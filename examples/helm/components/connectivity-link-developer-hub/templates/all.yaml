@@ -368,10 +368,12 @@ data:
     integrations:
       gitea:
         - host: gitea-gitea.{{ .Values.clusterDomain }}
+          baseUrl: http://gitea-http.gitea.svc.cluster.local:3000
           apiBaseUrl: http://gitea-http.gitea.svc.cluster.local:3000/api/v1
           username: gitea_admin
           password: "openshift"
         - host: gitea-gitea
+          baseUrl: http://gitea-http.gitea.svc.cluster.local:3000
           apiBaseUrl: http://gitea-http.gitea.svc.cluster.local:3000/api/v1
           username: gitea_admin
           password: "openshift"
