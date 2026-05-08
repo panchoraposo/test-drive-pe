@@ -35,7 +35,6 @@ spec:
           title: Owner (username)
           type: string
           description: "Owner of the component (e.g. user1)"
-          default: ${{ user.entity.metadata.name }}
           pattern: "^user[0-9]+$"
           ui:help: "Auto-detected from your login. Change only if removing another user's component."
   steps:
