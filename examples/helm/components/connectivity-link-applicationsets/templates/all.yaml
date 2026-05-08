@@ -78,7 +78,7 @@ spec:
       serviceAccountName: gitea-token-creator
       containers:
         - name: create-token
-          image: curlimages/curl:latest
+          image: quay.io/curl/curl:latest
           command:
             - /bin/sh
             - -c
@@ -174,7 +174,7 @@ spec:
           serviceAccountName: gitea-token-creator
           containers:
             - name: webhook-sync
-              image: curlimages/curl:latest
+              image: quay.io/curl/curl:latest
               command:
                 - /bin/sh
                 - -c
