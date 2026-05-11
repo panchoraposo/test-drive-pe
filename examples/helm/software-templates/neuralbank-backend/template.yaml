@@ -59,7 +59,7 @@ spec:
       name: Register in Catalog
       action: catalog:register
       input:
-        catalogInfoUrl: "https://gitea-gitea.${{ parameters.clusterDomain }}/ws-${{ user.entity.metadata.name }}/${{ parameters.name }}/raw/branch/main/catalog-info.yaml"
+        catalogInfoUrl: "http://gitea-http.gitea.svc.cluster.local:3000/ws-${{ user.entity.metadata.name }}/${{ parameters.name }}/raw/branch/main/catalog-info.yaml"
     - id: notify
       name: Send Email Notification
       action: http:backstage:request
