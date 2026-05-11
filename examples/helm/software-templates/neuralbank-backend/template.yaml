@@ -17,6 +17,7 @@ spec:
     - title: Application Information
       required:
         - name
+        - clusterDomain
       properties:
         name:
           title: Application Name
@@ -29,10 +30,10 @@ spec:
           type: string
           default: "Neuralbank REST API backend for credit management"
         clusterDomain:
-          title: Cluster Domain
+          title: Cluster Domain (apps base domain)
           type: string
-          ui:widget: hidden
-          description: "Auto-populated from app config workshop.clusterDomain"
+          description: "OpenShift base domain used for Routes (for example: apps.cluster.example.com). This should be pre-filled automatically."
+          pattern: "^[a-z0-9.-]+$"
   steps:
     - id: fetch-skeleton
       name: Generate Skeleton

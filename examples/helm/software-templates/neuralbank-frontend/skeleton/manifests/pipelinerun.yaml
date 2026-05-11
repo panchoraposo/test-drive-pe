@@ -11,7 +11,7 @@ spec:
     name: ${{values.name}}-build
   params:
     - name: git-url
-      value: https://gitea-gitea.${{values.clusterDomain}}/ws-${{values.owner}}/${{values.name}}.git
+      value: http://gitea-http.gitea.svc.cluster.local:3000/ws-${{values.owner}}/${{values.name}}.git
     - name: git-revision
       value: main
   workspaces:

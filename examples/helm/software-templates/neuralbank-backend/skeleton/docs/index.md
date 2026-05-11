@@ -31,7 +31,7 @@ ${{ values.description }}
 ## Quick Start
 
 ```bash
-git clone https://gitea-gitea.${{ values.clusterDomain }}/ws-${{ values.owner }}/${{ values.name }}.git
+git clone https://gitea-gitea.${{ values.clusterDomain | default('apps.cluster.example.com') }}/ws-${{ values.owner }}/${{ values.name }}.git
 cd ${{ values.name }}
 mvn quarkus:dev
 ```

@@ -21,7 +21,7 @@ ${{ values.description }}
 
 ```bash
 # Clone the repository
-git clone https://gitea-gitea.${{ values.clusterDomain }}/ws-${{ values.owner }}/${{ values.name }}.git
+git clone https://gitea-gitea.${{ values.clusterDomain | default('apps.cluster.example.com') }}/ws-${{ values.owner }}/${{ values.name }}.git
 cd ${{ values.name }}
 
 # Run in dev mode (hot-reload)
@@ -45,13 +45,13 @@ mvn quarkus:dev
 
 ```bash
 # List customers
-curl -s https://${{ values.name }}-${{ values.namespace }}.${{ values.clusterDomain }}/api/customers | jq
+curl -s https://${{ values.name }}-${{ values.namespace }}.${{ values.clusterDomain | default('apps.cluster.example.com') }}/api/customers | jq
 
 # List credits
-curl -s https://${{ values.name }}-${{ values.namespace }}.${{ values.clusterDomain }}/api/credits | jq
+curl -s https://${{ values.name }}-${{ values.namespace }}.${{ values.clusterDomain | default('apps.cluster.example.com') }}/api/credits | jq
 
 # Update a credit
-curl -X POST https://${{ values.name }}-${{ values.namespace }}.${{ values.clusterDomain }}/api/credits/1/update \
+curl -X POST https://${{ values.name }}-${{ values.namespace }}.${{ values.clusterDomain | default('apps.cluster.example.com') }}/api/credits/1/update \
   -H "Content-Type: application/json" \
   -d '{"amount": 5000, "status": "approved"}'
 ```
@@ -117,7 +117,7 @@ The Tekton pipeline runs automatically on git push (via webhook):
 Open directly in DevSpaces:
 
 ```
-https://devspaces.${{ values.clusterDomain }}/#https://gitea-gitea.${{ values.clusterDomain }}/ws-${{ values.owner }}/${{ values.name }}
+https://devspaces.${{ values.clusterDomain | default('apps.cluster.example.com') }}/#https://gitea-gitea.${{ values.clusterDomain | default('apps.cluster.example.com') }}/ws-${{ values.owner }}/${{ values.name }}
 ```
 
 ## Owner
