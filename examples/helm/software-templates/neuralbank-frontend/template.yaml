@@ -61,8 +61,8 @@ spec:
       name: Register in Catalog
       action: catalog:register
       input:
-        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
-        catalogInfoPath: /catalog-info.yaml
+        repoContentsUrl: "https://gitea-gitea.${{ environment.parameters.clusterDomain }}/ws-${{ user.entity.metadata.name }}/${{ parameters.name }}/src/branch/main/"
+        catalogInfoPath: catalog-info.yaml
     - id: notify
       name: Send Email Notification
       action: http:backstage:request
