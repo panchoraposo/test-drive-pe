@@ -428,7 +428,7 @@ data:
           - host: github.com
           - host: raw.githubusercontent.com
           - host: gitea-gitea.{{ .Values.clusterDomain }}
-          - host: gitea-http.gitea.svc.cluster.local
+          - host: gitea-http.gitea.svc.cluster.local:3000
     signInPage: oidc
     scaffolder:
       defaultValues:
