@@ -133,7 +133,9 @@ spec:
     repoURL: {{ $.Values.gitops.repoUrl }}
     targetRevision: {{ $.Values.gitops.revision }}
     path: {{ $.Values.gitops.basePath }}/components/{{ .path }}
-    {{- $domain := $.Values.deployer.domain | default "apps.cluster.example.com" }}
+    {{- $ing := (lookup "config.openshift.io/v1" "Ingress" "" "cluster") -}}
+    {{- $domain := (coalesce ($.Values.deployer.domain | default "") (dig "spec" "domain" "" $ing)) -}}
+    {{- $domain = required "Unable to determine cluster apps base domain. Set deployer.domain or ensure Ingress.config.openshift.io/cluster.spec.domain exists." $domain -}}
     {{- if eq .path "connectivity-link-openshift-gitops" }}
     helm:
       valuesObject:
