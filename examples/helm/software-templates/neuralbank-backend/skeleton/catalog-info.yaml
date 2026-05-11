@@ -12,7 +12,7 @@ metadata:
   name: ${{values.uniqueName}}
   description: ${{values.description}}
   annotations:
-    backstage.io/techdocs-ref: dir:.
+    backstage.io/techdocs-ref: url:https://gitea-gitea.${{ values.clusterDomain }}/ws-${{ values.owner }}/${{ values.name }}/src/branch/main/
     backstage.io/source-location: url:https://gitea-gitea.${{ values.clusterDomain }}/ws-${{ values.owner }}/${{ values.name }}
     backstage.io/view-url: https://gitea-gitea.${{ values.clusterDomain }}/ws-${{ values.owner }}/${{ values.name }}
     backstage.io/kubernetes-id: ${{values.uniqueName}}
