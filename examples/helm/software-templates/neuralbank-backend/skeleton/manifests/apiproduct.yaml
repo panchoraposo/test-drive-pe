@@ -24,9 +24,9 @@ spec:
     team: ${{values.owner}}
     email: "${{values.owner}}@redhat.local"
   documentation:
-    openAPISpecURL: "https://${{values.name}}-${{values.namespace}}.${{ values.clusterDomain | default('apps.cluster.example.com') }}/q/openapi"
-    swaggerUI: "https://${{values.name}}-${{values.namespace}}.${{ values.clusterDomain | default('apps.cluster.example.com') }}/q/swagger-ui"
-    gitRepository: "https://gitea-gitea.${{ values.clusterDomain | default('apps.cluster.example.com') }}/ws-${{values.owner}}/${{values.name}}"
+    openAPISpecURL: "https://${{values.name}}-${{values.namespace}}.${{ values.clusterDomain }}/q/openapi"
+    swaggerUI: "https://${{values.name}}-${{values.namespace}}.${{ values.clusterDomain }}/q/swagger-ui"
+    gitRepository: "https://gitea-gitea.${{ values.clusterDomain }}/ws-${{values.owner}}/${{values.name}}"
   targetRef:
     group: gateway.networking.k8s.io
     kind: HTTPRoute

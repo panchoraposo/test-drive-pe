@@ -23,7 +23,7 @@ ${{ values.description }}
 
 ```bash
 # Clone the repository
-git clone https://gitea-gitea.${{ values.clusterDomain | default('apps.cluster.example.com') }}/ws-${{ values.owner }}/${{ values.name }}.git
+git clone https://gitea-gitea.${{ values.clusterDomain }}/ws-${{ values.owner }}/${{ values.name }}.git
 cd ${{ values.name }}
 
 # Run in dev mode (hot-reload)
@@ -156,7 +156,7 @@ mcpServers:
 Open directly in DevSpaces:
 
 ```
-https://devspaces.${{ values.clusterDomain | default('apps.cluster.example.com') }}/#https://gitea-gitea.${{ values.clusterDomain | default('apps.cluster.example.com') }}/ws-${{ values.owner }}/${{ values.name }}
+https://devspaces.${{ values.clusterDomain }}/#https://gitea-gitea.${{ values.clusterDomain }}/ws-${{ values.owner }}/${{ values.name }}
 ```
 
 ## Owner

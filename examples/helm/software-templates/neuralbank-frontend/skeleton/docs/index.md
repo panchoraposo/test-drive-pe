@@ -29,7 +29,7 @@ Static single-page application for the Neuralbank platform. Provides a credit ma
 ## Quick Start
 
 ```bash
-git clone https://gitea-gitea.${{ values.clusterDomain | default('apps.cluster.example.com') }}/ws-${{ values.owner }}/${{ values.name }}.git
+git clone https://gitea-gitea.${{ values.clusterDomain }}/ws-${{ values.owner }}/${{ values.name }}.git
 cd ${{ values.name }}
 python3 -m http.server 8080
 ```
