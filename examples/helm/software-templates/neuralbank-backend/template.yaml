@@ -28,12 +28,6 @@ spec:
           title: Description
           type: string
           default: "Neuralbank REST API backend for credit management"
-        clusterDomain:
-          title: Cluster Domain (apps base domain)
-          type: string
-          ui:readonly: true
-          description: "Auto-populated (read-only) from Developer Hub config."
-          pattern: "^[a-z0-9.-]+$"
   steps:
     - id: fetch-skeleton
       name: Generate Skeleton
@@ -47,7 +41,7 @@ spec:
           description: ${{ parameters.description }}
           namespace: "${{ user.entity.metadata.name }}-neuralbank"
           imageRegistry: "image-registry.openshift-image-registry.svc:5000"
-          clusterDomain: ${{ parameters.clusterDomain }}
+          clusterDomain: ${{ environment.parameters.clusterDomain }}
     - id: publish
       name: Publish to Gitea
       action: publish:gitea
@@ -60,7 +54,8 @@ spec:
       name: Register in Catalog
       action: catalog:register
       input:
-        catalogInfoUrl: "http://gitea-http.gitea.svc.cluster.local:3000/ws-${{ user.entity.metadata.name }}/${{ parameters.name }}/raw/branch/main/catalog-info.yaml"
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: /catalog-info.yaml
     - id: notify
       name: Send Email Notification
       action: http:backstage:request
