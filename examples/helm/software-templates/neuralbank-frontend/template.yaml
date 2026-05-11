@@ -16,7 +16,6 @@ spec:
     - title: Application Information
       required:
         - name
-        - clusterDomain
       properties:
         name:
           title: Application Name
@@ -36,7 +35,8 @@ spec:
         clusterDomain:
           title: Cluster Domain (apps base domain)
           type: string
-          description: "OpenShift base domain used for Routes (for example: apps.cluster.example.com). This should be pre-filled automatically."
+          ui:widget: hidden
+          description: "Auto-populated from app config workshop.clusterDomain"
           pattern: "^[a-z0-9.-]+$"
   steps:
     - id: fetch-skeleton
