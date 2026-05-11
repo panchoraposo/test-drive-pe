@@ -34,6 +34,12 @@ spec:
           type: string
           default: neuralbank-backend
           description: "Name used when you created the backend template (for example: neuralbank-backend)."
+        clusterDomain:
+          title: Cluster Domain (apps base domain)
+          type: string
+          ui:readonly: true
+          description: Auto-populated from the environment installation.
+          pattern: "^[a-z0-9.-]+$"
   steps:
     - id: fetch-skeleton
       name: Generate Skeleton
@@ -47,7 +53,7 @@ spec:
           description: ${{ parameters.description }}
           namespace: "${{ user.entity.metadata.name }}-neuralbank"
           imageRegistry: "image-registry.openshift-image-registry.svc:5000"
-          clusterDomain: ${{ environment.parameters.clusterDomain }}
+          clusterDomain: ${{ parameters.clusterDomain }}
           backendName: ${{ parameters.backendName }}
           backendUniqueName: "${{ user.entity.metadata.name }}-${{ parameters.backendName }}"
     - id: publish
@@ -62,7 +68,7 @@ spec:
       name: Register in Catalog
       action: catalog:register
       input:
-        repoContentsUrl: "https://gitea-gitea.${{ environment.parameters.clusterDomain }}/ws-${{ user.entity.metadata.name }}/${{ parameters.name }}/src/branch/main/"
+        repoContentsUrl: "https://gitea-gitea.${{ parameters.clusterDomain }}/ws-${{ user.entity.metadata.name }}/${{ parameters.name }}/src/branch/main/"
         catalogInfoPath: catalog-info.yaml
     - id: notify
       name: Send Email Notification
