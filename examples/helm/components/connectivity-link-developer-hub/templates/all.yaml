@@ -431,7 +431,7 @@ data:
           - host: gitea-http.gitea.svc.cluster.local:3000
     signInPage: oidc
     scaffolder:
-      # Backstage scaffolder defaults (available as ${{ environment.parameters.* }}).
+      # Backstage scaffolder defaults (available as environment.parameters.*).
       # We keep defaultValues too for compatibility with older scaffolder configs.
       defaultEnvironment:
         parameters:
