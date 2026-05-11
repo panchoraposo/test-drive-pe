@@ -1,0 +1,16 @@
+apiVersion: devportal.kuadrant.io/v1alpha1
+kind: APIKey
+metadata:
+  name: ${{values.uniqueName}}
+  namespace: ${{values.namespace}}
+  labels:
+    app: ${{values.name}}
+    kuadrant.io/apikey: "true"
+spec:
+  apiProductRef:
+    name: ${{values.uniqueName}}-api
+  planTier: basic
+  requestedBy:
+    email: "${{values.owner}}@redhat.local"
+    userId: ${{values.owner}}
+  useCase: workshop
