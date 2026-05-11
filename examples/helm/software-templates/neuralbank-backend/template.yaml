@@ -28,13 +28,13 @@ spec:
           title: Description
           type: string
           default: "Neuralbank REST API backend for credit management"
-        clusterDomain:
-          title: Cluster Domain (apps base domain)
-          type: string
-          ui:readonly: true
-          description: Auto-populated from the environment installation.
-          pattern: "^[a-z0-9.-]+$"
   steps:
+    - id: get-cluster-domain
+      name: Detect Cluster Domain
+      action: http:backstage:request
+      input:
+        method: GET
+        path: /proxy/k8s-api/apis/config.openshift.io/v1/ingresses/cluster
     - id: fetch-skeleton
       name: Generate Skeleton
       action: fetch:template
@@ -47,7 +47,7 @@ spec:
           description: ${{ parameters.description }}
           namespace: "${{ user.entity.metadata.name }}-neuralbank"
           imageRegistry: "image-registry.openshift-image-registry.svc:5000"
-          clusterDomain: ${{ parameters.clusterDomain }}
+          clusterDomain: ${{ steps['get-cluster-domain'].output.body.spec.domain }}
     - id: publish
       name: Publish to Gitea
       action: publish:gitea
@@ -60,7 +60,7 @@ spec:
       name: Register in Catalog
       action: catalog:register
       input:
-        repoContentsUrl: "https://gitea-gitea.${{ parameters.clusterDomain }}/ws-${{ user.entity.metadata.name }}/${{ parameters.name }}/src/branch/main/"
+        repoContentsUrl: "https://gitea-gitea.${{ steps['get-cluster-domain'].output.body.spec.domain }}/ws-${{ user.entity.metadata.name }}/${{ parameters.name }}/src/branch/main/"
         catalogInfoPath: catalog-info.yaml
     - id: notify
       name: Send Email Notification
