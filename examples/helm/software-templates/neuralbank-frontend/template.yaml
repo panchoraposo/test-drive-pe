@@ -35,8 +35,8 @@ spec:
         clusterDomain:
           title: Cluster Domain (apps base domain)
           type: string
-          ui:widget: hidden
-          description: "Auto-populated from app config workshop.clusterDomain"
+          ui:readonly: true
+          description: "Auto-populated (read-only) from Developer Hub config."
           pattern: "^[a-z0-9.-]+$"
   steps:
     - id: fetch-skeleton
