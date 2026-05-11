@@ -28,6 +28,6 @@ spec:
   owner: user:${{values.owner}}
   system: ${{values.owner}}-neuralbank
   consumesApis:
-    - ${{values.owner}}-neuralbank-backend-api
+    - ${{values.backendApiName | default(values.owner + '-neuralbank-backend-api') }}
   dependsOn:
-    - component:default/${{values.owner}}-neuralbank-backend
+    - component:default/${{values.backendUniqueName | default(values.owner + '-neuralbank-backend') }}

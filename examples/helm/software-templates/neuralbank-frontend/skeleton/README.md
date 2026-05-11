@@ -45,7 +45,7 @@ Static single-page application for the Neuralbank platform. Provides a credit ma
 This frontend consumes the API from:
 
 ```
-component:default/${{ values.owner }}-neuralbank-backend
+component:default/${{ values.backendUniqueName | default(values.owner + '-neuralbank-backend') }}
 ```
 
 ## Project Structure

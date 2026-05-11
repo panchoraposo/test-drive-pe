@@ -68,7 +68,7 @@ The MCP server exposes customer management tools that AI assistants (like OpenSh
 This MCP server calls the `neuralbank-backend` REST API internally:
 
 ```
-http://neuralbank-backend.${{ values.namespace }}.svc.cluster.local:8080/api/v1/customers
+http://${{ values.backendName | default('neuralbank-backend') }}.${{ values.namespace }}.svc.cluster.local:8080/api/v1/customers
 ```
 
 ## Project Structure

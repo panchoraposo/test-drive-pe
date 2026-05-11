@@ -31,7 +31,7 @@ spec:
   providesApis:
     - ${{values.uniqueName}}-api
   dependsOn:
-    - component:default/${{values.owner}}-neuralbank-backend
+    - component:default/${{values.backendUniqueName | default(values.owner + '-neuralbank-backend') }}
 ---
 apiVersion: backstage.io/v1alpha1
 kind: API
