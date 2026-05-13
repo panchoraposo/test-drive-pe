@@ -335,6 +335,39 @@ spec:
       destination:
         server: https://kubernetes.default.svc
         namespace: {{ $user }}-neuralbank
+      # Workshop repos may share certain resources (Tekton Tasks, shared RBAC, etc.).
+      # Ignore benign/operator-added drift and Argo tracking-id differences so apps stay Synced.
+      ignoreDifferences:
+        - group: tekton.dev
+          kind: Task
+          jsonPointers:
+            - /spec/steps/0/computeResources
+            - /metadata/annotations/argocd.argoproj.io~1tracking-id
+        - group: triggers.tekton.dev
+          kind: EventListener
+          jsonPointers:
+            - /spec/namespaceSelector
+            - /spec/resources
+            - /spec/triggers/0/bindings/0/kind
+            - /metadata/annotations/argocd.argoproj.io~1tracking-id
+        - group: gateway.networking.k8s.io
+          kind: HTTPRoute
+          jsonPointers:
+            - /spec/parentRefs/0/group
+            - /spec/parentRefs/0/kind
+            - /metadata/annotations/argocd.argoproj.io~1tracking-id
+        - group: rbac.authorization.k8s.io
+          kind: ClusterRoleBinding
+          jsonPointers:
+            - /metadata/annotations/argocd.argoproj.io~1tracking-id
+        - group: rbac.authorization.k8s.io
+          kind: Role
+          jsonPointers:
+            - /metadata/annotations/argocd.argoproj.io~1tracking-id
+        - group: rbac.authorization.k8s.io
+          kind: RoleBinding
+          jsonPointers:
+            - /metadata/annotations/argocd.argoproj.io~1tracking-id
       syncPolicy:
         automated:
           prune: true
@@ -342,4 +375,5 @@ spec:
         syncOptions:
           - CreateNamespace=true
           - ServerSideApply=true
+          - RespectIgnoreDifferences=true
 {{- end }}

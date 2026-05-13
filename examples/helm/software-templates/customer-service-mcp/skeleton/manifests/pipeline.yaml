@@ -22,7 +22,7 @@ spec:
     - name: git-clone
       taskRef:
         kind: Task
-        name: git-clone
+        name: ${{values.name}}-git-clone
       params:
         - name: url
           value: $(params.git-url)
@@ -36,7 +36,7 @@ spec:
         - git-clone
       taskRef:
         kind: Task
-        name: maven
+        name: ${{values.name}}-maven
       params:
         - name: MAVEN_IMAGE
           value: maven:3.9-eclipse-temurin-17
@@ -54,7 +54,7 @@ spec:
         - maven-build
       taskRef:
         kind: Task
-        name: buildah
+        name: ${{values.name}}-buildah
       params:
         - name: IMAGE
           value: $(params.image-name)
@@ -68,7 +68,7 @@ spec:
         - build-image
       taskRef:
         kind: Task
-        name: openshift-client
+        name: ${{values.name}}-openshift-client
       params:
         - name: SCRIPT
           value: |

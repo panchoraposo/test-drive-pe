@@ -9,6 +9,8 @@ metadata:
 spec:
   parentRefs:
     - name: ${{values.name}}-gateway
+      group: gateway.networking.k8s.io
+      kind: Gateway
       namespace: ${{values.namespace}}
   rules:
     - matches:

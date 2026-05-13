@@ -1,7 +1,7 @@
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-  name: git-clone
+  name: ${{values.name}}-git-clone
   namespace: ${{values.namespace}}
 spec:
   params:
@@ -19,6 +19,7 @@ spec:
     - name: output
   steps:
     - name: clone
+      computeResources: {}
       image: alpine/git:latest
       env:
         - name: PARAM_URL
@@ -42,7 +43,7 @@ spec:
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-  name: buildah
+  name: ${{values.name}}-buildah
   namespace: ${{values.namespace}}
 spec:
   params:
@@ -58,6 +59,7 @@ spec:
     - name: source
   steps:
     - name: build-and-push
+      computeResources: {}
       image: quay.io/buildah/stable:v1.31.0
       workingDir: $(workspaces.source.path)
       securityContext:
@@ -78,7 +80,7 @@ spec:
 apiVersion: tekton.dev/v1
 kind: Task
 metadata:
-  name: openshift-client
+  name: ${{values.name}}-openshift-client
   namespace: ${{values.namespace}}
 spec:
   params:
@@ -86,6 +88,7 @@ spec:
       type: string
   steps:
     - name: oc
+      computeResources: {}
       image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
       script: |
         #!/usr/bin/env bash

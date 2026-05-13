@@ -6,11 +6,14 @@ metadata:
   labels:
     backstage.io/kubernetes-id: ${{values.uniqueName}}
 spec:
+  namespaceSelector: {}
+  resources: {}
   serviceAccountName: ${{values.name}}-trigger-sa
   triggers:
     - name: gitea-push
       bindings:
-        - ref: ${{values.name}}-binding
+        - kind: TriggerBinding
+          ref: ${{values.name}}-binding
       template:
         ref: ${{values.name}}-template
 ---
