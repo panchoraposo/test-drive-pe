@@ -18,8 +18,13 @@ spec:
           apiKey:
             allNamespaces: true
             selector:
-              matchLabels:
-                devportal.kuadrant.io/apiproduct: ${{values.uniqueName}}-api
+              matchExpressions:
+                - key: devportal.kuadrant.io/apiproduct
+                  operator: In
+                  values:
+                    # Allow using either the MCP API key or the backend API key
+                    - ${{values.uniqueName}}-api
+                    - ${{values.backendUniqueName}}-api
           credentials:
             customHeader:
               name: X-API-Key
