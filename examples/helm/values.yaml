@@ -289,7 +289,7 @@ connectivityLink:
           model:
             name: qwen25-7b-instruct
             modelId: qwen25-7b-instruct
-            apiBase: "https://qwen25-7b-instruct-my-first-model.apps.ocp.xbgvw.sandbox67.opentlc.com/v1"
+            apiBase: "http://mock-llm.openshift-lightspeed.svc.cluster.local:8080/v1"
             apiKey: "sk-no-key"
     - id: n8n
       enabled: true
@@ -309,8 +309,8 @@ connectivityLink:
 # Keys are injected at deploy time (RHDP or --set), NOT in git
 # ============================================================
 lightspeed:
-  llmApiKey: "sk-no-key"
-  llmEndpoint: "https://qwen25-7b-instruct-my-first-model.apps.ocp.xbgvw.sandbox67.opentlc.com/v1"
+  llmApiKey: "sk-openshift-mcp-1234"
+  llmEndpoint: "http://openshift-mcp-server-litellm.openshift-lightspeed.svc.cluster.local:4000/v1"
   model: "qwen25-7b-instruct"
 
 # ============================================================

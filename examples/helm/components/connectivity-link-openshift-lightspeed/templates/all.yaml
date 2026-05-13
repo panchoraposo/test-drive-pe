@@ -138,3 +138,180 @@ spec:
             type: secret
             secretRef:
               name: rhdh-mcp-token
+
+---
+##
+## Mock OpenAI-compatible LLM (workshop fallback)
+## Used as upstream for the in-cluster LiteLLM proxy when no GPU-backed model is available.
+##
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mock-llm-app
+  namespace: openshift-lightspeed
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+data:
+  main.py: |
+    from __future__ import annotations
+
+    import json
+    from typing import Any, Dict, List, Optional
+
+    from fastapi import FastAPI, Request
+    from fastapi.responses import JSONResponse, StreamingResponse
+
+    app = FastAPI()
+
+    MODEL_ID = "qwen25-7b-instruct"
+
+
+    @app.get("/v1/models")
+    async def list_models() -> Dict[str, Any]:
+      return {
+        "object": "list",
+        "data": [
+          {
+            "id": MODEL_ID,
+            "object": "model",
+            "created": 0,
+            "owned_by": "openai",
+          }
+        ],
+      }
+
+
+    def _extract_user_text(messages: List[Dict[str, Any]]) -> str:
+      for m in reversed(messages or []):
+        if m.get("role") == "user" and isinstance(m.get("content"), str):
+          return m["content"]
+      return ""
+
+
+    def _is_validation_prompt(messages: List[Dict[str, Any]]) -> bool:
+      joined = "\n".join([str(m.get("content", "")) for m in (messages or [])])
+      return "question classification tool" in joined.lower()
+
+
+    def _completion_text(messages: List[Dict[str, Any]]) -> str:
+      if _is_validation_prompt(messages):
+        # The Lightspeed question validity shield expects a strict allow/reject answer.
+        return "allowed"
+      user_text = _extract_user_text(messages)
+      if not user_text:
+        return "ok"
+      return (
+        "Lightspeed is running in workshop fallback mode (no external LLM configured).\n\n"
+        f"You asked: {user_text}\n\n"
+        "Tip: Ask about Developer Hub templates, catalog, Argo CD apps, or Kuadrant policies."
+      )
+
+
+    @app.post("/v1/chat/completions")
+    async def chat_completions(req: Request) -> Any:
+      payload = await req.json()
+      messages = payload.get("messages") or []
+      stream = bool(payload.get("stream"))
+      content = _completion_text(messages)
+
+      if not stream:
+        return JSONResponse(
+          {
+            "id": "chatcmpl-mock",
+            "object": "chat.completion",
+            "created": 0,
+            "model": payload.get("model", MODEL_ID),
+            "choices": [
+              {
+                "index": 0,
+                "message": {"role": "assistant", "content": content},
+                "finish_reason": "stop",
+              }
+            ],
+          }
+        )
+
+      async def gen():
+        # Minimal OpenAI SSE stream: send the full content in a couple chunks.
+        chunks = [content[: max(1, len(content) // 2)], content[max(1, len(content) // 2) :]]
+        for part in chunks:
+          data = {
+            "id": "chatcmpl-mock",
+            "object": "chat.completion.chunk",
+            "created": 0,
+            "model": payload.get("model", MODEL_ID),
+            "choices": [{"index": 0, "delta": {"content": part}, "finish_reason": None}],
+          }
+          yield f"data: {json.dumps(data)}\n\n"
+        done = {
+          "id": "chatcmpl-mock",
+          "object": "chat.completion.chunk",
+          "created": 0,
+          "model": payload.get("model", MODEL_ID),
+          "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+        }
+        yield f"data: {json.dumps(done)}\n\n"
+        yield "data: [DONE]\n\n"
+
+      return StreamingResponse(gen(), media_type="text/event-stream")
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mock-llm
+  namespace: openshift-lightspeed
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mock-llm
+  template:
+    metadata:
+      labels:
+        app: mock-llm
+    spec:
+      containers:
+        - name: mock-llm
+          image: "tiangolo/uvicorn-gunicorn-fastapi:python3.11"
+          env:
+            - name: MODULE_NAME
+              value: "main"
+            - name: VARIABLE_NAME
+              value: "app"
+          ports:
+            - name: http
+              containerPort: 80
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+          volumeMounts:
+            - name: app
+              mountPath: /app/main.py
+              subPath: main.py
+      volumes:
+        - name: app
+          configMap:
+            name: mock-llm-app
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mock-llm
+  namespace: openshift-lightspeed
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  selector:
+    app: mock-llm
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 80
