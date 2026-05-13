@@ -1,0 +1,15 @@
+.DS_Store
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# Logs
+*.log
+
