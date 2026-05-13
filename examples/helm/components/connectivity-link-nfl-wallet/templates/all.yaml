@@ -279,12 +279,14 @@ kind: Secret
 metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "3"
+    secret.kuadrant.io/plan-id: basic
   name: nfl-wallet-apikey-admin
   namespace: nfl-wallet-prod
   labels:
     app: nfl-wallet
     kuadrant.io/apikey: "true"
     authorino.kuadrant.io/managed-by: authorino
+    secret.kuadrant.io/plan-id: basic
 type: Opaque
 stringData:
   api_key: nfl-wallet-demo-key-2024
@@ -294,12 +296,14 @@ kind: Secret
 metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "3"
+    secret.kuadrant.io/plan-id: free
   name: nfl-wallet-apikey-readonly
   namespace: nfl-wallet-prod
   labels:
     app: nfl-wallet
     kuadrant.io/apikey: "true"
     authorino.kuadrant.io/managed-by: authorino
+    secret.kuadrant.io/plan-id: free
 type: Opaque
 stringData:
   api_key: nfl-wallet-readonly-key-2024
@@ -321,7 +325,7 @@ spec:
   plans:
     - tier: free
       predicate: |
-        has(auth.identity) && auth.identity.metadata.annotations["secret.kuadrant.io/plan-id"] == "free"
+        has(auth.identity) && auth.identity.metadata.labels["secret.kuadrant.io/plan-id"] == "free"
       limits:
         daily: 100
         custom:
@@ -329,7 +333,7 @@ spec:
             window: "1m"
     - tier: basic
       predicate: |
-        has(auth.identity) && auth.identity.metadata.annotations["secret.kuadrant.io/plan-id"] == "basic"
+        has(auth.identity) && auth.identity.metadata.labels["secret.kuadrant.io/plan-id"] == "basic"
       limits:
         daily: 1000
         custom:
@@ -337,7 +341,7 @@ spec:
             window: "1m"
     - tier: pro
       predicate: |
-        has(auth.identity) && auth.identity.metadata.annotations["secret.kuadrant.io/plan-id"] == "pro"
+        has(auth.identity) && auth.identity.metadata.labels["secret.kuadrant.io/plan-id"] == "pro"
       limits:
         daily: 10000
         custom:
