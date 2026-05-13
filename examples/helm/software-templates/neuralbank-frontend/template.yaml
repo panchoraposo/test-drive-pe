@@ -30,8 +30,9 @@ spec:
         backendName:
           title: Backend component name
           type: string
-          default: neuralbank-backend
           description: "Name used when you created the backend template (for example: neuralbank-backend)."
+          ui:placeholder: neuralbank-backend
+          ui:help: "If you created the backend with a different name, set it here. Otherwise, use neuralbank-backend."
   steps:
     - id: get-cluster-domain
       name: Detect Cluster Domain
