@@ -300,9 +300,18 @@ metadata:
   namespace: openshift-gitops
 data:
   scopes: "[groups, preferred_username]"
+  policy.default: role:workshop-readonly
   policy.csv: |
     g, system:cluster-admins, role:admin
     g, admin, role:admin
+    # Default readonly access for workshop users (keeps UI usable even if username claim differs)
+    p, role:workshop-readonly, applications, get, default/user*-*, allow
+    p, role:workshop-readonly, applications, list, default/user*-*, allow
+    p, role:workshop-readonly, logs, get, default/user*-*, allow
+    p, role:workshop-readonly, projects, get, *, allow
+    p, role:workshop-readonly, projects, list, *, allow
+    p, role:workshop-readonly, clusters, get, *, allow
+    p, role:workshop-readonly, repositories, get, *, allow
     p, platformadmin, applications, get, default/*, allow
     p, platformadmin, applications, sync, default/*, allow
     p, platformadmin, logs, get, default/*, allow
