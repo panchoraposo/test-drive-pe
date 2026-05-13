@@ -27,12 +27,6 @@ spec:
           title: Description
           type: string
           default: "Neuralbank credit visualization frontend"
-        backendName:
-          title: Backend component name
-          type: string
-          description: "Name used when you created the backend template (for example: neuralbank-backend)."
-          ui:placeholder: neuralbank-backend
-          ui:help: "If you created the backend with a different name, set it here. Otherwise, use neuralbank-backend."
   steps:
     - id: get-cluster-domain
       name: Detect Cluster Domain
@@ -53,9 +47,9 @@ spec:
           namespace: "${{ user.entity.metadata.name }}-neuralbank"
           imageRegistry: "image-registry.openshift-image-registry.svc:5000"
           clusterDomain: ${{ steps['get-cluster-domain'].output.body.spec.domain }}
-          backendName: ${{ parameters.backendName }}
-          backendUniqueName: "${{ user.entity.metadata.name }}-${{ parameters.backendName }}"
-          backendApiName: "${{ user.entity.metadata.name }}-${{ parameters.backendName }}-api"
+          backendName: neuralbank-backend
+          backendUniqueName: "${{ user.entity.metadata.name }}-neuralbank-backend"
+          backendApiName: "${{ user.entity.metadata.name }}-neuralbank-backend-api"
     - id: publish
       name: Publish to Gitea
       action: publish:gitea
