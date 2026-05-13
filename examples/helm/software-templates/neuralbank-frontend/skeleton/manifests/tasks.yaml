@@ -13,8 +13,10 @@ spec:
   results:
     - name: commit
       description: The precise commit SHA that was fetched
+      type: string
     - name: url
       description: The precise URL that was fetched
+      type: string
   workspaces:
     - name: output
   steps:
