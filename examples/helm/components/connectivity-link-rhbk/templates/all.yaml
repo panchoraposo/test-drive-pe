@@ -2778,3 +2778,25 @@ spec:
       realmRoles:
       - corporate-client
       username: info@inversionesmadrid.es
+
+    {{- $userCount := int (.Values.userCount | default 200) -}}
+    {{- range $i := until $userCount }}
+    {{- $n := add1 $i }}
+    - credentials:
+      - temporary: false
+        type: password
+        value: Welcome123!
+      disableableCredentialTypes: []
+      email: user{{ $n }}@developer-hub.local
+      emailVerified: true
+      enabled: true
+      firstName: User
+      groups:
+      - US-Clients
+      lastName: "{{ $n }}"
+      realmRoles:
+      - personal-client
+      requiredActions: []
+      totp: false
+      username: user{{ $n }}
+    {{- end }}
