@@ -22,11 +22,19 @@ metadata:
     argocd.argoproj.io/sync-options: ServerSideApply=true
 spec:
   rbac:
-    defaultPolicy: ''
+    defaultPolicy: 'role:workshop-readonly'
     scopes: '[groups, preferred_username]'
     policy: |
       g, system:cluster-admins, role:admin
       g, admin, role:admin
+      # Default readonly access for workshop users (keeps UI usable even if username claim differs)
+      p, role:workshop-readonly, applications, get, default/user*-*, allow
+      p, role:workshop-readonly, applications, list, default/user*-*, allow
+      p, role:workshop-readonly, logs, get, default/user*-*, allow
+      p, role:workshop-readonly, projects, get, *, allow
+      p, role:workshop-readonly, projects, list, *, allow
+      p, role:workshop-readonly, clusters, get, *, allow
+      p, role:workshop-readonly, repositories, get, *, allow
       {{- $userCount := .Values.userCount | default 200 | int }}
       {{- range $i := until $userCount }}
       {{- $user := printf "user%d" (add1 $i) }}
