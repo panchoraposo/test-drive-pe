@@ -6,7 +6,7 @@
 # ============================================================
 gitops:
   # Repository containing the component charts (your fork or this template)
-  repoUrl: "https://github.com/maximilianoPizarro/test-drive-pe-oscg.git"
+  repoUrl: "https://github.com/panchoraposo/test-drive-pe.git"
   revision: "main"
   basePath: "examples/helm"
 
@@ -361,7 +361,7 @@ components:
     namespace: showroom
     name: showroom
     content:
-      repoUrl: "https://github.com/maximilianoPizarro/showroom-from-zero-to-hero.git"
+      repoUrl: "https://github.com/panchoraposo/showroom-from-zero-to-hero.git"
       repoRef: "main"
       antoraPlaybook: "site.yml"
       image: "quay.io/rhpds/showroom-content:v1.3.1"
