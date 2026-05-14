@@ -152,26 +152,22 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "0"
 data:
-  main.py: |
+  server.py: |
     from __future__ import annotations
 
     import json
+    from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
     from typing import Any, Dict, List
-
-    from fastapi import FastAPI, Request
-    from fastapi.responses import JSONResponse, StreamingResponse
-
-    app = FastAPI()
 
     MODEL_ID = "qwen25-7b-instruct"
 
     PRESET_ANSWERS: Dict[str, str] = {
       "getting started with developer hub": (
         "Here’s a quick getting-started path in Red Hat Developer Hub:\n\n"
-        "1) Explore the **Catalog** to discover existing components (services, APIs, systems).\n"
-        "2) Use **Software Templates** to scaffold a new service (repo + CI/CD + manifests) and let Argo CD deploy it.\n"
-        "3) Check the new component’s **TechDocs** and links (repo, pipelines, runtime).\n"
-        "4) Use **APIs** to find published OpenAPI specs and consumption details.\n\n"
+        "1) Explore the Catalog to discover existing components (services, APIs, systems).\n"
+        "2) Use Software Templates to scaffold a new service (repo + CI/CD + manifests) and let Argo CD deploy it.\n"
+        "3) Check the new component’s TechDocs and links (repo, pipelines, runtime).\n"
+        "4) Use APIs to find published OpenAPI specs and consumption details.\n\n"
         "If you tell me what you want to build (backend/frontend), I’ll point you to the right template."
       ),
       "software templates": (
@@ -181,15 +177,15 @@ data:
         "- Fill parameters (name, owner, runtime options)\n"
         "- The template creates a repo, pipelines, and GitOps config\n"
         "- Argo CD syncs and deploys to OpenShift\n\n"
-        "Tip: Start in **Create… → Template**, then follow the generated links (repo, pipeline run, Argo CD app)."
+        "Tip: Start in Create → Template, then follow the generated links (repo, pipeline run, Argo CD app)."
       ),
       "neuralbank platform": (
         "Neuralbank (workshop) is composed of:\n\n"
-        "- **Frontend** (user-facing web app)\n"
-        "- **Backend** (customer service API)\n"
-        "- **Keycloak (RHBK)** for OIDC (interactive login for the pre-deployed stack)\n"
-        "- **Gateway + Kuadrant policies** for API protection (API Key / OIDC) and rate limiting\n"
-        "- **Observability** stack (metrics/traces/logs dashboards)\n\n"
+        "- Frontend (user-facing web app)\n"
+        "- Backend (customer service API)\n"
+        "- Keycloak (RHBK) for OIDC (interactive login for the pre-deployed stack)\n"
+        "- Gateway + Kuadrant policies for API protection (API Key / OIDC) and rate limiting\n"
+        "- Observability stack (metrics/traces/logs dashboards)\n\n"
         "The workshop demonstrates both auth patterns: OIDC for interactive users and API Key for M2M access."
       ),
       "ci/cd with tekton": (
@@ -202,6 +198,7 @@ data:
         "To debug: check the PipelineRun logs and then confirm Argo CD shows the app as Healthy/Synced."
       ),
     }
+
 
     def _flatten_content(content: Any) -> str:
       if content is None:
@@ -216,21 +213,6 @@ data:
       if isinstance(content, list):
         return "\n".join(_flatten_content(x) for x in content)
       return str(content)
-
-
-    @app.get("/v1/models")
-    async def list_models() -> Dict[str, Any]:
-      return {
-        "object": "list",
-        "data": [
-          {
-            "id": MODEL_ID,
-            "object": "model",
-            "created": 0,
-            "owned_by": "openai",
-          }
-        ],
-      }
 
 
     def _extract_user_text(messages: List[Dict[str, Any]]) -> str:
@@ -251,7 +233,6 @@ data:
 
     def _completion_text(messages: List[Dict[str, Any]]) -> str:
       if _is_validation_prompt(messages):
-        # The Lightspeed question validity shield expects a strict allow/reject answer.
         return "allowed"
       user_text = _extract_user_text(messages)
       if not user_text:
@@ -266,53 +247,115 @@ data:
       )
 
 
-    @app.post("/v1/chat/completions")
-    async def chat_completions(req: Request) -> Any:
-      payload = await req.json()
-      messages = payload.get("messages") or []
-      stream = bool(payload.get("stream"))
-      content = _completion_text(messages)
+    class Handler(BaseHTTPRequestHandler):
+      server_version = "mock-llm/1.0"
 
-      if not stream:
-        return JSONResponse(
+      def _send_json(self, code: int, payload: Any, content_type: str = "application/json"):
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+        self.send_response(code)
+        self.send_header("Content-Type", f"{content_type}; charset=utf-8")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+      def _send_sse(self, chunks: List[Dict[str, Any]]):
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream; charset=utf-8")
+        self.send_header("Cache-Control", "no-cache")
+        self.end_headers()
+        for obj in chunks:
+          line = f"data: {json.dumps(obj, ensure_ascii=False)}\n\n".encode("utf-8")
+          self.wfile.write(line)
+          self.wfile.flush()
+        self.wfile.write(b"data: [DONE]\n\n")
+        self.wfile.flush()
+
+      def do_GET(self):
+        if self.path.rstrip("/") == "/v1/models":
+          self._send_json(
+            200,
+            {
+              "object": "list",
+              "data": [{"id": MODEL_ID, "object": "model", "created": 0, "owned_by": "openai"}],
+            },
+          )
+          return
+        self._send_json(404, {"error": {"message": "not found", "code": 404}})
+
+      def do_POST(self):
+        if self.path.rstrip("/") != "/v1/chat/completions":
+          self._send_json(404, {"error": {"message": "not found", "code": 404}})
+          return
+
+        length = int(self.headers.get("Content-Length", "0") or "0")
+        raw = self.rfile.read(length) if length else b"{}"
+        try:
+          payload = json.loads(raw.decode("utf-8"))
+        except Exception:
+          self._send_json(400, {"error": {"message": "invalid json", "code": 400}})
+          return
+
+        messages = payload.get("messages") or []
+        stream = bool(payload.get("stream"))
+        content = _completion_text(messages)
+        model = payload.get("model") or MODEL_ID
+
+        if not stream:
+          self._send_json(
+            200,
+            {
+              "id": "chatcmpl-mock",
+              "object": "chat.completion",
+              "created": 0,
+              "model": model,
+              "choices": [
+                {
+                  "index": 0,
+                  "message": {"role": "assistant", "content": content},
+                  "finish_reason": "stop",
+                }
+              ],
+            },
+          )
+          return
+
+        # Minimal OpenAI SSE stream chunks.
+        half = max(1, len(content) // 2)
+        parts = [content[:half], content[half:]]
+        chunks = []
+        for part in parts:
+          chunks.append(
+            {
+              "id": "chatcmpl-mock",
+              "object": "chat.completion.chunk",
+              "created": 0,
+              "model": model,
+              "choices": [{"index": 0, "delta": {"content": part}, "finish_reason": None}],
+            }
+          )
+        chunks.append(
           {
-            "id": "chatcmpl-mock",
-            "object": "chat.completion",
-            "created": 0,
-            "model": payload.get("model", MODEL_ID),
-            "choices": [
-              {
-                "index": 0,
-                "message": {"role": "assistant", "content": content},
-                "finish_reason": "stop",
-              }
-            ],
-          }
-        )
-
-      async def gen():
-        # Minimal OpenAI SSE stream: send the full content in a couple chunks.
-        chunks = [content[: max(1, len(content) // 2)], content[max(1, len(content) // 2) :]]
-        for part in chunks:
-          data = {
             "id": "chatcmpl-mock",
             "object": "chat.completion.chunk",
             "created": 0,
-            "model": payload.get("model", MODEL_ID),
-            "choices": [{"index": 0, "delta": {"content": part}, "finish_reason": None}],
+            "model": model,
+            "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
           }
-          yield f"data: {json.dumps(data)}\n\n"
-        done = {
-          "id": "chatcmpl-mock",
-          "object": "chat.completion.chunk",
-          "created": 0,
-          "model": payload.get("model", MODEL_ID),
-          "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
-        }
-        yield f"data: {json.dumps(done)}\n\n"
-        yield "data: [DONE]\n\n"
+        )
+        self._send_sse(chunks)
 
-      return StreamingResponse(gen(), media_type="text/event-stream")
+      def log_message(self, fmt: str, *args: Any) -> None:
+        # Keep logs minimal (avoid dumping user content).
+        return
+
+
+    def main():
+      server = ThreadingHTTPServer(("0.0.0.0", 8080), Handler)
+      server.serve_forever()
+
+
+    if __name__ == "__main__":
+      main()
 
 ---
 apiVersion: apps/v1
@@ -334,14 +377,8 @@ spec:
     spec:
       containers:
         - name: mock-llm
-          image: "tiangolo/uvicorn-gunicorn-fastapi:python3.11"
-          env:
-            - name: MODULE_NAME
-              value: "main"
-            - name: VARIABLE_NAME
-              value: "app"
-            - name: PORT
-              value: "8080"
+          image: "python:3.13-alpine"
+          command: ["python", "/app/server.py"]
           ports:
             - name: http
               containerPort: 8080
@@ -354,8 +391,8 @@ spec:
               memory: 256Mi
           volumeMounts:
             - name: app
-              mountPath: /app/main.py
-              subPath: main.py
+              mountPath: /app/server.py
+              subPath: server.py
       volumes:
         - name: app
           configMap:
