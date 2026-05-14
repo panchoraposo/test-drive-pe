@@ -117,13 +117,11 @@ spec:
       jsonPointers:
         - /metadata/annotations
         - /status
-        - /spec/deployment
     - group: janus-idp.io
       kind: Backstage
       jsonPointers:
         - /metadata/annotations
         - /status
-        - /spec/deployment
     - group: argoproj.io
       kind: ApplicationSet
       jsonPointers:
