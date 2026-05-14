@@ -126,9 +126,13 @@ spec:
     introspectionEnabled: false
     userDataCollection: {}
   mcpServers:
-    - name: mcp-gateway
-      # Use the MCP Gateway listener so tool calls are forwarded to upstream MCP servers.
-      url: "http://mcp-gateway-istio.mcp-system.svc.cluster.local:8080/mcp"
+    # Connect to the backend MCP servers through the gateway listener routes.
+    # This avoids relying on the broker aggregation endpoint when it is unhealthy.
+    - name: mcp-gateway-k8s
+      url: "http://mcp-gateway-istio.mcp-system.svc.cluster.local:8080/k8s-mcp-server/mcp"
+      timeout: 120
+    - name: mcp-gateway-ocp
+      url: "http://mcp-gateway-istio.mcp-system.svc.cluster.local:8080/openshift-mcp-server/mcp"
       timeout: 120
     - name: rhdh-catalog
       url: "http://backstage-developer-hub.developer-hub.svc.cluster.local/api/mcp-actions/v1"
