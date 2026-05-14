@@ -265,6 +265,30 @@ data:
       return None
 
 
+    def _pick_tool_by_keywords(tools: Any, keywords: List[str]) -> str | None:
+      if not isinstance(tools, list):
+        return None
+      want = [k.lower() for k in keywords if k]
+      best: str | None = None
+      best_score = -1
+      for t in tools:
+        if not isinstance(t, dict):
+          continue
+        fn = t.get("function")
+        if not isinstance(fn, dict) or not isinstance(fn.get("name"), str):
+          continue
+        name = fn["name"]
+        desc = fn.get("description") if isinstance(fn.get("description"), str) else ""
+        hay = (name + " " + desc).lower()
+        if all(k in hay for k in want):
+          # Prefer more specific matches (more keyword hits) and shorter names (less noise)
+          score = len(want) * 100 - len(name)
+          if score > best_score:
+            best_score = score
+            best = name
+      return best
+
+
     def _tool_by_name(tools: Any, name: str) -> Dict[str, Any] | None:
       if not isinstance(tools, list):
         return None
@@ -380,8 +404,12 @@ data:
           ("redis" in key and "helm" in key and ("install" in key or "instal" in key))
           or ("install redis" in key and "helm" in key)
         ):
-          tool_name = _pick_tool(tools, ["k8shelm_install", "k8shelm_install_in_namespace"]) or "k8shelm_install"
+          tool_name = (
+            _pick_tool(tools, ["k8shelm_install", "k8shelm_install_in_namespace"])
+            or _pick_tool_by_keywords(tools, ["helm", "install"])
+          )
           if tool_name:
+            ns = _extract_namespace(user_text)
             desired = {
               "name": "redis",
               "release": "redis",
@@ -394,6 +422,8 @@ data:
               "valuesObject": {"auth": {"enabled": False}},
               "valuesYaml": "auth:\n  enabled: false\n",
             }
+            if ns:
+              desired["namespace"] = ns
             return {
               "content": "",
               "tool_calls": [
@@ -407,7 +437,7 @@ data:
 
         # Example: deploy a Redis database via OpenShift helper tool
         if "deploy a redis database" in key or "deploy redis database" in key:
-          tool_name = _pick_tool(tools, ["ocpdeployDatabase"]) or "ocpdeployDatabase"
+          tool_name = _pick_tool(tools, ["ocpdeployDatabase"]) or _pick_tool_by_keywords(tools, ["deploy", "database"])
           if tool_name:
             desired = {"databaseType": "redis", "name": "redis"}
             return {
@@ -423,17 +453,17 @@ data:
 
         # Other showroom examples
         if "check the cluster health" in key:
-          tool_name = _pick_tool(tools, ["ocpcheckClusterHealth"]) or "ocpcheckClusterHealth"
+          tool_name = _pick_tool(tools, ["ocpcheckClusterHealth"]) or _pick_tool_by_keywords(tools, ["cluster", "health"])
           if tool_name:
             return {"content": "", "tool_calls": [{"id": "call_cluster_health", "type": "function", "function": {"name": tool_name, "arguments": "{}"}}]}
 
         if "pods with resource issues" in key or "resource issues" in key:
-          tool_name = _pick_tool(tools, ["ocpdetectResourceIssues"]) or "ocpdetectResourceIssues"
+          tool_name = _pick_tool(tools, ["ocpdetectResourceIssues"]) or _pick_tool_by_keywords(tools, ["resource", "issue"])
           if tool_name:
             return {"content": "", "tool_calls": [{"id": "call_resource_issues", "type": "function", "function": {"name": tool_name, "arguments": "{}"}}]}
 
         if "horizontalpodautoscaler" in key or "hpa" in key:
-          tool_name = _pick_tool(tools, ["ocpcreateHpa"]) or "ocpcreateHpa"
+          tool_name = _pick_tool(tools, ["ocpcreateHpa"]) or _pick_tool_by_keywords(tools, ["hpa"])
           if tool_name:
             desired = {"name": "backend", "target": "backend"}
             return {
@@ -444,7 +474,7 @@ data:
             }
 
         if "run a network test" in key or ("network test" in key and "between" in key):
-          tool_name = _pick_tool(tools, ["ocprunNetworkTest"]) or "ocprunNetworkTest"
+          tool_name = _pick_tool(tools, ["ocprunNetworkTest"]) or _pick_tool_by_keywords(tools, ["network", "test"])
           if tool_name:
             return {
               "content": "",
@@ -454,7 +484,7 @@ data:
             }
 
         if "monitor all deployments" in key:
-          tool_name = _pick_tool(tools, ["ocpmonitorDeployments"]) or "ocpmonitorDeployments"
+          tool_name = _pick_tool(tools, ["ocpmonitorDeployments"]) or _pick_tool_by_keywords(tools, ["monitor", "deploy"])
           if tool_name:
             desired = {}
             return {
@@ -468,7 +498,7 @@ data:
         if ("list all pods" in key or "list pods" in key) and "namespace" in key:
           ns = _extract_namespace(user_text)
           if ns:
-            tool_name = _pick_tool(tools, ["k8spods_list_in_namespace"]) or "k8spods_list_in_namespace"
+            tool_name = _pick_tool(tools, ["k8spods_list_in_namespace"]) or _pick_tool_by_keywords(tools, ["list", "pods"])
             desired = {"namespace": ns}
             return {
               "content": "",
