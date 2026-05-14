@@ -236,56 +236,192 @@ data:
       )
 
 
-    def _completion_text(messages: List[Dict[str, Any]]) -> str:
+    def _has_any_tool_result(messages: List[Dict[str, Any]]) -> bool:
+      for m in reversed(messages or []):
+        if m.get("role") in ("tool", "function"):
+          return True
+      return False
+
+
+    def _tool_names(tools: Any) -> List[str]:
+      out: List[str] = []
+      if not isinstance(tools, list):
+        return out
+      for t in tools:
+        if not isinstance(t, dict):
+          continue
+        fn = t.get("function")
+        if isinstance(fn, dict) and isinstance(fn.get("name"), str):
+          out.append(fn["name"])
+      return out
+
+
+    def _pick_tool(tools: Any, preferred: List[str]) -> str | None:
+      names = set(_tool_names(tools))
+      for n in preferred:
+        if n in names:
+          return n
+      return None
+
+
+    def _tool_by_name(tools: Any, name: str) -> Dict[str, Any] | None:
+      if not isinstance(tools, list):
+        return None
+      for t in tools:
+        if not isinstance(t, dict):
+          continue
+        fn = t.get("function")
+        if isinstance(fn, dict) and fn.get("name") == name:
+          return t
+      return None
+
+
+    def _args_for_tool(tools: Any, tool_name: str, desired: Dict[str, Any]) -> str:
+      tool = _tool_by_name(tools, tool_name) or {}
+      fn = tool.get("function") if isinstance(tool, dict) else {}
+      params = fn.get("parameters") if isinstance(fn, dict) else None
+      if not isinstance(params, dict):
+        return json.dumps(desired, ensure_ascii=False)
+      props = params.get("properties") if isinstance(params.get("properties"), dict) else {}
+      required = params.get("required") if isinstance(params.get("required"), list) else []
+
+      out: Dict[str, Any] = {}
+      for k in props.keys():
+        if k in desired and desired[k] is not None:
+          out[k] = desired[k]
+
+      # Best-effort: satisfy required keys with safe placeholders.
+      for k in required:
+        if k in out:
+          continue
+        schema = props.get(k) if isinstance(props, dict) else None
+        t = schema.get("type") if isinstance(schema, dict) else None
+        if k in desired and desired[k] is not None:
+          out[k] = desired[k]
+        elif t == "boolean":
+          out[k] = False
+        elif t == "array":
+          out[k] = []
+        elif t == "object":
+          out[k] = {}
+        else:
+          out[k] = ""
+      return json.dumps(out, ensure_ascii=False)
+
+
+    def _completion(req: Dict[str, Any]) -> Dict[str, Any]:
+      messages = req.get("messages") if isinstance(req.get("messages"), list) else []
+      tools = req.get("tools")
       if _is_validation_prompt(messages):
         # The lightspeed_question_validity shield checks for the exact token
         # "ALLOWED" (uppercase). Any other output triggers a violation.
-        return "ALLOWED"
+        return {"content": "ALLOWED"}
+
+      # If the orchestrator already executed a tool, return a short final answer.
+      if _has_any_tool_result(messages):
+        return {"content": "Done. The requested operation has been executed."}
+
       user_text = _extract_user_text(messages)
       if not user_text:
-        return "ok"
+        return {"content": "ok"}
       key = user_text.strip().lower()
 
       # Lightspeed preset buttons sometimes send the full question (not just the title).
       # Match by keywords/contains so the workshop "expected" answers show up.
       if "software template" in key or ("template" in key and "developer hub" in key):
-        return PRESET_ANSWERS["software templates"]
+        return {"content": PRESET_ANSWERS["software templates"]}
       if "getting started" in key or ("first step" in key and "developer hub" in key):
-        return PRESET_ANSWERS["getting started with developer hub"]
+        return {"content": PRESET_ANSWERS["getting started with developer hub"]}
       if "tekton" in key or "ci/cd" in key or "cicd" in key:
-        return PRESET_ANSWERS["ci/cd with tekton"]
+        return {"content": PRESET_ANSWERS["ci/cd with tekton"]}
 
       # Avoid replying with the "Neuralbank Platform" summary for operational questions
       # like "show logs of neuralbank-backend" that happen to include the word "neuralbank".
       if ("neuralbank platform" in key) or (
         "neuralbank" in key and ("what components" in key or "components make up" in key)
       ):
-        return PRESET_ANSWERS["neuralbank platform"]
+        return {"content": PRESET_ANSWERS["neuralbank platform"]}
 
       # Common OpenShift Lightspeed console-style prompts in the workshop.
       if ("show me the logs" in key) or ("show logs" in key and "pod" in key):
-        return (
+        return {"content": (
           "To view pod logs in OpenShift:\n"
           "- Open the OpenShift Console → Observe → Logs\n"
           "- Select the project (namespace) where the pod runs\n"
           "- Pick the pod and container\n\n"
           "If you tell me the namespace and pod name, I can point you to the exact place to find it."
-        )
+        )}
       if ("what events happened" in key) or ("events happened" in key) or ("show events" in key):
-        return (
+        return {"content": (
           "To view events in OpenShift:\n"
           "- Open the OpenShift Console → Observe → Events\n"
           "- Filter by the project (namespace)\n\n"
           "If you tell me the namespace (e.g. `user1-neuralbank`), I can tell you what to filter for."
-        )
+        )}
+
+      # Tool calling (MCP Gateway). If tools are present, emit OpenAI tool_calls.
+      if tools:
+        # Example: install Redis via Helm
+        if ("install redis" in key and "helm" in key) or ("redis" in key and "helm" in key):
+          tool_name = _pick_tool(tools, ["k8shelm_install", "k8shelm_install_in_namespace"])
+          if tool_name:
+            desired = {
+              "name": "redis",
+              "release": "redis",
+              "releaseName": "redis",
+              "chart": "redis",
+              "chartRef": "oci://registry-1.docker.io/bitnamicharts/redis",
+              "repo": "oci://registry-1.docker.io/bitnamicharts",
+              "repoURL": "https://charts.bitnami.com/bitnami",
+              "values": {"auth": {"enabled": False}},
+              "valuesObject": {"auth": {"enabled": False}},
+              "valuesYaml": "auth:\n  enabled: false\n",
+            }
+            return {
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_redis_helm_install",
+                  "type": "function",
+                  "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired)},
+                }
+              ],
+            }
+
+        # Example: deploy a Redis database via OpenShift helper tool
+        if "deploy a redis database" in key or "deploy redis database" in key:
+          tool_name = _pick_tool(tools, ["ocpdeployDatabase"])
+          if tool_name:
+            desired = {"databaseType": "redis", "name": "redis"}
+            return {
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_ocp_deploy_redis",
+                  "type": "function",
+                  "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired)},
+                }
+              ],
+            }
+
+        # Other showroom examples
+        if "check the cluster health" in key:
+          tool_name = _pick_tool(tools, ["ocpcheckClusterHealth"])
+          if tool_name:
+            return {"content": "", "tool_calls": [{"id": "call_cluster_health", "type": "function", "function": {"name": tool_name, "arguments": "{}"}}]}
+
+        if "pods with resource issues" in key or "resource issues" in key:
+          tool_name = _pick_tool(tools, ["ocpdetectResourceIssues"])
+          if tool_name:
+            return {"content": "", "tool_calls": [{"id": "call_resource_issues", "type": "function", "function": {"name": tool_name, "arguments": "{}"}}]}
 
       if key in PRESET_ANSWERS:
-        return PRESET_ANSWERS[key]
-      return (
+        return {"content": PRESET_ANSWERS[key]}
+      return {"content": (
         "Lightspeed is running in workshop fallback mode (no external LLM configured).\n\n"
         f"You asked: {user_text}\n\n"
         "Tip: Ask about Developer Hub templates, catalog, Argo CD apps, or Kuadrant policies."
-      )
+      )}
 
 
     class Handler(BaseHTTPRequestHandler):
@@ -338,10 +474,17 @@ data:
 
         messages = payload.get("messages") or []
         stream = bool(payload.get("stream"))
-        content = _completion_text(messages)
+        resp = _completion(payload)
+        content = resp.get("content", "")
+        tool_calls = resp.get("tool_calls")
         model = payload.get("model") or MODEL_ID
 
         if not stream:
+          msg: Dict[str, Any] = {"role": "assistant", "content": content}
+          finish_reason = "stop"
+          if tool_calls:
+            msg["tool_calls"] = tool_calls
+            finish_reason = "tool_calls"
           self._send_json(
             200,
             {
@@ -352,8 +495,8 @@ data:
               "choices": [
                 {
                   "index": 0,
-                  "message": {"role": "assistant", "content": content},
-                  "finish_reason": "stop",
+                  "message": msg,
+                  "finish_reason": finish_reason,
                 }
               ],
             },
@@ -361,28 +504,65 @@ data:
           return
 
         # Minimal OpenAI SSE stream chunks.
-        half = max(1, len(content) // 2)
-        parts = [content[:half], content[half:]]
         chunks = []
-        for part in parts:
+        if tool_calls:
+          tc0 = tool_calls[0]
           chunks.append(
             {
               "id": "chatcmpl-mock",
               "object": "chat.completion.chunk",
               "created": 0,
               "model": model,
-              "choices": [{"index": 0, "delta": {"content": part}, "finish_reason": None}],
+              "choices": [
+                {
+                  "index": 0,
+                  "delta": {
+                    "role": "assistant",
+                    "tool_calls": [
+                      {
+                        "index": 0,
+                        "id": tc0.get("id"),
+                        "type": "function",
+                        "function": tc0.get("function"),
+                      }
+                    ],
+                  },
+                  "finish_reason": None,
+                }
+              ],
             }
           )
-        chunks.append(
-          {
-            "id": "chatcmpl-mock",
-            "object": "chat.completion.chunk",
-            "created": 0,
-            "model": model,
-            "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
-          }
-        )
+          chunks.append(
+            {
+              "id": "chatcmpl-mock",
+              "object": "chat.completion.chunk",
+              "created": 0,
+              "model": model,
+              "choices": [{"index": 0, "delta": {}, "finish_reason": "tool_calls"}],
+            }
+          )
+        else:
+          half = max(1, len(content) // 2)
+          parts = [content[:half], content[half:]]
+          for part in parts:
+            chunks.append(
+              {
+                "id": "chatcmpl-mock",
+                "object": "chat.completion.chunk",
+                "created": 0,
+                "model": model,
+                "choices": [{"index": 0, "delta": {"content": part}, "finish_reason": None}],
+              }
+            )
+          chunks.append(
+            {
+              "id": "chatcmpl-mock",
+              "object": "chat.completion.chunk",
+              "created": 0,
+              "model": model,
+              "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}],
+            }
+          )
         self._send_sse(chunks)
 
       def log_message(self, fmt: str, *args: Any) -> None:
