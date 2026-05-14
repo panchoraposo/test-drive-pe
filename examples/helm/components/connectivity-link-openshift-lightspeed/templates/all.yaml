@@ -318,7 +318,8 @@ spec:
     app: k8s-mcp-server-accept-proxy
   ports:
     - name: http
-      port: 8080
+      # Expose as 8085 so mcp-gateway can keep using :8085/mcp
+      port: 8085
       targetPort: 8080
 ---
 ##
