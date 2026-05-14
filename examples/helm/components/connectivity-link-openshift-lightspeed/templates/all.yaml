@@ -245,6 +245,18 @@ data:
       if not user_text:
         return "ok"
       key = user_text.strip().lower()
+
+      # Lightspeed preset buttons sometimes send the full question (not just the title).
+      # Match by keywords/contains so the workshop "expected" answers show up.
+      if "software template" in key or ("template" in key and "developer hub" in key):
+        return PRESET_ANSWERS["software templates"]
+      if "getting started" in key or ("first step" in key and "developer hub" in key):
+        return PRESET_ANSWERS["getting started with developer hub"]
+      if "neuralbank" in key:
+        return PRESET_ANSWERS["neuralbank platform"]
+      if "tekton" in key or "ci/cd" in key or "cicd" in key:
+        return PRESET_ANSWERS["ci/cd with tekton"]
+
       if key in PRESET_ANSWERS:
         return PRESET_ANSWERS[key]
       return (
