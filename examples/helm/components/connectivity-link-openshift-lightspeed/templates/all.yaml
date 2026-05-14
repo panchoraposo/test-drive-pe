@@ -415,6 +415,38 @@ data:
           if tool_name:
             return {"content": "", "tool_calls": [{"id": "call_resource_issues", "type": "function", "function": {"name": tool_name, "arguments": "{}"}}]}
 
+        if "horizontalpodautoscaler" in key or "hpa" in key:
+          tool_name = _pick_tool(tools, ["ocpcreateHpa"])
+          if tool_name:
+            desired = {"name": "backend", "target": "backend"}
+            return {
+              "content": "",
+              "tool_calls": [
+                {"id": "call_create_hpa", "type": "function", "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired)}}
+              ],
+            }
+
+        if "run a network test" in key or ("network test" in key and "between" in key):
+          tool_name = _pick_tool(tools, ["ocprunNetworkTest"])
+          if tool_name:
+            return {
+              "content": "",
+              "tool_calls": [
+                {"id": "call_network_test", "type": "function", "function": {"name": tool_name, "arguments": "{}"}}
+              ],
+            }
+
+        if "monitor all deployments" in key:
+          tool_name = _pick_tool(tools, ["ocpmonitorDeployments"])
+          if tool_name:
+            desired = {}
+            return {
+              "content": "",
+              "tool_calls": [
+                {"id": "call_monitor_deployments", "type": "function", "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired)}}
+              ],
+            }
+
       if key in PRESET_ANSWERS:
         return {"content": PRESET_ANSWERS[key]}
       return {"content": (
