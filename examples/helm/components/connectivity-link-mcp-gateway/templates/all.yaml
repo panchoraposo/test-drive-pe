@@ -39,12 +39,10 @@ spec:
 ##
 ## 2. CRDs — MCPServerRegistration, MCPGatewayExtension, MCPVirtualServer
 ##
-{{/*
-  CRDs and controllers should be provided by the MCP Gateway Operator (OLM).
-  We keep the workshop manifests focused on configuration (Gateway, Extension,
-  registrations, routes) rather than vendoring CRDs.
-*/}}
-{{- /*
+# CRDs and controllers should be provided by the MCP Gateway Operator (OLM).
+# We keep the workshop manifests focused on configuration (Gateway, Extension,
+# registrations, routes) rather than vendoring CRDs.
+{{- if false }}
 apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
@@ -460,12 +458,12 @@ spec:
       storage: true
       subresources:
         status: {}
-*/ -}}
+{{- end }}
 ---
 ##
 ## 3. RBAC
 ##
-{{- /*
+{{- if false }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -555,7 +553,7 @@ subjects:
   - kind: ServiceAccount
     name: mcp-broker-router
     namespace: mcp-system
-*/ -}}
+{{- end }}
 ---
 ##
 ## 4. Trusted Header Public Key
@@ -578,10 +576,8 @@ type: Opaque
 ##
 ## 5. MCP Controller Deployment
 ##
-{{/*
-  The Operator installs and runs the controller.
-*/}}
-{{- /*
+# The Operator installs and runs the controller.
+{{- if false }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -645,7 +641,7 @@ spec:
               port: 8081
             initialDelaySeconds: 5
             periodSeconds: 10
-*/ -}}
+{{- end }}
 ---
 ##
 ## 6. Gateway
