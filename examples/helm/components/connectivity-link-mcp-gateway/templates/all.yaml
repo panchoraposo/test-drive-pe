@@ -803,7 +803,8 @@ spec:
   targetRef:
     name: openshift-mcp-server-route
   toolPrefix: ocp
-  path: /mcp
+  # Path prefix as exposed through the gateway (matches HTTPRoute).
+  path: /openshift-mcp-server/mcp
 ---
 apiVersion: mcp.kuadrant.io/v1alpha1
 kind: MCPServerRegistration
@@ -817,7 +818,8 @@ spec:
   targetRef:
     name: k8s-mcp-server-route
   toolPrefix: k8s
-  path: /mcp
+  # Path prefix as exposed through the gateway (matches HTTPRoute).
+  path: /k8s-mcp-server/mcp
 {{/*
   RHDH MCP Server via Kuadrant Gateway is DISABLED.
   Reason: RHDH plugin uses legacy SSE transport (GET /sse + POST /messages?sessionId=X),
