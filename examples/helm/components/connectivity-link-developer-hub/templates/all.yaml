@@ -1208,6 +1208,64 @@ data:
 apiVersion: v1
 kind: ConfigMap
 metadata:
+  name: lightspeed-core-sitecustomize
+  namespace: developer-hub
+data:
+  sitecustomize.py: |
+    from __future__ import annotations
+
+    from importlib.machinery import PathFinder
+    import importlib.abc
+    import sys
+
+    TARGET = "app.endpoints.streaming_query"
+
+
+    class _PatchLoader(importlib.abc.Loader):
+      def __init__(self, wrapped):
+        self._wrapped = wrapped
+
+      def create_module(self, spec):
+        if hasattr(self._wrapped, "create_module"):
+          return self._wrapped.create_module(spec)  # type: ignore[attr-defined]
+        return None
+
+      def exec_module(self, module):
+        self._wrapped.exec_module(module)  # type: ignore[attr-defined]
+
+        def _handle_shield_event(chunk, chunk_id, media_type="application/json"):
+          # Keep validation behavior, but don't stream verdict tokens ("No Violation"/"Violation")
+          # into the chat output.
+          try:
+            if getattr(chunk.event.payload, "event_type", None) == "step_complete":
+              violation = chunk.event.payload.step_details.violation
+              if violation:
+                try:
+                  module.metrics.llm_calls_validation_errors_total.inc()
+                except Exception:
+                  pass
+          except Exception:
+            pass
+          return iter(())
+
+        module._handle_shield_event = _handle_shield_event
+
+
+    class _PatchFinder(importlib.abc.MetaPathFinder):
+      def find_spec(self, fullname, path, target=None):
+        if fullname != TARGET:
+          return None
+        spec = PathFinder.find_spec(fullname, path)
+        if spec and spec.loader:
+          spec.loader = _PatchLoader(spec.loader)
+        return spec
+
+
+    sys.meta_path.insert(0, _PatchFinder())
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
   name: lightspeed-app-config
   namespace: developer-hub
   labels:
@@ -1286,7 +1344,7 @@ type: Opaque
 stringData:
   LIGHTSPEED_SERVER_ID: {{ .Values.litellmModel | default "qwen25-7b-instruct" | quote }}
   LIGHTSPEED_SERVICE_PORT: "8080"
-  LIGHTSPEED_QUESTION_VALIDATION: "false"
+  LIGHTSPEED_QUESTION_VALIDATION: "true"
   LLM_SERVER_ID: {{ .Values.litellmModel | default "qwen25-7b-instruct" | quote }}
   LLM_SERVER_URL: "http://localhost:8080"
   LLM_SERVER_TOKEN: ""
@@ -1535,6 +1593,9 @@ spec:
               - name: lightspeed-stack
                 configMap:
                   name: lightspeed-stack
+              - name: lightspeed-core-sitecustomize
+                configMap:
+                  name: lightspeed-core-sitecustomize
               - name: llama-stack-config
                 configMap:
                   name: llama-stack-config
@@ -1580,6 +1641,9 @@ spec:
                   - mountPath: /app-root/lightspeed-stack.yaml
                     name: lightspeed-stack
                     subPath: lightspeed-stack.yaml
+                  - mountPath: /app-root/src/sitecustomize.py
+                    name: lightspeed-core-sitecustomize
+                    subPath: sitecustomize.py
                   - mountPath: /tmp/data
                     name: shared-storage
 ---
