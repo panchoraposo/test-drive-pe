@@ -1286,7 +1286,7 @@ type: Opaque
 stringData:
   LIGHTSPEED_SERVER_ID: {{ .Values.litellmModel | default "qwen25-7b-instruct" | quote }}
   LIGHTSPEED_SERVICE_PORT: "8080"
-  LIGHTSPEED_QUESTION_VALIDATION: "true"
+  LIGHTSPEED_QUESTION_VALIDATION: "false"
   LLM_SERVER_ID: {{ .Values.litellmModel | default "qwen25-7b-instruct" | quote }}
   LLM_SERVER_URL: "http://localhost:8080"
   LLM_SERVER_TOKEN: ""
