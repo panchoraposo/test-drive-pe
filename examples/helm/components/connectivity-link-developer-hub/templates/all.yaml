@@ -1641,7 +1641,7 @@ spec:
                   - mountPath: /app-root/lightspeed-stack.yaml
                     name: lightspeed-stack
                     subPath: lightspeed-stack.yaml
-                  - mountPath: /app-root/src/sitecustomize.py
+                  - mountPath: /app-root/sitecustomize.py
                     name: lightspeed-core-sitecustomize
                     subPath: sitecustomize.py
                   - mountPath: /tmp/data
