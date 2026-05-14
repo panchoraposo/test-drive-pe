@@ -252,10 +252,32 @@ data:
         return PRESET_ANSWERS["software templates"]
       if "getting started" in key or ("first step" in key and "developer hub" in key):
         return PRESET_ANSWERS["getting started with developer hub"]
-      if "neuralbank" in key:
-        return PRESET_ANSWERS["neuralbank platform"]
       if "tekton" in key or "ci/cd" in key or "cicd" in key:
         return PRESET_ANSWERS["ci/cd with tekton"]
+
+      # Avoid replying with the "Neuralbank Platform" summary for operational questions
+      # like "show logs of neuralbank-backend" that happen to include the word "neuralbank".
+      if ("neuralbank platform" in key) or (
+        "neuralbank" in key and ("what components" in key or "components make up" in key)
+      ):
+        return PRESET_ANSWERS["neuralbank platform"]
+
+      # Common OpenShift Lightspeed console-style prompts in the workshop.
+      if ("show me the logs" in key) or ("show logs" in key and "pod" in key):
+        return (
+          "To view pod logs in OpenShift:\n"
+          "- Open the OpenShift Console → Observe → Logs\n"
+          "- Select the project (namespace) where the pod runs\n"
+          "- Pick the pod and container\n\n"
+          "If you tell me the namespace and pod name, I can point you to the exact place to find it."
+        )
+      if ("what events happened" in key) or ("events happened" in key) or ("show events" in key):
+        return (
+          "To view events in OpenShift:\n"
+          "- Open the OpenShift Console → Observe → Events\n"
+          "- Filter by the project (namespace)\n\n"
+          "If you tell me the namespace (e.g. `user1-neuralbank`), I can tell you what to filter for."
+        )
 
       if key in PRESET_ANSWERS:
         return PRESET_ANSWERS[key]
