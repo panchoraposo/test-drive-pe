@@ -225,9 +225,14 @@ data:
     def _is_validation_prompt(messages: List[Dict[str, Any]]) -> bool:
       joined = "\n".join([_flatten_content(m.get("content")) for m in (messages or [])]).lower()
       return (
-        "question classification tool" in joined
-        or "determine if a user's question is related" in joined
-        or "you are a question classification tool" in joined
+        # Be liberal here: the upstream shield prompt has changed across versions
+        # (classification/classifying/classifier). We just need to detect that
+        # this is a validity-check prompt and return the exact token expected.
+        ("question classif" in joined)
+        or ("determine if a user's question is related" in joined)
+        or ("determine where or a user's question is related" in joined)
+        or ("answer with allowed" in joined and "answer with rejected" in joined)
+        or ("allowed" in joined and "rejected" in joined and "response:" in joined)
       )
 
 
