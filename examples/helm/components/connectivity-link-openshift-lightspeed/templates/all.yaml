@@ -289,6 +289,11 @@ data:
       return best
 
 
+    def _extract_int(text: str) -> int | None:
+      m = re.search(r"\b(\d{1,4})\b", (text or ""))
+      return int(m.group(1)) if m else None
+
+
     def _tool_by_name(tools: Any, name: str) -> Dict[str, Any] | None:
       if not isinstance(tools, list):
         return None
@@ -498,12 +503,40 @@ data:
         if ("list all pods" in key or "list pods" in key) and "namespace" in key:
           ns = _extract_namespace(user_text)
           if ns:
-            tool_name = _pick_tool(tools, ["k8spods_list_in_namespace"]) or _pick_tool_by_keywords(tools, ["list", "pods"])
+            tool_name = (
+              _pick_tool(tools, ["pods_list_in_namespace", "pods_list", "k8spods_list_in_namespace", "k8spods_list"])
+              or _pick_tool_by_keywords(tools, ["pods_list"])
+              or _pick_tool_by_keywords(tools, ["list", "pods", "namespace"])
+            )
             desired = {"namespace": ns}
             return {
               "content": "",
               "tool_calls": [
                 {"id": "call_list_pods", "type": "function", "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired) if tools else json.dumps(desired, ensure_ascii=False)}}
+              ],
+            }
+
+        if "scale" in key and ("replica" in key or "replicas" in key) and "deployment" in key:
+          replicas = _extract_int(user_text)
+          ns = _extract_namespace(user_text)
+          # try "the X deployment"
+          m = re.search(r"\b([a-z0-9-]+)\s+deployment\b", key)
+          dep = m.group(1) if m else None
+          tool_name = (
+            _pick_tool(tools, ["resources_scale", "k8sresources_scale", "scale"])
+            or _pick_tool_by_keywords(tools, ["scale", "deployment"])
+          )
+          if tool_name and dep and replicas is not None:
+            desired = {
+              "kind": "Deployment",
+              "name": dep,
+              "replicas": replicas,
+              "namespace": ns,
+            }
+            return {
+              "content": "",
+              "tool_calls": [
+                {"id": "call_scale_deploy", "type": "function", "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired) if tools else json.dumps(desired, ensure_ascii=False)}}
               ],
             }
 
