@@ -12,6 +12,7 @@ metadata:
 ## 1b. Install MCP Gateway Operator (OLM)
 ## Per RHC Link docs: mcp-gateway channel=preview from redhat-operators.
 ##
+{{- if (.Values.operatorInstallEnabled | default false) }}
 apiVersion: operators.coreos.com/v1
 kind: OperatorGroup
 metadata:
@@ -35,6 +36,7 @@ spec:
   sourceNamespace: openshift-marketplace
   name: mcp-gateway
   channel: preview
+{{- end }}
 ---
 ##
 ## 2. CRDs — MCPServerRegistration, MCPGatewayExtension, MCPVirtualServer
