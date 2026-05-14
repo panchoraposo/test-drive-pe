@@ -648,7 +648,7 @@ spec:
   # Allow in-cluster callers (e.g. OLS) to use the service DNS name as Host.
   # Without this, tool discovery may work but tool execution can fail due to
   # hostname mismatch across HTTPRoutes.
-  privateHost: mcp-gateway-istio.mcp-system.svc.cluster.local
+  privateHost: mcp-gateway-istio.mcp-system.svc.cluster.local:8080
   trustedHeadersKey:
     secretName: trusted-headers-public-key
 ---

@@ -127,9 +127,8 @@ spec:
     userDataCollection: {}
   mcpServers:
     - name: mcp-gateway
-      # Use the MCP broker service directly. Using the Istio gateway service here
-      # can cause the router to loop back to itself during tool execution.
-      url: "http://mcp-gateway.mcp-system.svc.cluster.local:8080/mcp"
+      # Use the MCP Gateway listener so tool calls are forwarded to upstream MCP servers.
+      url: "http://mcp-gateway-istio.mcp-system.svc.cluster.local:8080/mcp"
       timeout: 120
     - name: rhdh-catalog
       url: "http://backstage-developer-hub.developer-hub.svc.cluster.local/api/mcp-actions/v1"
