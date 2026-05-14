@@ -129,10 +129,10 @@ spec:
     # Connect to the backend MCP servers through the gateway listener routes.
     # This avoids relying on the broker aggregation endpoint when it is unhealthy.
     - name: mcp-gateway-k8s
-      url: "http://mcp-gateway-istio.mcp-system.svc.cluster.local:8080/k8s-mcp-server/mcp"
+      url: "http://k8s-mcp-server-accept-proxy.openshift-lightspeed.svc.cluster.local:8085/mcp"
       timeout: 120
     - name: mcp-gateway-ocp
-      url: "http://mcp-gateway-istio.mcp-system.svc.cluster.local:8080/openshift-mcp-server/mcp"
+      url: "http://openshift-mcp-server-accept-proxy.openshift-lightspeed.svc.cluster.local:8080/mcp"
       timeout: 120
     - name: rhdh-catalog
       url: "http://backstage-developer-hub.developer-hub.svc.cluster.local/api/mcp-actions/v1"
@@ -648,7 +648,13 @@ data:
         if "check the cluster health" in key:
           tool_name = _pick_tool(tools, ["ocpcheckClusterHealth"]) or _pick_tool_by_keywords(tools, ["cluster", "health"])
           if tool_name:
-            return {"content": "", "tool_calls": [{"id": "call_cluster_health", "type": "function", "function": {"name": tool_name, "arguments": "{}"}}]}
+            desired = {"detailed": True}
+            return {
+              "content": "",
+              "tool_calls": [
+                {"id": "call_cluster_health", "type": "function", "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired) if tools else json.dumps(desired, ensure_ascii=False)}}
+              ],
+            }
 
         if "pods with resource issues" in key or "resource issues" in key:
           tool_name = _pick_tool(tools, ["ocpdetectResourceIssues"]) or _pick_tool_by_keywords(tools, ["resource", "issue"])
@@ -710,17 +716,30 @@ data:
           # try "the X deployment"
           m = re.search(r"\b([a-z0-9-]+)\s+deployment\b", key)
           dep = m.group(1) if m else None
+          if dep == "frontend":
+            dep = "neuralbank-frontend"
+          if dep == "backend":
+            dep = "neuralbank-backend"
+          if not dep:
+            if "frontend" in key:
+              dep = "neuralbank-frontend"
+            elif "backend" in key:
+              dep = "neuralbank-backend"
+
           tool_name = (
             _pick_tool(tools, ["resources_scale", "k8sresources_scale", "scale"])
             or _pick_tool_by_keywords(tools, ["scale", "deployment"])
           )
           if tool_name and dep and replicas is not None:
             desired = {
+              "apiVersion": "apps/v1",
               "kind": "Deployment",
               "name": dep,
-              "replicas": replicas,
-              "namespace": ns,
+              # k8s MCP server uses `scale` (not `replicas`)
+              "scale": replicas,
             }
+            if ns:
+              desired["namespace"] = ns
             return {
               "content": "",
               "tool_calls": [
