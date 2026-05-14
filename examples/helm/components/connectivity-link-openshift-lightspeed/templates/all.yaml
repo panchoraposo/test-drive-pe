@@ -156,6 +156,7 @@ metadata:
     argocd.argoproj.io/sync-wave: "1"
 data:
   nginx.conf: |
+    pid /tmp/nginx.pid;
     worker_processes  1;
 
     events {
