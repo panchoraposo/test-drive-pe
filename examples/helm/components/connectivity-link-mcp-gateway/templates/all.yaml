@@ -679,7 +679,7 @@ metadata:
     argocd.argoproj.io/sync-wave: "3"
 spec:
   type: ExternalName
-  externalName: openshift-mcp-server-k8s-mcp.openshift-lightspeed.svc.cluster.local
+  externalName: k8s-mcp-server-accept-proxy.openshift-lightspeed.svc.cluster.local
   ports:
     - port: 8085
       protocol: TCP

@@ -233,6 +233,95 @@ spec:
       targetPort: 8080
 ---
 ##
+## Accept-header proxy for kubernetes-mcp-server (openshift-mcp-server-k8s-mcp)
+## Some MCP servers require `Accept: application/json, text/event-stream` (and reject
+## `Accept: application/json`), while clients may send different defaults.
+##
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: k8s-mcp-server-accept-proxy-nginx
+  namespace: openshift-lightspeed
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+data:
+  nginx.conf: |
+    pid /tmp/nginx.pid;
+    worker_processes  1;
+
+    events {
+      worker_connections  1024;
+    }
+
+    http {
+      server {
+        listen 8080;
+
+        location / {
+          proxy_pass http://openshift-mcp-server-k8s-mcp.openshift-lightspeed.svc.cluster.local:8085;
+          proxy_set_header Host $host;
+          proxy_set_header Accept "application/json, text/event-stream";
+          proxy_set_header Connection "";
+          proxy_buffering off;
+          proxy_read_timeout 120s;
+          proxy_send_timeout 120s;
+        }
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: k8s-mcp-server-accept-proxy
+  namespace: openshift-lightspeed
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: k8s-mcp-server-accept-proxy
+  template:
+    metadata:
+      labels:
+        app: k8s-mcp-server-accept-proxy
+    spec:
+      containers:
+        - name: nginx
+          image: nginxinc/nginx-unprivileged:stable-alpine
+          ports:
+            - name: http
+              containerPort: 8080
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/nginx.conf
+              subPath: nginx.conf
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: k8s-mcp-server-accept-proxy-nginx
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: k8s-mcp-server-accept-proxy
+  namespace: openshift-lightspeed
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  selector:
+    app: k8s-mcp-server-accept-proxy
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+---
+##
 ## Mock OpenAI-compatible LLM (workshop fallback)
 ## Used as upstream for the in-cluster LiteLLM proxy when no GPU-backed model is available.
 ##
