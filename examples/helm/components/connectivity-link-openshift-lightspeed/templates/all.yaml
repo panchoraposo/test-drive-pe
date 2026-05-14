@@ -156,7 +156,7 @@ data:
     from __future__ import annotations
 
     import json
-    from typing import Any, Dict, List, Optional
+    from typing import Any, Dict, List
 
     from fastapi import FastAPI, Request
     from fastapi.responses import JSONResponse, StreamingResponse
@@ -164,6 +164,58 @@ data:
     app = FastAPI()
 
     MODEL_ID = "qwen25-7b-instruct"
+
+    PRESET_ANSWERS: Dict[str, str] = {
+      "getting started with developer hub": (
+        "Here’s a quick getting-started path in Red Hat Developer Hub:\n\n"
+        "1) Explore the **Catalog** to discover existing components (services, APIs, systems).\n"
+        "2) Use **Software Templates** to scaffold a new service (repo + CI/CD + manifests) and let Argo CD deploy it.\n"
+        "3) Check the new component’s **TechDocs** and links (repo, pipelines, runtime).\n"
+        "4) Use **APIs** to find published OpenAPI specs and consumption details.\n\n"
+        "If you tell me what you want to build (backend/frontend), I’ll point you to the right template."
+      ),
+      "software templates": (
+        "Software Templates in Developer Hub are scaffolder templates that automate creating a new service.\n\n"
+        "Typical flow:\n"
+        "- Pick a template (e.g. backend service)\n"
+        "- Fill parameters (name, owner, runtime options)\n"
+        "- The template creates a repo, pipelines, and GitOps config\n"
+        "- Argo CD syncs and deploys to OpenShift\n\n"
+        "Tip: Start in **Create… → Template**, then follow the generated links (repo, pipeline run, Argo CD app)."
+      ),
+      "neuralbank platform": (
+        "Neuralbank (workshop) is composed of:\n\n"
+        "- **Frontend** (user-facing web app)\n"
+        "- **Backend** (customer service API)\n"
+        "- **Keycloak (RHBK)** for OIDC (interactive login for the pre-deployed stack)\n"
+        "- **Gateway + Kuadrant policies** for API protection (API Key / OIDC) and rate limiting\n"
+        "- **Observability** stack (metrics/traces/logs dashboards)\n\n"
+        "The workshop demonstrates both auth patterns: OIDC for interactive users and API Key for M2M access."
+      ),
+      "ci/cd with tekton": (
+        "CI/CD in this workshop uses Tekton pipelines triggered by repository changes.\n\n"
+        "Typical steps:\n"
+        "- Build and test the app\n"
+        "- Build/push container image\n"
+        "- Update deployment manifests (GitOps)\n"
+        "- Argo CD syncs changes to the cluster\n\n"
+        "To debug: check the PipelineRun logs and then confirm Argo CD shows the app as Healthy/Synced."
+      ),
+    }
+
+    def _flatten_content(content: Any) -> str:
+      if content is None:
+        return ""
+      if isinstance(content, str):
+        return content
+      if isinstance(content, dict):
+        # OpenAI-style: {"type":"text","text":"..."}
+        if isinstance(content.get("text"), str):
+          return content["text"]
+        return json.dumps(content, ensure_ascii=False)
+      if isinstance(content, list):
+        return "\n".join(_flatten_content(x) for x in content)
+      return str(content)
 
 
     @app.get("/v1/models")
@@ -183,14 +235,18 @@ data:
 
     def _extract_user_text(messages: List[Dict[str, Any]]) -> str:
       for m in reversed(messages or []):
-        if m.get("role") == "user" and isinstance(m.get("content"), str):
-          return m["content"]
+        if m.get("role") == "user":
+          return _flatten_content(m.get("content"))
       return ""
 
 
     def _is_validation_prompt(messages: List[Dict[str, Any]]) -> bool:
-      joined = "\n".join([str(m.get("content", "")) for m in (messages or [])])
-      return "question classification tool" in joined.lower()
+      joined = "\n".join([_flatten_content(m.get("content")) for m in (messages or [])]).lower()
+      return (
+        "question classification tool" in joined
+        or "determine if a user's question is related" in joined
+        or "you are a question classification tool" in joined
+      )
 
 
     def _completion_text(messages: List[Dict[str, Any]]) -> str:
@@ -200,6 +256,9 @@ data:
       user_text = _extract_user_text(messages)
       if not user_text:
         return "ok"
+      key = user_text.strip().lower()
+      if key in PRESET_ANSWERS:
+        return PRESET_ANSWERS[key]
       return (
         "Lightspeed is running in workshop fallback mode (no external LLM configured).\n\n"
         f"You asked: {user_text}\n\n"
