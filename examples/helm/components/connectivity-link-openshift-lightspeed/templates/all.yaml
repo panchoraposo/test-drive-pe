@@ -157,6 +157,7 @@ data:
 
     import json
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+    import re
     from typing import Any, Dict, List
 
     MODEL_ID = "qwen25-7b-instruct"
@@ -309,6 +310,18 @@ data:
       return json.dumps(out, ensure_ascii=False)
 
 
+    def _extract_namespace(text: str) -> str | None:
+      # English + Spanish-ish patterns
+      t = (text or "").lower()
+      m = re.search(r"\b(?:in|en)\s+(?:the\s+)?(?:namespace|proyecto|project)\s+([a-z0-9-]+)\b", t)
+      if m:
+        return m.group(1)
+      m = re.search(r"\b([a-z0-9-]+)\s+namespace\b", t)
+      if m:
+        return m.group(1)
+      return None
+
+
     def _completion(req: Dict[str, Any]) -> Dict[str, Any]:
       messages = req.get("messages") if isinstance(req.get("messages"), list) else []
       tools = req.get("tools")
@@ -359,11 +372,15 @@ data:
           "If you tell me the namespace (e.g. `user1-neuralbank`), I can tell you what to filter for."
         )}
 
-      # Tool calling (MCP Gateway). If tools are present, emit OpenAI tool_calls.
-      if tools:
+      # Tool calling (MCP Gateway). Prefer picking tool names from `tools` if present,
+      # but fall back to canonical showroom tool names so demos still work.
+      if True:
         # Example: install Redis via Helm
-        if ("install redis" in key and "helm" in key) or ("redis" in key and "helm" in key):
-          tool_name = _pick_tool(tools, ["k8shelm_install", "k8shelm_install_in_namespace"])
+        if (
+          ("redis" in key and "helm" in key and ("install" in key or "instal" in key))
+          or ("install redis" in key and "helm" in key)
+        ):
+          tool_name = _pick_tool(tools, ["k8shelm_install", "k8shelm_install_in_namespace"]) or "k8shelm_install"
           if tool_name:
             desired = {
               "name": "redis",
@@ -383,14 +400,14 @@ data:
                 {
                   "id": "call_redis_helm_install",
                   "type": "function",
-                  "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired)},
+                  "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired) if tools else json.dumps(desired, ensure_ascii=False)},
                 }
               ],
             }
 
         # Example: deploy a Redis database via OpenShift helper tool
         if "deploy a redis database" in key or "deploy redis database" in key:
-          tool_name = _pick_tool(tools, ["ocpdeployDatabase"])
+          tool_name = _pick_tool(tools, ["ocpdeployDatabase"]) or "ocpdeployDatabase"
           if tool_name:
             desired = {"databaseType": "redis", "name": "redis"}
             return {
@@ -399,35 +416,35 @@ data:
                 {
                   "id": "call_ocp_deploy_redis",
                   "type": "function",
-                  "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired)},
+                  "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired) if tools else json.dumps(desired, ensure_ascii=False)},
                 }
               ],
             }
 
         # Other showroom examples
         if "check the cluster health" in key:
-          tool_name = _pick_tool(tools, ["ocpcheckClusterHealth"])
+          tool_name = _pick_tool(tools, ["ocpcheckClusterHealth"]) or "ocpcheckClusterHealth"
           if tool_name:
             return {"content": "", "tool_calls": [{"id": "call_cluster_health", "type": "function", "function": {"name": tool_name, "arguments": "{}"}}]}
 
         if "pods with resource issues" in key or "resource issues" in key:
-          tool_name = _pick_tool(tools, ["ocpdetectResourceIssues"])
+          tool_name = _pick_tool(tools, ["ocpdetectResourceIssues"]) or "ocpdetectResourceIssues"
           if tool_name:
             return {"content": "", "tool_calls": [{"id": "call_resource_issues", "type": "function", "function": {"name": tool_name, "arguments": "{}"}}]}
 
         if "horizontalpodautoscaler" in key or "hpa" in key:
-          tool_name = _pick_tool(tools, ["ocpcreateHpa"])
+          tool_name = _pick_tool(tools, ["ocpcreateHpa"]) or "ocpcreateHpa"
           if tool_name:
             desired = {"name": "backend", "target": "backend"}
             return {
               "content": "",
               "tool_calls": [
-                {"id": "call_create_hpa", "type": "function", "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired)}}
+                {"id": "call_create_hpa", "type": "function", "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired) if tools else json.dumps(desired, ensure_ascii=False)}}
               ],
             }
 
         if "run a network test" in key or ("network test" in key and "between" in key):
-          tool_name = _pick_tool(tools, ["ocprunNetworkTest"])
+          tool_name = _pick_tool(tools, ["ocprunNetworkTest"]) or "ocprunNetworkTest"
           if tool_name:
             return {
               "content": "",
@@ -437,13 +454,26 @@ data:
             }
 
         if "monitor all deployments" in key:
-          tool_name = _pick_tool(tools, ["ocpmonitorDeployments"])
+          tool_name = _pick_tool(tools, ["ocpmonitorDeployments"]) or "ocpmonitorDeployments"
           if tool_name:
             desired = {}
             return {
               "content": "",
               "tool_calls": [
-                {"id": "call_monitor_deployments", "type": "function", "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired)}}
+                {"id": "call_monitor_deployments", "type": "function", "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired) if tools else json.dumps(desired, ensure_ascii=False)}}
+              ],
+            }
+
+        # Common operational prompts (not in showroom examples, but users try them).
+        if ("list all pods" in key or "list pods" in key) and "namespace" in key:
+          ns = _extract_namespace(user_text)
+          if ns:
+            tool_name = _pick_tool(tools, ["k8spods_list_in_namespace"]) or "k8spods_list_in_namespace"
+            desired = {"namespace": ns}
+            return {
+              "content": "",
+              "tool_calls": [
+                {"id": "call_list_pods", "type": "function", "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired) if tools else json.dumps(desired, ensure_ascii=False)}}
               ],
             }
 
@@ -598,7 +628,6 @@ data:
         self._send_sse(chunks)
 
       def log_message(self, fmt: str, *args: Any) -> None:
-        # Keep logs minimal (avoid dumping user content).
         return
 
 
