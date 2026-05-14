@@ -645,6 +645,10 @@ spec:
     namespace: mcp-system
     sectionName: mcp
   publicHost: mcp-gateway.{{ .Values.clusterDomain }}
+  # Allow in-cluster callers (e.g. OLS) to use the service DNS name as Host.
+  # Without this, tool discovery may work but tool execution can fail due to
+  # hostname mismatch across HTTPRoutes.
+  privateHost: mcp-gateway-istio.mcp-system.svc.cluster.local
   trustedHeadersKey:
     secretName: trusted-headers-public-key
 ---
@@ -692,6 +696,7 @@ metadata:
 spec:
   hostnames:
     - mcp-gateway.{{ .Values.clusterDomain }}
+    - mcp-gateway-istio.mcp-system.svc.cluster.local
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
@@ -718,6 +723,7 @@ metadata:
 spec:
   hostnames:
     - mcp-gateway.{{ .Values.clusterDomain }}
+    - mcp-gateway-istio.mcp-system.svc.cluster.local
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
@@ -888,6 +894,7 @@ metadata:
 spec:
   hostnames:
     - mcp-gateway.{{ .Values.clusterDomain }}
+    - mcp-gateway-istio.mcp-system.svc.cluster.local
   parentRefs:
     - group: gateway.networking.k8s.io
       kind: Gateway
