@@ -233,7 +233,10 @@ data:
 
     def _completion_text(messages: List[Dict[str, Any]]) -> str:
       if _is_validation_prompt(messages):
-        return "allowed"
+        # NOTE: The bundled lightspeed_question_validity config uses literal
+        # "${allowed}" / "${rejected}" tokens in its prompt. Return the exact
+        # token so the shield evaluation passes.
+        return "${allowed}"
       user_text = _extract_user_text(messages)
       if not user_text:
         return "ok"
