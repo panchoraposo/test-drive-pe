@@ -226,6 +226,89 @@ spec:
         - mountPath: /showroom/repo
           name: showroom-files
           subPath: repo
+      - name: patch-lab-guide
+        image: {{ .Values.showroom.content.image | quote }}
+        command: ["sh", "-lc"]
+        args:
+          - |
+            set -eu
+            target="/showroom/repo/content/modules/ROOT/pages/04-deploy-backend.adoc"
+            if [ ! -f "$target" ]; then
+              echo "WARN: missing $target; skipping patch"
+              exit 0
+            fi
+
+            python3 - <<'PY'
+            from __future__ import annotations
+
+            from pathlib import Path
+            import re
+
+            path = Path("/showroom/repo/content/modules/ROOT/pages/04-deploy-backend.adoc")
+            s = path.read_text(encoding="utf-8")
+
+            old = r'''export APP_NAME="${APP_NAME:-neuralbank-backend}"
+            export NS="{user_name}-neuralbank"
+            export APIKEY_NAME="{user_name}-${APP_NAME}"
+
+            SECRET_NAME=$(oc get apikey -n "$NS" "$APIKEY_NAME" -o jsonpath='{.status.secretRef.name}')
+            API_KEY=$(oc get secret -n "$NS" "$SECRET_NAME" -o jsonpath='{.data.api_key}' | tr -d '\n' | base64 -d)
+
+            echo "API Key: $API_KEY"'''
+
+            new = r'''export APP_NAME="${APP_NAME:-neuralbank-backend}"
+            export NS="{user_name}-neuralbank"
+            export APIKEY_NAME="{user_name}-${APP_NAME}"
+
+            unset SECRET_NAME API_KEY || true
+
+            # The APIKey controller may take a few seconds to create the backing Secret.
+            for i in $(seq 1 30); do
+              SECRET_NAME="$(oc get apikey -n "$NS" "$APIKEY_NAME" -o jsonpath='{.status.secretRef.name}' 2>/dev/null || true)"
+              if [ -n "$SECRET_NAME" ]; then
+                break
+              fi
+              echo "Waiting for API key Secret to be created for $APIKEY_NAME..."
+              sleep 2
+            done
+
+            if [ -z "${SECRET_NAME:-}" ]; then
+              echo "ERROR: API key Secret not ready for $APIKEY_NAME"
+              oc get apikey -n "$NS" "$APIKEY_NAME" -o yaml || true
+              exit 1
+            fi
+
+            API_KEY="$(oc get secret -n "$NS" "$SECRET_NAME" -o jsonpath='{.data.api_key}' | tr -d '\n' | base64 -d)"
+
+            echo "API Key: $API_KEY"'''
+
+            # Normalize indentation in the AsciiDoc block by matching with flexible leading spaces.
+            def norm_block(x: str) -> str:
+              lines = x.splitlines()
+              # strip common leading whitespace
+              min_indent = None
+              for ln in lines:
+                if not ln.strip():
+                  continue
+                m = re.match(r"^(\s+)", ln)
+                if not m:
+                  min_indent = 0
+                  break
+                ind = len(m.group(1))
+                min_indent = ind if min_indent is None else min(min_indent, ind)
+              min_indent = min_indent or 0
+              return "\n".join([ln[min_indent:] if len(ln) >= min_indent else ln for ln in lines])
+
+            old_n = norm_block(old)
+            new_n = norm_block(new)
+
+            if old_n not in s:
+              raise SystemExit("Patch failed: expected snippet not found in 04-deploy-backend.adoc")
+
+            s2 = s.replace(old_n, new_n, 1)
+            path.write_text(s2, encoding="utf-8")
+            print("Patched", path)
+            PY
       - name: antora-builder
         image: "quay.io/rhpds/antora:v1.0.1"
         env:
