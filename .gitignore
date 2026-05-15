@@ -20,3 +20,6 @@ __pycache__/
 # Ansible
 *.retry
 .kubeconfig
+
+# Local vendor checkouts (kept as separate git repos)
+vendor/
