@@ -48,7 +48,7 @@ commands:
   - id: run
     exec:
       component: tools
-      commandLine: export PATH=/home/user/apache-maven-3.9.9/bin:$PATH && mvn quarkus:dev
+      commandLine: export PATH=/home/user/apache-maven-3.9.9/bin:$PATH && mvn quarkus:dev -Dquarkus.http.host=0.0.0.0 -Dquarkus.http.proxy.proxy-address-forwarding=true -Dquarkus.dev-ui.hosts=.*
       workingDir: ${PROJECT_SOURCE}
       group:
         kind: run
