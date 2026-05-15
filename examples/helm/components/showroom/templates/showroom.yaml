@@ -281,6 +281,10 @@ spec:
             path.write_text(s2, encoding=\"utf-8\")
             print(\"Patched\", path)
             PY
+        volumeMounts:
+        - mountPath: /showroom/repo
+          name: showroom-files
+          subPath: repo
       - name: antora-builder
         image: "quay.io/rhpds/antora:v1.0.1"
         env:
