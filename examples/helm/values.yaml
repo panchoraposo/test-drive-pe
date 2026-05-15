@@ -324,7 +324,7 @@ lightspeed:
 # Recommended: 30 (small), 50 (medium), 100 (large), 200 (extra-large)
 # See README.md "Cluster Sizing" for node/resource recommendations
 # ============================================================
-userCount: 200
+userCount: 100
 
 # ============================================================
 # Workshop Registration Portal
