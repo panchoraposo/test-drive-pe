@@ -20,7 +20,7 @@ components:
     volume:
       size: 2Gi
 commands:
-  - id: init-maven
+  - id: 01-init-maven
     exec:
       component: tools
       commandLine: |
@@ -37,7 +37,7 @@ commands:
       group:
         kind: build
         isDefault: false
-  - id: build
+  - id: 02-build
     exec:
       component: tools
       commandLine: export PATH=/home/user/apache-maven-3.9.9/bin:$PATH && mvn package -DskipTests
@@ -45,7 +45,7 @@ commands:
       group:
         kind: build
         isDefault: true
-  - id: run
+  - id: 03-run
     exec:
       component: tools
       commandLine: export PATH=/home/user/apache-maven-3.9.9/bin:$PATH && mvn quarkus:dev -Dquarkus.http.host=0.0.0.0 -Dquarkus.http.proxy.proxy-address-forwarding=true -Dquarkus.dev-ui.hosts=.*
@@ -53,3 +53,48 @@ commands:
       group:
         kind: run
         isDefault: true
+  - id: 04-open-rhda-report
+    exec:
+      component: tools
+      commandLine: |
+        REPORT_PATH="${REPORT_PATH:-/tmp/redhatDependencyAnalyticsReport.html}"
+        echo "RHDA report path: ${REPORT_PATH}"
+        if [ -f "${REPORT_PATH}" ]; then
+          ls -lh "${REPORT_PATH}"
+          echo "Tip: open it from the file explorer inside Dev Spaces."
+        else
+          echo "Report file not found yet."
+          echo "Generate it in the IDE by opening pom.xml and clicking the pie-chart icon, or right-click pom.xml -> 'Red Hat Dependency Analytics Report...'"
+        fi
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: test
+        isDefault: false
+  - id: 05-update-quarkus-to-3.35.2
+    exec:
+      component: tools
+      commandLine: |
+        export PATH=/home/user/apache-maven-3.9.9/bin:$PATH
+        python3 - <<'PY'
+        from pathlib import Path
+        import re
+        
+        pom = Path("pom.xml")
+        s = pom.read_text(encoding="utf-8")
+        new_version = "3.35.2"
+        s2, n = re.subn(
+            r"(<quarkus\.platform\.version>)([^<]+)(</quarkus\.platform\.version>)",
+            r"\g<1>" + new_version + r"\g<3>",
+            s,
+            count=1,
+        )
+        if n != 1:
+            raise SystemExit("ERROR: Could not find <quarkus.platform.version>...</quarkus.platform.version> in pom.xml")
+        pom.write_text(s2, encoding="utf-8")
+        print(f"Updated quarkus.platform.version to {new_version}")
+        PY
+        mvn -q -DskipTests package
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: build
+        isDefault: false

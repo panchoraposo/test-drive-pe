@@ -20,7 +20,7 @@ components:
     volume:
       size: 2Gi
 commands:
-  - id: init-maven
+  - id: 01-init-maven
     exec:
       component: tools
       commandLine: |
@@ -37,7 +37,7 @@ commands:
       group:
         kind: build
         isDefault: false
-  - id: build
+  - id: 02-build
     exec:
       component: tools
       commandLine: export PATH=/home/user/apache-maven-3.9.9/bin:$PATH && mvn package -DskipTests
@@ -45,7 +45,7 @@ commands:
       group:
         kind: build
         isDefault: true
-  - id: run
+  - id: 03-run
     exec:
       component: tools
       commandLine: export PATH=/home/user/apache-maven-3.9.9/bin:$PATH && mvn quarkus:dev
@@ -53,10 +53,28 @@ commands:
       group:
         kind: run
         isDefault: true
-  - id: mcp-inspector
+  - id: 04-mcp-inspector
     exec:
       component: tools
       commandLine: "npx @anthropic-ai/mcp-inspector http://localhost:8080/mcp/sse"
       workingDir: ${PROJECT_SOURCE}
       group:
         kind: debug
+        isDefault: false
+  - id: 05-open-rhda-report
+    exec:
+      component: tools
+      commandLine: |
+        REPORT_PATH="${REPORT_PATH:-/tmp/redhatDependencyAnalyticsReport.html}"
+        echo "RHDA report path: ${REPORT_PATH}"
+        if [ -f "${REPORT_PATH}" ]; then
+          ls -lh "${REPORT_PATH}"
+          echo "Tip: open it from the file explorer inside Dev Spaces."
+        else
+          echo "Report file not found yet."
+          echo "Generate it in the IDE by opening pom.xml and clicking the pie-chart icon, or right-click pom.xml -> 'Red Hat Dependency Analytics Report...'"
+        fi
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: test
+        isDefault: false

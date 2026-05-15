@@ -14,7 +14,7 @@ components:
       cpuLimit: "1"
       mountSources: true
 commands:
-  - id: serve
+  - id: 01-serve
     exec:
       component: tools
       commandLine: python3 -m http.server 8080
