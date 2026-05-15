@@ -279,10 +279,10 @@ spec:
             s2, n = pattern.subn(replacement, s, count=1)
             if n != 1:
               # Don't crash the pod if upstream content changes; just log a warning.
-              print(f\"WARN: expected APIKey snippet not found; skipping patch (matches={n})\")
+              print(f"WARN: expected APIKey snippet not found; skipping patch (matches={n})")
             else:
-              path.write_text(s2, encoding=\"utf-8\")
-              print(\"Patched\", path)
+              path.write_text(s2, encoding="utf-8")
+              print("Patched", path)
             PY
         volumeMounts:
         - mountPath: /showroom/repo
