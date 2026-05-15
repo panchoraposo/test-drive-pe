@@ -173,6 +173,23 @@ subjects:
   namespace: {{ $devNs }}
 ---
 apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vscode-editor-configurations
+  namespace: {{ $devNs }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  labels:
+    app.kubernetes.io/part-of: che.eclipse.org
+data:
+  extensions.json: |
+    {
+      "recommendations": [
+        "redhat.fabric8-analytics"
+      ]
+    }
+---
+apiVersion: v1
 kind: Namespace
 metadata:
   name: {{ $appNs }}
