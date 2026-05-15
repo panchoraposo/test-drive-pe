@@ -249,7 +249,8 @@ spec:
             # Replace the fragile immediate Secret lookup with a short wait/retry loop.
             start = None
             for i, ln in enumerate(lines):
-              if ln.lstrip().startswith("unset SECRET_NAME"):
+              l = ln.lstrip()
+              if l.startswith("SECRET_NAME=") and "oc get apikey" in l:
                 start = i
                 break
 
@@ -268,7 +269,6 @@ spec:
                 print("WARN: APIKey snippet end not found; skipping patch")
               else:
                 replacement = [
-                  indent + "unset SECRET_NAME API_KEY || true",
                   indent + 'SECRET_NAME=""',
                   indent + "for i in $(seq 1 30); do",
                   indent + "  SECRET_NAME=\"$(oc get apikey -n \"$NS\" \"$APIKEY_NAME\" -o jsonpath='{.status.secretRef.name}' 2>/dev/null || true)\"",
@@ -276,7 +276,7 @@ spec:
                   indent + "  sleep 2",
                   indent + "done",
                   indent + "[ -n \"$SECRET_NAME\" ] || { echo \"ERROR: API key Secret not ready for $APIKEY_NAME\"; oc get apikey -n \"$NS\" \"$APIKEY_NAME\" -o yaml || true; exit 1; }",
-                  indent + "API_KEY=\"$(oc get secret -n \"$NS\" \"$SECRET_NAME\" -o jsonpath='{.data.api_key}' | base64 -d)\"",
+                  indent + "API_KEY=\"$(oc get secret -n \"$NS\" \"$SECRET_NAME\" -o jsonpath='{.data.api_key}' | tr -d '\\n' | base64 -d)\"",
                   indent + "echo \"API Key: $API_KEY\"",
                 ]
 
