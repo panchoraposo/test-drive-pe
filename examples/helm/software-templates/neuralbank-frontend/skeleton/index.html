@@ -408,11 +408,21 @@
         return r.text();
       })
       .then(function(text) {
+        var hint = '';
+        var raw = (text || '').toLowerCase();
+        if (raw.indexOf('customer-service-mcp-gateway-istio') !== -1 || raw.indexOf('dns lookup failure') !== -1) {
+          hint = 'No se pudo resolver el upstream <code>customer-service-mcp-gateway-istio</code>. Esto normalmente significa que <strong>customer-service-mcp</strong> aún no fue desplegado (o está en build). Volvé al Showroom y completá <strong>Step 2: Deploy Customer Service MCP</strong>, luego esperá a que ArgoCD muestre el app <code>customer-service-mcp</code> como <strong>Synced/Healthy</strong>.';
+        } else if (raw.indexOf('proxy error') !== -1 && raw.indexOf('mcp') !== -1) {
+          hint = 'Proxy error hacia el MCP Gateway. Verificá que <strong>customer-service-mcp</strong> esté desplegado y que exista el Service <code>customer-service-mcp-gateway-istio</code> en tu namespace.';
+        }
+        document.getElementById('mcp-alert').innerHTML = hint ? ('<div class="alert alert-warn"><i class="fas fa-triangle-exclamation"></i> ' + hint + '</div>') : '';
         try { var j = JSON.parse(text); text = JSON.stringify(j, null, 2); } catch(e) {}
         resultDiv.innerHTML = '<div class="result-box">' + text + '</div>';
       })
       .catch(function(e) {
         setGatewayStatus('mcp', 'err');
+        document.getElementById('mcp-alert').innerHTML =
+          '<div class="alert alert-warn"><i class="fas fa-triangle-exclamation"></i> No se pudo contactar el MCP Gateway. Si aún no desplegaste <strong>customer-service-mcp</strong>, completá el paso correspondiente en el Showroom y esperá a que esté <strong>Synced/Healthy</strong>.</div>';
         resultDiv.innerHTML = '<div class="alert alert-error" style="margin-top:0.5rem"><i class="fas fa-circle-exclamation"></i> ' + e.message + '</div>';
       });
   }
@@ -427,8 +437,17 @@
       .catch(function(e) { setGatewayStatus('backend', 'err'); showAlert('dashboard-alert', 'error', 'Backend: ' + e.message); });
 
     fetch('/api/mcp/q/health', { headers: apiKey ? { 'X-API-Key': apiKey } : {} })
-      .then(function(r) { setGatewayStatus('mcp', r.ok ? 'ok' : 'err'); done(); })
-      .catch(function(e) { setGatewayStatus('mcp', 'err'); });
+      .then(function(r) {
+        setGatewayStatus('mcp', r.ok ? 'ok' : 'err');
+        if (!r.ok) {
+          showAlert('dashboard-alert', 'warn', 'MCP: no disponible todavía. Asegurate de haber desplegado <strong>customer-service-mcp</strong> y que su gateway esté listo.');
+        }
+        done();
+      })
+      .catch(function() {
+        setGatewayStatus('mcp', 'err');
+        showAlert('dashboard-alert', 'warn', 'MCP: sin conexión. Si aún no desplegaste <strong>customer-service-mcp</strong>, completá ese paso en el Showroom.');
+      });
 
     apiFetch('/api/backend/credits')
       .then(function(data) {
