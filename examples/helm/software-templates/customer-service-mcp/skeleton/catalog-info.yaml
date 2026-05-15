@@ -14,9 +14,9 @@ metadata:
     argocd/app-namespace: openshift-gitops
     tektonci/build-namespace: ${{values.namespace}}
     che.eclipse.org/che-server: https://devspaces.${{ values.clusterDomain }}
-    devspaces.io/factory: "https://devspaces.${{ values.clusterDomain }}/#https://gitea-gitea.${{ values.clusterDomain }}/ws-${{ values.owner }}/${{ values.name }}.git?ref=main"
+    devspaces.io/factory: "https://devspaces.${{ values.clusterDomain }}/#https://gitea-gitea.${{ values.clusterDomain }}/ws-${{ values.owner }}/${{ values.name }}?new"
   links:
-    - url: "https://devspaces.${{ values.clusterDomain }}/#https://gitea-gitea.${{ values.clusterDomain }}/ws-${{ values.owner }}/${{ values.name }}.git?ref=main"
+    - url: "https://devspaces.${{ values.clusterDomain }}/#https://gitea-gitea.${{ values.clusterDomain }}/ws-${{ values.owner }}/${{ values.name }}?new"
       title: Open in DevSpaces
       icon: catalog
       type: ide
