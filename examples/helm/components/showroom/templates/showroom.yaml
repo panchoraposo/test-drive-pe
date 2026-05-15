@@ -242,47 +242,60 @@ spec:
             from __future__ import annotations
 
             from pathlib import Path
-            import re
 
             path = Path("/showroom/repo/content/modules/ROOT/pages/04-deploy-backend.adoc")
             s = path.read_text(encoding="utf-8")
 
             # Replace the fragile immediate Secret lookup with a wait/retry loop.
-            pattern = re.compile(
-              r"^[ \\t]*SECRET_NAME=\\$\\(oc get apikey[^\\n]*\\n"
-              r"^[ \\t]*API_KEY=\\$\\(oc get secret[^\\n]*\\n"
-              r"(?:^[ \\t]*\\n)*"
-              r"^[ \\t]*echo \"API Key: \\$API_KEY\"[ \\t]*$",
-              re.MULTILINE,
-            )
+            lines = s.splitlines()
 
-            replacement = (
-              "unset SECRET_NAME API_KEY || true\\n\\n"
-              "# The APIKey controller may take a few seconds to create the backing Secret.\\n"
-              "for i in $(seq 1 30); do\\n"
-              "  SECRET_NAME=\\\"$(oc get apikey -n \\\"$NS\\\" \\\"$APIKEY_NAME\\\" -o jsonpath='{.status.secretRef.name}' 2>/dev/null || true)\\\"\\n"
-              "  if [ -n \\\"$SECRET_NAME\\\" ]; then\\n"
-              "    break\\n"
-              "  fi\\n"
-              "  echo \\\"Waiting for API key Secret to be created for $APIKEY_NAME...\\\"\\n"
-              "  sleep 2\\n"
-              "done\\n\\n"
-              "if [ -z \\\"${SECRET_NAME:-}\\\" ]; then\\n"
-              "  echo \\\"ERROR: API key Secret not ready for $APIKEY_NAME\\\"\\n"
-              "  oc get apikey -n \\\"$NS\\\" \\\"$APIKEY_NAME\\\" -o yaml || true\\n"
-              "  exit 1\\n"
-              "fi\\n\\n"
-              "API_KEY=\\\"$(oc get secret -n \\\"$NS\\\" \\\"$SECRET_NAME\\\" -o jsonpath='{.data.api_key}' | tr -d '\\\\n' | base64 -d)\\\"\\n\\n"
-              "echo \\\"API Key: $API_KEY\\\""
-            )
+            start = None
+            for i, ln in enumerate(lines):
+              if ln.lstrip().startswith("SECRET_NAME=$(oc get apikey "):
+                start = i
+                break
 
-            s2, n = pattern.subn(replacement, s, count=1)
-            if n != 1:
-              # Don't crash the pod if upstream content changes; just log a warning.
-              print(f"WARN: expected APIKey snippet not found; skipping patch (matches={n})")
+            if start is None:
+              print("WARN: APIKey snippet start not found; skipping patch")
             else:
-              path.write_text(s2, encoding="utf-8")
-              print("Patched", path)
+              indent = lines[start][: len(lines[start]) - len(lines[start].lstrip())]
+              # Find the end line (echo) after API_KEY assignment.
+              end = None
+              for j in range(start, min(start + 10, len(lines))):
+                if lines[j].lstrip().startswith('echo "API Key: $API_KEY"'):
+                  end = j
+                  break
+
+              if end is None:
+                print("WARN: APIKey snippet end not found; skipping patch")
+              else:
+                replacement = [
+                  f"{indent}unset SECRET_NAME API_KEY || true",
+                  "",
+                  f"{indent}# The APIKey controller may take a few seconds to create the backing Secret.",
+                  f"{indent}for i in $(seq 1 30); do",
+                  f"{indent}  SECRET_NAME=\"$(oc get apikey -n \"$NS\" \"$APIKEY_NAME\" -o jsonpath='{{.status.secretRef.name}}' 2>/dev/null || true)\"",
+                  f"{indent}  if [ -n \"$SECRET_NAME\" ]; then",
+                  f"{indent}    break",
+                  f"{indent}  fi",
+                  f"{indent}  echo \"Waiting for API key Secret to be created for $APIKEY_NAME...\"",
+                  f"{indent}  sleep 2",
+                  f"{indent}done",
+                  "",
+                  f"{indent}if [ -z \"${{SECRET_NAME:-}}\" ]; then",
+                  f"{indent}  echo \"ERROR: API key Secret not ready for $APIKEY_NAME\"",
+                  f"{indent}  oc get apikey -n \"$NS\" \"$APIKEY_NAME\" -o yaml || true",
+                  f"{indent}  exit 1",
+                  f"{indent}fi",
+                  "",
+                  f"{indent}API_KEY=\"$(oc get secret -n \"$NS\" \"$SECRET_NAME\" -o jsonpath='{{.data.api_key}}' | tr -d '\\n' | base64 -d)\"",
+                  "",
+                  f'{indent}echo \"API Key: $API_KEY\"',
+                ]
+
+                lines[start : end + 1] = replacement
+                path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+                print("Patched", path)
             PY
         volumeMounts:
         - mountPath: /showroom/repo
