@@ -669,6 +669,7 @@ spec:
 ##
 ## 7. MCPGatewayExtension (controller creates broker, HTTPRoute, and service)
 ##
+{{- if .Capabilities.APIVersions.Has "mcp.kuadrant.io/v1alpha1" }}
 apiVersion: mcp.kuadrant.io/v1alpha1
 kind: MCPGatewayExtension
 metadata:
@@ -691,6 +692,7 @@ spec:
   privateHost: mcp-gateway-istio.mcp-system.svc.cluster.local:8080
   trustedHeadersKey:
     secretName: trusted-headers-public-key
+{{- end }}
 ---
 ##
 ## 8. MCP Server Registrations — connect openshift-mcp-server backends to the gateway
@@ -791,6 +793,7 @@ spec:
             type: PathPrefix
             value: /k8s-mcp-server/mcp
 ---
+{{- if .Capabilities.APIVersions.Has "mcp.kuadrant.io/v1alpha1" }}
 apiVersion: mcp.kuadrant.io/v1alpha1
 kind: MCPServerRegistration
 metadata:
@@ -820,6 +823,7 @@ spec:
   toolPrefix: k8s
   # Path prefix as exposed through the gateway (matches HTTPRoute).
   path: /k8s-mcp-server/mcp
+{{- end }}
 {{/*
   RHDH MCP Server via Kuadrant Gateway is DISABLED.
   Reason: RHDH plugin uses legacy SSE transport (GET /sse + POST /messages?sessionId=X),
