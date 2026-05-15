@@ -99,7 +99,6 @@ ${{ values.name }}/
 │   ├── service.yaml
 │   ├── route.yaml
 │   ├── pipeline.yaml
-│   ├── pipelinerun.yaml
 │   ├── tasks.yaml
 │   ├── event-listener.yaml
 │   ├── trigger-binding.yaml

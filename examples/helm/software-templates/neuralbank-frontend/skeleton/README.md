@@ -59,7 +59,6 @@ ${{ values.name }}/
 │   ├── service.yaml                  # Kubernetes Service
 │   ├── route.yaml                    # OpenShift Route
 │   ├── pipeline.yaml                 # Tekton Pipeline
-│   ├── pipelinerun.yaml              # Initial PipelineRun
 │   ├── tasks.yaml                    # Tekton Tasks
 │   ├── event-listener.yaml           # Tekton EventListener
 │   ├── trigger-binding.yaml          # Tekton TriggerBinding
