@@ -249,9 +249,10 @@ spec:
 
             # Replace the fragile immediate Secret lookup with a wait/retry loop.
             pattern = re.compile(
-              r"^SECRET_NAME=\\$\\(oc get apikey[^\\n]*\\n"
-              r"API_KEY=\\$\\(oc get secret[^\\n]*\\n\\n"
-              r"echo \"API Key: \\$API_KEY\"$",
+              r"^[ \\t]*SECRET_NAME=\\$\\(oc get apikey[^\\n]*\\n"
+              r"^[ \\t]*API_KEY=\\$\\(oc get secret[^\\n]*\\n"
+              r"(?:^[ \\t]*\\n)*"
+              r"^[ \\t]*echo \"API Key: \\$API_KEY\"[ \\t]*$",
               re.MULTILINE,
             )
 
@@ -277,9 +278,11 @@ spec:
 
             s2, n = pattern.subn(replacement, s, count=1)
             if n != 1:
-              raise SystemExit(f\"Patch failed: expected pattern not found (matches={n})\")
-            path.write_text(s2, encoding=\"utf-8\")
-            print(\"Patched\", path)
+              # Don't crash the pod if upstream content changes; just log a warning.
+              print(f\"WARN: expected APIKey snippet not found; skipping patch (matches={n})\")
+            else:
+              path.write_text(s2, encoding=\"utf-8\")
+              print(\"Patched\", path)
             PY
         volumeMounts:
         - mountPath: /showroom/repo
