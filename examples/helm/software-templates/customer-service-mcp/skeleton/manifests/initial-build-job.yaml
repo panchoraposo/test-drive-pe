@@ -57,4 +57,7 @@ spec:
                             storage: 1Gi
                   - name: maven-settings
                     emptyDir: {}
+                  - name: maven-repo
+                    persistentVolumeClaim:
+                      claimName: maven-repo-cache
               EOF
