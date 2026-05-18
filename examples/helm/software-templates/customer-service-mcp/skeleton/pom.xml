@@ -11,8 +11,9 @@
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
-    <quarkus.platform.group-id>io.quarkus.platform</quarkus.platform.group-id>
-    <quarkus.platform.version>3.27.3</quarkus.platform.version>
+    <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
+    <quarkus.platform.version>3.27.3.redhat-00002</quarkus.platform.version>
+    <quarkus.mcp.bom.version>1.7.0.redhat-00001</quarkus.mcp.bom.version>
     <surefire-plugin.version>3.5.4</surefire-plugin.version>
   </properties>
   <dependencyManagement>
@@ -25,14 +26,40 @@
         <scope>import</scope>
       </dependency>
       <dependency>
-        <groupId>${quarkus.platform.group-id}</groupId>
+        <groupId>io.quarkiverse.mcp</groupId>
         <artifactId>quarkus-mcp-server-bom</artifactId>
-        <version>${quarkus.platform.version}</version>
+        <version>${quarkus.mcp.bom.version}</version>
         <type>pom</type>
         <scope>import</scope>
       </dependency>
     </dependencies>
   </dependencyManagement>
+  <repositories>
+    <repository>
+      <id>redhat-ga</id>
+      <name>Red Hat GA Maven Repository</name>
+      <url>https://maven.repository.redhat.com/ga/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
+  </repositories>
+  <pluginRepositories>
+    <pluginRepository>
+      <id>redhat-ga</id>
+      <name>Red Hat GA Maven Repository</name>
+      <url>https://maven.repository.redhat.com/ga/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </pluginRepository>
+  </pluginRepositories>
   <dependencies>
     <dependency>
       <groupId>io.quarkiverse.mcp</groupId>
