@@ -34,6 +34,9 @@ spec:
         #!/usr/bin/env sh
         set -eu
         cd "$WORKSPACE_OUTPUT_PATH"
+        # Keep Maven cache under .m2 between runs; clean everything else.
+        mkdir -p .m2/repository
+        find . -mindepth 1 -maxdepth 1 ! -name .m2 -exec rm -rf {} +
         git init
         git remote add origin "$PARAM_URL"
         git fetch --depth 1 origin "$PARAM_REVISION"
@@ -61,7 +64,6 @@ spec:
   workspaces:
     - name: source
     - name: maven-settings
-    - name: maven-repo
   steps:
     - name: mvn-settings
       computeResources: {}
@@ -80,7 +82,7 @@ spec:
       script: |
         #!/usr/bin/env bash
         set -euo pipefail
-        REPO_DIR="$(workspaces.maven-repo.path)/repository"
+        REPO_DIR="$(workspaces.source.path)/.m2/repository"
         mkdir -p "${REPO_DIR}"
         mvn -s "$(workspaces.maven-settings.path)/settings.xml" \
           -Dmaven.repo.local="${REPO_DIR}" \
