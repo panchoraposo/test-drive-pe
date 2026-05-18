@@ -18,6 +18,8 @@ spec:
         labels:
           backstage.io/kubernetes-id: ${{values.uniqueName}}
           tekton.dev/pipeline: ${{values.name}}-build
+        annotations:
+          pipeline.tekton.dev/affinity-assistant: "disabled"
       spec:
         pipelineRef:
           name: ${{values.name}}-build
