@@ -53,8 +53,8 @@ spec:
       type: string
       default: maven:3.9-eclipse-temurin-17
     - name: GOALS
-      type: string
-      default: "package"
+      type: array
+      default: ["package"]
     - name: CONTEXT_DIR
       type: string
       default: "."
@@ -87,7 +87,7 @@ spec:
           -Dmaven.wagon.http.retryHandler.count=3 \
           -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 \
           -T 1C \
-          $(params.GOALS)
+          $(params.GOALS[*])
 ---
 apiVersion: tekton.dev/v1
 kind: Task
