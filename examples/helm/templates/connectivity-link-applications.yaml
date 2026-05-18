@@ -193,10 +193,6 @@ spec:
       valuesObject:
         clusterDomain: {{ $domain }}
         userCount: {{ $.Values.userCount | default 200 }}
-    {{- else if eq .path "connectivity-link-maven-mirror" }}
-    helm:
-      valuesObject:
-        clusterDomain: {{ $domain }}
     {{- else if eq .path "connectivity-link-developer-hub" }}
     helm:
       valuesObject:
