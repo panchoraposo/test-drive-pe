@@ -13,6 +13,11 @@ components:
       memoryLimit: 2Gi
       cpuLimit: "1"
       mountSources: true
+      env:
+        - name: DEFAULT_EXTENSIONS
+          value: "/projects/${{values.name}}/.extensions/redhat.fabric8-analytics.vsix"
+        - name: VSCODE_TRUSTED_EXTENSIONS
+          value: "redhat.fabric8-analytics"
       volumeMounts:
         - name: m2
           path: /home/user/.m2
@@ -20,6 +25,22 @@ components:
     volume:
       size: 2Gi
 commands:
+  - id: 00-install-rhda-extension
+    exec:
+      component: tools
+      commandLine: |
+        set -euo pipefail
+        mkdir -p "/projects/${{values.name}}/.extensions"
+        if [ -f "/projects/${{values.name}}/.extensions/redhat.fabric8-analytics.vsix" ]; then
+          echo "RHDA VSIX already present."
+          exit 0
+        fi
+        echo "Downloading RHDA extension VSIX..."
+        curl -sSL "https://open-vsx.org/api/redhat/fabric8-analytics/0.10.2/file/redhat.fabric8-analytics-0.10.2.vsix" -o "/projects/${{values.name}}/.extensions/redhat.fabric8-analytics.vsix"
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: build
+        isDefault: false
   - id: 01-init-maven
     exec:
       component: tools
@@ -112,3 +133,6 @@ commands:
       group:
         kind: run
         isDefault: false
+events:
+  postStart:
+    - 00-install-rhda-extension
