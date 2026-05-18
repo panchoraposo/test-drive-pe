@@ -38,19 +38,31 @@ spec:
 
                   cat > /tmp/settings.xml <<'EOF'
                   <settings>
+                    <mirrors>
+                      <mirror>
+                        <id>central-mirror</id>
+                        <mirrorOf>central</mirrorOf>
+                        <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/central/</url>
+                      </mirror>
+                      <mirror>
+                        <id>redhat-ga-mirror</id>
+                        <mirrorOf>redhat-ga</mirrorOf>
+                        <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/ga/</url>
+                      </mirror>
+                    </mirrors>
                     <profiles>
                       <profile>
-                        <id>mirror</id>
+                        <id>repos</id>
                         <repositories>
                           <repository>
                             <id>central</id>
-                            <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/central/</url>
+                            <url>https://repo.maven.apache.org/maven2/</url>
                             <releases><enabled>true</enabled></releases>
                             <snapshots><enabled>false</enabled></snapshots>
                           </repository>
                           <repository>
                             <id>redhat-ga</id>
-                            <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/ga/</url>
+                            <url>https://maven.repository.redhat.com/ga/</url>
                             <releases><enabled>true</enabled></releases>
                             <snapshots><enabled>false</enabled></snapshots>
                           </repository>
@@ -58,13 +70,13 @@ spec:
                         <pluginRepositories>
                           <pluginRepository>
                             <id>central</id>
-                            <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/central/</url>
+                            <url>https://repo.maven.apache.org/maven2/</url>
                             <releases><enabled>true</enabled></releases>
                             <snapshots><enabled>false</enabled></snapshots>
                           </pluginRepository>
                           <pluginRepository>
                             <id>redhat-ga</id>
-                            <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/ga/</url>
+                            <url>https://maven.repository.redhat.com/ga/</url>
                             <releases><enabled>true</enabled></releases>
                             <snapshots><enabled>false</enabled></snapshots>
                           </pluginRepository>
@@ -72,7 +84,7 @@ spec:
                       </profile>
                     </profiles>
                     <activeProfiles>
-                      <activeProfile>mirror</activeProfile>
+                      <activeProfile>repos</activeProfile>
                     </activeProfiles>
                   </settings>
                   EOF
@@ -80,7 +92,8 @@ spec:
                   get() {
                     local artifact="$1"
                     echo "Warming: $artifact"
-                    mvn -q -s /tmp/settings.xml -Dmaven.repo.local=/tmp/.m2/repository -Dtransitive=true dependency:get -Dartifact="$artifact"
+                    mvn -q -s /tmp/settings.xml -Dmaven.repo.local=/tmp/.m2/repository -Dtransitive=true \
+                      org.apache.maven.plugins:maven-dependency-plugin:3.6.1:get -Dartifact="$artifact"
                   }
 
                   # Backend template (old Quarkus for RHDA demo)
