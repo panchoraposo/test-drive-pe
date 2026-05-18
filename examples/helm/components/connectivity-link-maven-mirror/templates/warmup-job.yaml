@@ -8,7 +8,7 @@ metadata:
     argocd.argoproj.io/hook: PostSync
     argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 spec:
-  backoffLimit: 2
+  backoffLimit: 1
   template:
     spec:
       restartPolicy: Never
@@ -20,7 +20,6 @@ spec:
             - |
               set -euo pipefail
               export HOME=/tmp
-              export MAVEN_USER_HOME=/tmp/.m2
               mkdir -p /tmp/.m2/repository
               cat > /tmp/settings.xml <<'EOF'
               <settings>
@@ -38,8 +37,6 @@ spec:
                 </mirrors>
               </settings>
               EOF
-
-              echo "HOME=$HOME MAVEN_USER_HOME=$MAVEN_USER_HOME"
 
               mkdir -p /tmp/backend && cd /tmp/backend
               cat > pom.xml <<'EOF'
