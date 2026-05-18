@@ -40,14 +40,6 @@ spec:
               EOF
 
               echo "HOME=$HOME MAVEN_USER_HOME=$MAVEN_USER_HOME"
-              echo "Waiting for maven-mirror readiness..."
-              for i in $(seq 1 60); do
-                if curl -fsS "http://maven-mirror.maven-mirror.svc.cluster.local:8080/" >/dev/null; then
-                  echo "maven-mirror is ready."
-                  break
-                fi
-                sleep 2
-              done
 
               mkdir -p /tmp/backend && cd /tmp/backend
               cat > pom.xml <<'EOF'
@@ -116,7 +108,7 @@ spec:
                 </build>
               </project>
               EOF
-              mvn -s /tmp/settings.xml -Dmaven.repo.local=/tmp/.m2/repository -DskipTests dependency:go-offline
+              mvn -q -s /tmp/settings.xml -Dmaven.repo.local=/tmp/.m2/repository -DskipTests dependency:go-offline
 
               mkdir -p /tmp/mcp && cd /tmp/mcp
               cat > pom.xml <<'EOF'
@@ -185,6 +177,6 @@ spec:
                 </build>
               </project>
               EOF
-              mvn -s /tmp/settings.xml -Dmaven.repo.local=/tmp/.m2/repository -DskipTests dependency:go-offline
+              mvn -q -s /tmp/settings.xml -Dmaven.repo.local=/tmp/.m2/repository -DskipTests dependency:go-offline
 
               echo "Warmup complete."
