@@ -91,14 +91,6 @@ connectivityLink:
       prune: true
       selfHeal: true
       skipDryRunOnMissingResource: false
-    - id: connectivity-link-maven-mirror
-      enabled: true
-      path: connectivity-link-maven-mirror
-      destinationNamespace: maven-mirror
-      syncWave: "2"
-      prune: true
-      selfHeal: true
-      skipDryRunOnMissingResource: true
     - id: connectivity-link-openshift-gitops
       enabled: true
       path: connectivity-link-openshift-gitops

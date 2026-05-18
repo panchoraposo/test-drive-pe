@@ -41,36 +41,6 @@ commands:
       group:
         kind: build
         isDefault: false
-  - id: 00-init-maven-settings
-    exec:
-      component: tools
-      commandLine: |
-        set -euo pipefail
-        mkdir -p /home/user/.m2
-        if [ -f /home/user/.m2/settings.xml ]; then
-          echo "Maven settings.xml already present."
-          exit 0
-        fi
-        cat > /home/user/.m2/settings.xml <<'EOF'
-        <settings>
-          <mirrors>
-            <mirror>
-              <id>central-mirror</id>
-              <mirrorOf>central</mirrorOf>
-              <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/central/</url>
-            </mirror>
-            <mirror>
-              <id>redhat-ga-mirror</id>
-              <mirrorOf>redhat-ga</mirrorOf>
-              <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/ga/</url>
-            </mirror>
-          </mirrors>
-        </settings>
-        EOF
-      workingDir: ${PROJECT_SOURCE}
-      group:
-        kind: build
-        isDefault: false
   - id: 01-init-maven
     exec:
       component: tools
@@ -132,4 +102,3 @@ commands:
 events:
   postStart:
     - 00-install-rhda-extension
-    - 00-init-maven-settings
