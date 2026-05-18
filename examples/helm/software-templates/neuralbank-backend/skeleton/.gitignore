@@ -2,8 +2,7 @@
 
 # IDEs
 .idea/
-.vscode/*
-!.vscode/tasks.json
+.vscode/
 *.iml
 
 # Eclipse
