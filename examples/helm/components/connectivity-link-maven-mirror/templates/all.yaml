@@ -68,6 +68,9 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
+  {{- if .Values.mavenMirror.storageClassName }}
+  storageClassName: {{ .Values.mavenMirror.storageClassName | quote }}
+  {{- end }}
   accessModes:
     - ReadWriteOnce
   resources:
