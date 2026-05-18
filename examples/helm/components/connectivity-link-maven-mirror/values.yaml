@@ -2,4 +2,4 @@ clusterDomain: ""
 mavenMirror:
   namespace: maven-mirror
   name: maven-mirror
-  image: quay.io/nginxinc/nginx-unprivileged:stable-alpine
+  image: docker.io/library/nginx:1.27-alpine
