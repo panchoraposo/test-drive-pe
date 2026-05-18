@@ -3,8 +3,9 @@ mavenMirror:
   namespace: maven-mirror
   name: maven-mirror
   image: docker.io/library/nginx:1.27-alpine
-  replicaCount: 2
+  replicaCount: 1
   cache:
     enabled: true
-    storageClassName: ocs-external-storagecluster-cephfs
-    size: 50Gi
+    storageClassName: ocs-external-storagecluster-ceph-rbd-immediate
+    accessMode: ReadWriteOnce
+    size: 30Gi

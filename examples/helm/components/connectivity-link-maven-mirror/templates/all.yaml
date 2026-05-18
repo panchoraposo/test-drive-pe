@@ -78,7 +78,7 @@ metadata:
     argocd.argoproj.io/sync-wave: "1"
 spec:
   accessModes:
-    - ReadWriteMany
+    - {{ .Values.mavenMirror.cache.accessMode | default "ReadWriteOnce" }}
   {{- if .Values.mavenMirror.cache.storageClassName }}
   storageClassName: {{ .Values.mavenMirror.cache.storageClassName | quote }}
   {{- end }}
