@@ -1,56 +1,60 @@
 apiVersion: batch/v1
-kind: Job
+kind: CronJob
 metadata:
   name: {{ .Values.mavenMirror.name }}-warmup
   namespace: {{ .Values.mavenMirror.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "2"
-    argocd.argoproj.io/hook: PostSync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
 spec:
-  backoffLimit: 2
-  template:
+  schedule: "*/30 * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 1
+  failedJobsHistoryLimit: 1
+  jobTemplate:
     spec:
-      restartPolicy: Never
-      containers:
-        - name: warmup
-          image: maven:3.9-eclipse-temurin-17
-          command: ["bash", "-lc"]
-          args:
-            - |
-              set -euo pipefail
-              export HOME=/tmp
-              export MAVEN_USER_HOME=/tmp/.m2
-              mkdir -p /tmp/.m2/repository
-              cat > /tmp/settings.xml <<'EOF'
-              <settings>
-                <mirrors>
-                  <mirror>
-                    <id>central-mirror</id>
-                    <mirrorOf>central</mirrorOf>
-                    <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/central/</url>
-                  </mirror>
-                  <mirror>
-                    <id>redhat-ga-mirror</id>
-                    <mirrorOf>redhat-ga</mirrorOf>
-                    <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/ga/</url>
-                  </mirror>
-                </mirrors>
-              </settings>
-              EOF
+      backoffLimit: 2
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+            - name: warmup
+              image: maven:3.9-eclipse-temurin-17
+              command: ["bash", "-lc"]
+              args:
+                - |
+                  set -euo pipefail
+                  export HOME=/tmp
+                  export MAVEN_USER_HOME=/tmp/.m2
+                  mkdir -p /tmp/.m2/repository
+                  cat > /tmp/settings.xml <<'EOF'
+                  <settings>
+                    <mirrors>
+                      <mirror>
+                        <id>central-mirror</id>
+                        <mirrorOf>central</mirrorOf>
+                        <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/central/</url>
+                      </mirror>
+                      <mirror>
+                        <id>redhat-ga-mirror</id>
+                        <mirrorOf>redhat-ga</mirrorOf>
+                        <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/ga/</url>
+                      </mirror>
+                    </mirrors>
+                  </settings>
+                  EOF
 
-              echo "HOME=$HOME MAVEN_USER_HOME=$MAVEN_USER_HOME"
-              echo "Waiting for maven-mirror readiness..."
-              for i in $(seq 1 60); do
-                if curl -fsS "http://maven-mirror.maven-mirror.svc.cluster.local:8080/" >/dev/null; then
-                  echo "maven-mirror is ready."
-                  break
-                fi
-                sleep 2
-              done
+                  echo "HOME=$HOME MAVEN_USER_HOME=$MAVEN_USER_HOME"
+                  echo "Waiting for maven-mirror readiness..."
+                  for i in $(seq 1 60); do
+                    if curl -fsS "http://maven-mirror.maven-mirror.svc.cluster.local:8080/" >/dev/null; then
+                      echo "maven-mirror is ready."
+                      break
+                    fi
+                    sleep 2
+                  done
 
-              mkdir -p /tmp/backend && cd /tmp/backend
-              cat > pom.xml <<'EOF'
+                  mkdir -p /tmp/backend && cd /tmp/backend
+                  cat > pom.xml <<'EOF'
               <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
                 <modelVersion>4.0.0</modelVersion>
@@ -116,10 +120,10 @@ spec:
                 </build>
               </project>
               EOF
-              mvn -s /tmp/settings.xml -Dmaven.repo.local=/tmp/.m2/repository -DskipTests dependency:go-offline
+                  mvn -s /tmp/settings.xml -Dmaven.repo.local=/tmp/.m2/repository -DskipTests dependency:go-offline
 
-              mkdir -p /tmp/mcp && cd /tmp/mcp
-              cat > pom.xml <<'EOF'
+                  mkdir -p /tmp/mcp && cd /tmp/mcp
+                  cat > pom.xml <<'EOF'
               <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
                        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
                 <modelVersion>4.0.0</modelVersion>
@@ -185,6 +189,6 @@ spec:
                 </build>
               </project>
               EOF
-              mvn -s /tmp/settings.xml -Dmaven.repo.local=/tmp/.m2/repository -DskipTests dependency:go-offline
+                  mvn -s /tmp/settings.xml -Dmaven.repo.local=/tmp/.m2/repository -DskipTests dependency:go-offline
 
-              echo "Warmup complete."
+                  echo "Warmup complete."
