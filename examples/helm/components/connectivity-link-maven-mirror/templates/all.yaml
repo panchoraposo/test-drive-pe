@@ -60,6 +60,23 @@ data:
       }
     }
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ .Values.mavenMirror.name }}-cache
+  namespace: {{ .Values.mavenMirror.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  {{- if .Values.mavenMirror.storageClassName }}
+  storageClassName: {{ .Values.mavenMirror.storageClassName | quote }}
+  {{- end }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.mavenMirror.storage }}
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -97,7 +114,8 @@ spec:
           configMap:
             name: {{ .Values.mavenMirror.name }}-nginx
         - name: cache
-          emptyDir: {}
+          persistentVolumeClaim:
+            claimName: {{ .Values.mavenMirror.name }}-cache
 ---
 apiVersion: v1
 kind: Service

@@ -2,4 +2,6 @@ clusterDomain: ""
 mavenMirror:
   namespace: maven-mirror
   name: maven-mirror
-  image: quay.io/nginxinc/nginx-unprivileged:stable-alpine
+  storage: 20Gi
+  storageClassName: ocs-external-storagecluster-ceph-rbd-immediate
+  image: registry.access.redhat.com/ubi9/nginx-124:latest
