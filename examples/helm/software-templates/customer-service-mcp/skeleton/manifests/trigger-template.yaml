@@ -18,6 +18,8 @@ spec:
         labels:
           backstage.io/kubernetes-id: ${{values.uniqueName}}
           tekton.dev/pipeline: ${{values.name}}-build
+        annotations:
+          pipeline.tekton.dev/affinity-assistant: "disabled"
       spec:
         pipelineRef:
           name: ${{values.name}}-build
@@ -28,7 +30,15 @@ spec:
             value: $(tt.params.git-revision)
         workspaces:
           - name: source
-            persistentVolumeClaim:
-              claimName: maven-repo-cache
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 1Gi
           - name: maven-settings
             emptyDir: {}
+          - name: maven-repo
+            persistentVolumeClaim:
+              claimName: maven-repo-cache

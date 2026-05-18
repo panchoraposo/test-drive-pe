@@ -18,6 +18,7 @@ spec:
   workspaces:
     - name: source
     - name: maven-settings
+    - name: maven-repo
   tasks:
     - name: git-clone
       taskRef:
@@ -47,6 +48,8 @@ spec:
           workspace: source
         - name: maven-settings
           workspace: maven-settings
+        - name: maven-repo
+          workspace: maven-repo
     - name: build-image
       runAfter:
         - maven-build
