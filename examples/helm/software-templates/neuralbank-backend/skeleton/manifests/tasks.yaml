@@ -61,6 +61,7 @@ spec:
   workspaces:
     - name: source
     - name: maven-settings
+    - name: maven-repo
   steps:
     - name: mvn-settings
       computeResources: {}
@@ -76,11 +77,17 @@ spec:
       computeResources: {}
       image: $(params.MAVEN_IMAGE)
       workingDir: $(workspaces.source.path)/$(params.CONTEXT_DIR)
-      command: ["/usr/bin/mvn"]
-      args:
-        - -s
-        - $(workspaces.maven-settings.path)/settings.xml
-        - "$(params.GOALS[*])"
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        REPO_DIR="$(workspaces.maven-repo.path)/repository"
+        mkdir -p "${REPO_DIR}"
+        mvn -s "$(workspaces.maven-settings.path)/settings.xml" \
+          -Dmaven.repo.local="${REPO_DIR}" \
+          -Dmaven.wagon.http.retryHandler.count=3 \
+          -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 \
+          -T 1C \
+          $(params.GOALS[*])
 ---
 apiVersion: tekton.dev/v1
 kind: Task

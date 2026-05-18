@@ -247,4 +247,21 @@ subjects:
 - kind: ServiceAccount
   name: pipeline
   namespace: {{ $appNs }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: maven-repo-cache
+  namespace: {{ $appNs }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  labels:
+    app.kubernetes.io/part-of: neuralbank
+    user: {{ $user }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
 {{- end }}
