@@ -1,0 +1,6 @@
+clusterDomain: ""
+mavenMirror:
+  namespace: maven-mirror
+  name: maven-mirror
+  storage: 20Gi
+  image: registry.access.redhat.com/ubi9/nginx-124:latest

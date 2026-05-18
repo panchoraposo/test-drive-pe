@@ -73,7 +73,21 @@ spec:
         [[ -f $(workspaces.maven-settings.path)/settings.xml ]] && \
           echo "using existing settings.xml" && exit 0
         cat > "$(workspaces.maven-settings.path)/settings.xml" <<EOF
-        <settings><mirrors></mirrors><proxies></proxies></settings>
+        <settings>
+          <mirrors>
+            <mirror>
+              <id>central-mirror</id>
+              <mirrorOf>central</mirrorOf>
+              <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/central/</url>
+            </mirror>
+            <mirror>
+              <id>redhat-ga-mirror</id>
+              <mirrorOf>redhat-ga</mirrorOf>
+              <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/ga/</url>
+            </mirror>
+          </mirrors>
+          <proxies></proxies>
+        </settings>
         EOF
     - name: mvn-goals
       computeResources: {}
