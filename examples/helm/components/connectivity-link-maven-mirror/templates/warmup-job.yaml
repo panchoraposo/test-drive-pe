@@ -26,24 +26,7 @@ spec:
                   export HOME=/tmp
                   export MAVEN_USER_HOME=/tmp/.m2
                   mkdir -p /tmp/.m2/repository
-                  cat > /tmp/settings.xml <<'EOF'
-                  <settings>
-                    <mirrors>
-                      <mirror>
-                        <id>central-mirror</id>
-                        <mirrorOf>central</mirrorOf>
-                        <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/central/</url>
-                      </mirror>
-                      <mirror>
-                        <id>redhat-ga-mirror</id>
-                        <mirrorOf>redhat-ga</mirrorOf>
-                        <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/ga/</url>
-                      </mirror>
-                    </mirrors>
-                  </settings>
-                  EOF
 
-                  echo "HOME=$HOME MAVEN_USER_HOME=$MAVEN_USER_HOME"
                   echo "Waiting for maven-mirror readiness..."
                   for i in $(seq 1 60); do
                     if curl -fsS "http://maven-mirror.maven-mirror.svc.cluster.local:8080/" >/dev/null; then
@@ -53,142 +36,63 @@ spec:
                     sleep 2
                   done
 
-                  mkdir -p /tmp/backend && cd /tmp/backend
-                  cat > pom.xml <<'EOF'
-              <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                       xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-                <modelVersion>4.0.0</modelVersion>
-                <groupId>com.neuralbank</groupId>
-                <artifactId>warmup-backend</artifactId>
-                <version>1.0.0</version>
-                <properties>
-                  <maven.compiler.release>17</maven.compiler.release>
-                  <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
-                  <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
-                  <quarkus.platform.version>3.15.7.redhat-00001</quarkus.platform.version>
-                </properties>
-                <repositories>
-                  <repository>
-                    <id>redhat-ga</id>
-                    <url>https://maven.repository.redhat.com/ga/</url>
-                    <releases><enabled>true</enabled></releases>
-                    <snapshots><enabled>false</enabled></snapshots>
-                  </repository>
-                </repositories>
-                <pluginRepositories>
-                  <pluginRepository>
-                    <id>redhat-ga</id>
-                    <url>https://maven.repository.redhat.com/ga/</url>
-                    <releases><enabled>true</enabled></releases>
-                    <snapshots><enabled>false</enabled></snapshots>
-                  </pluginRepository>
-                </pluginRepositories>
-                <dependencyManagement>
-                  <dependencies>
-                    <dependency>
-                      <groupId>${quarkus.platform.group-id}</groupId>
-                      <artifactId>${quarkus.platform.artifact-id}</artifactId>
-                      <version>${quarkus.platform.version}</version>
-                      <type>pom</type>
-                      <scope>import</scope>
-                    </dependency>
-                  </dependencies>
-                </dependencyManagement>
-                <dependencies>
-                  <dependency>
-                    <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-rest</artifactId>
-                  </dependency>
-                  <dependency>
-                    <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-rest-jackson</artifactId>
-                  </dependency>
-                  <dependency>
-                    <groupId>io.quarkus</groupId>
-                    <artifactId>quarkus-smallrye-openapi</artifactId>
-                  </dependency>
-                </dependencies>
-                <build>
-                  <plugins>
-                    <plugin>
-                      <groupId>${quarkus.platform.group-id}</groupId>
-                      <artifactId>quarkus-maven-plugin</artifactId>
-                      <version>${quarkus.platform.version}</version>
-                      <extensions>true</extensions>
-                    </plugin>
-                  </plugins>
-                </build>
-              </project>
-              EOF
-                  mvn -s /tmp/settings.xml -Dmaven.repo.local=/tmp/.m2/repository -DskipTests dependency:go-offline
+                  cat > /tmp/settings.xml <<'EOF'
+                  <settings>
+                    <profiles>
+                      <profile>
+                        <id>mirror</id>
+                        <repositories>
+                          <repository>
+                            <id>central</id>
+                            <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/central/</url>
+                            <releases><enabled>true</enabled></releases>
+                            <snapshots><enabled>false</enabled></snapshots>
+                          </repository>
+                          <repository>
+                            <id>redhat-ga</id>
+                            <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/ga/</url>
+                            <releases><enabled>true</enabled></releases>
+                            <snapshots><enabled>false</enabled></snapshots>
+                          </repository>
+                        </repositories>
+                        <pluginRepositories>
+                          <pluginRepository>
+                            <id>central</id>
+                            <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/central/</url>
+                            <releases><enabled>true</enabled></releases>
+                            <snapshots><enabled>false</enabled></snapshots>
+                          </pluginRepository>
+                          <pluginRepository>
+                            <id>redhat-ga</id>
+                            <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/ga/</url>
+                            <releases><enabled>true</enabled></releases>
+                            <snapshots><enabled>false</enabled></snapshots>
+                          </pluginRepository>
+                        </pluginRepositories>
+                      </profile>
+                    </profiles>
+                    <activeProfiles>
+                      <activeProfile>mirror</activeProfile>
+                    </activeProfiles>
+                  </settings>
+                  EOF
 
-                  mkdir -p /tmp/mcp && cd /tmp/mcp
-                  cat > pom.xml <<'EOF'
-              <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-                       xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-                <modelVersion>4.0.0</modelVersion>
-                <groupId>com.neuralbank</groupId>
-                <artifactId>warmup-mcp</artifactId>
-                <version>1.0.0</version>
-                <properties>
-                  <maven.compiler.release>17</maven.compiler.release>
-                  <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
-                  <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
-                  <quarkus.platform.version>3.27.3.redhat-00002</quarkus.platform.version>
-                  <quarkus.mcp.bom.version>1.7.0.redhat-00001</quarkus.mcp.bom.version>
-                </properties>
-                <repositories>
-                  <repository>
-                    <id>redhat-ga</id>
-                    <url>https://maven.repository.redhat.com/ga/</url>
-                    <releases><enabled>true</enabled></releases>
-                    <snapshots><enabled>false</enabled></snapshots>
-                  </repository>
-                </repositories>
-                <pluginRepositories>
-                  <pluginRepository>
-                    <id>redhat-ga</id>
-                    <url>https://maven.repository.redhat.com/ga/</url>
-                    <releases><enabled>true</enabled></releases>
-                    <snapshots><enabled>false</enabled></snapshots>
-                  </pluginRepository>
-                </pluginRepositories>
-                <dependencyManagement>
-                  <dependencies>
-                    <dependency>
-                      <groupId>${quarkus.platform.group-id}</groupId>
-                      <artifactId>${quarkus.platform.artifact-id}</artifactId>
-                      <version>${quarkus.platform.version}</version>
-                      <type>pom</type>
-                      <scope>import</scope>
-                    </dependency>
-                    <dependency>
-                      <groupId>io.quarkiverse.mcp</groupId>
-                      <artifactId>quarkus-mcp-server-bom</artifactId>
-                      <version>${quarkus.mcp.bom.version}</version>
-                      <type>pom</type>
-                      <scope>import</scope>
-                    </dependency>
-                  </dependencies>
-                </dependencyManagement>
-                <dependencies>
-                  <dependency>
-                    <groupId>io.quarkiverse.mcp</groupId>
-                    <artifactId>quarkus-mcp-server-http</artifactId>
-                  </dependency>
-                </dependencies>
-                <build>
-                  <plugins>
-                    <plugin>
-                      <groupId>${quarkus.platform.group-id}</groupId>
-                      <artifactId>quarkus-maven-plugin</artifactId>
-                      <version>${quarkus.platform.version}</version>
-                      <extensions>true</extensions>
-                    </plugin>
-                  </plugins>
-                </build>
-              </project>
-              EOF
-                  mvn -s /tmp/settings.xml -Dmaven.repo.local=/tmp/.m2/repository -DskipTests dependency:go-offline
+                  get() {
+                    local artifact="$1"
+                    echo "Warming: $artifact"
+                    mvn -q -s /tmp/settings.xml -Dmaven.repo.local=/tmp/.m2/repository -Dtransitive=true dependency:get -Dartifact="$artifact"
+                  }
+
+                  # Backend template (old Quarkus for RHDA demo)
+                  get "io.quarkus:quarkus-bom:pom:3.15.7.redhat-00001"
+                  get "io.quarkus:quarkus-maven-plugin:3.15.7.redhat-00001"
+                  get "io.quarkus:quarkus-rest:3.15.7.redhat-00001"
+                  get "io.quarkus:quarkus-rest-jackson:3.15.7.redhat-00001"
+                  get "io.quarkus:quarkus-smallrye-openapi:3.15.7.redhat-00001"
+
+                  # MCP template (newer Quarkus + MCP extension)
+                  get "io.quarkus:quarkus-bom:pom:3.27.3.redhat-00002"
+                  get "io.quarkus:quarkus-maven-plugin:3.27.3.redhat-00002"
+                  get "io.quarkiverse.mcp:quarkus-mcp-server-http:1.7.0.redhat-00001"
 
                   echo "Warmup complete."
