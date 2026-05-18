@@ -1,0 +1,58 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ${{values.name}}-initial-build
+  namespace: ${{values.namespace}}
+  labels:
+    backstage.io/kubernetes-id: ${{values.uniqueName}}
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        backstage.io/kubernetes-id: ${{values.uniqueName}}
+    spec:
+      serviceAccountName: ${{values.name}}-trigger-sa
+      restartPolicy: Never
+      containers:
+        - name: trigger
+          image: image-registry.openshift-image-registry.svc:5000/openshift/cli:latest
+          command: ["bash", "-lc"]
+          args:
+            - |
+              set -euo pipefail
+              NS="$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)"
+              APP="${{values.name}}"
+              if oc -n "$NS" get pipelinerun -l "tekton.dev/pipeline=${{values.name}}-build" --no-headers 2>/dev/null | grep -q .; then
+                echo "A PipelineRun already exists for $APP; skipping initial build."
+                exit 0
+              fi
+
+              oc -n "$NS" create -f - <<'EOF'
+              apiVersion: tekton.dev/v1
+              kind: PipelineRun
+              metadata:
+                generateName: ${{values.name}}-run-
+                labels:
+                  backstage.io/kubernetes-id: ${{values.uniqueName}}
+                  tekton.dev/pipeline: ${{values.name}}-build
+              spec:
+                pipelineRef:
+                  name: ${{values.name}}-build
+                params:
+                  - name: git-url
+                    value: http://gitea-http.gitea.svc.cluster.local:3000/ws-${{values.owner}}/${{values.name}}.git
+                  - name: git-revision
+                    value: main
+                workspaces:
+                  - name: source
+                    volumeClaimTemplate:
+                      spec:
+                        accessModes: ["ReadWriteOnce"]
+                        resources:
+                          requests:
+                            storage: 1Gi
+              EOF
