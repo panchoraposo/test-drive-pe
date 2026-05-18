@@ -36,11 +36,7 @@ data:
         location /central/ {
           proxy_ssl_server_name on;
           proxy_set_header Host repo.maven.apache.org;
-          proxy_http_version 1.1;
-          proxy_set_header Connection "";
           proxy_cache mavencache;
-          proxy_cache_lock on;
-          proxy_cache_use_stale updating error timeout http_500 http_502 http_503 http_504;
           proxy_cache_valid 200 302 7d;
           proxy_cache_valid 404 10m;
           add_header X-Cache-Status $upstream_cache_status always;
@@ -51,11 +47,7 @@ data:
         location /ga/ {
           proxy_ssl_server_name on;
           proxy_set_header Host maven.repository.redhat.com;
-          proxy_http_version 1.1;
-          proxy_set_header Connection "";
           proxy_cache mavencache;
-          proxy_cache_lock on;
-          proxy_cache_use_stale updating error timeout http_500 http_502 http_503 http_504;
           proxy_cache_valid 200 302 7d;
           proxy_cache_valid 404 10m;
           add_header X-Cache-Status $upstream_cache_status always;
@@ -68,25 +60,6 @@ data:
       }
     }
 ---
-{{- if .Values.mavenMirror.cache.enabled }}
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: {{ .Values.mavenMirror.name }}-cache
-  namespace: {{ .Values.mavenMirror.namespace }}
-  annotations:
-    argocd.argoproj.io/sync-wave: "1"
-spec:
-  accessModes:
-    - ReadWriteMany
-  {{- if .Values.mavenMirror.cache.storageClassName }}
-  storageClassName: {{ .Values.mavenMirror.cache.storageClassName | quote }}
-  {{- end }}
-  resources:
-    requests:
-      storage: {{ .Values.mavenMirror.cache.size }}
----
-{{- end }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -95,7 +68,7 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
-  replicas: {{ .Values.mavenMirror.replicaCount | default 1 }}
+  replicas: 1
   selector:
     matchLabels:
       app: {{ .Values.mavenMirror.name }}
@@ -109,12 +82,6 @@ spec:
           image: {{ .Values.mavenMirror.image | quote }}
           ports:
             - containerPort: 8080
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 8080
-            initialDelaySeconds: 2
-            periodSeconds: 5
           volumeMounts:
             - name: nginx-conf
               mountPath: /etc/nginx/nginx.conf
@@ -130,12 +97,7 @@ spec:
           configMap:
             name: {{ .Values.mavenMirror.name }}-nginx
         - name: cache
-          {{- if .Values.mavenMirror.cache.enabled }}
-          persistentVolumeClaim:
-            claimName: {{ .Values.mavenMirror.name }}-cache
-          {{- else }}
           emptyDir: {}
-          {{- end }}
 ---
 apiVersion: v1
 kind: Service
