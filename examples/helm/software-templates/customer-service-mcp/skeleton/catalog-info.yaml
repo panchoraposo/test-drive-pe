@@ -14,9 +14,9 @@ metadata:
     argocd/app-namespace: openshift-gitops
     tektonci/build-namespace: ${{values.namespace}}
     che.eclipse.org/che-server: https://devspaces.${{ values.clusterDomain }}
-    devspaces.io/factory: "https://devspaces.${{ values.clusterDomain }}/#https://gitea-gitea.${{ values.clusterDomain }}/ws-${{ values.owner }}/${{ values.name }}.git?new&devfilePath=devfile.yaml"
+    devspaces.io/factory: "https://devspaces.${{ values.clusterDomain }}/#https://gitea-gitea.${{ values.clusterDomain }}/ws-${{ values.owner }}/${{ values.name }}.git?new&devfilePath=devfile.yaml&che-editor=che-incubator/che-theia/latest"
   links:
-    - url: "https://devspaces.${{ values.clusterDomain }}/#https://gitea-gitea.${{ values.clusterDomain }}/ws-${{ values.owner }}/${{ values.name }}.git?new&devfilePath=devfile.yaml"
+    - url: "https://devspaces.${{ values.clusterDomain }}/#https://gitea-gitea.${{ values.clusterDomain }}/ws-${{ values.owner }}/${{ values.name }}.git?new&devfilePath=devfile.yaml&che-editor=che-incubator/che-theia/latest"
       title: Open in DevSpaces
       icon: catalog
       type: ide
