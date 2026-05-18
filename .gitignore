@@ -3,9 +3,13 @@
 
 # IDE
 .idea/
-.vscode/
+/.vscode/
 *.swp
 *.swo
+
+# Allow VS Code tasks in template skeletons (Dev Spaces "Run Task")
+!examples/helm/software-templates/**/skeleton/.vscode/
+!examples/helm/software-templates/**/skeleton/.vscode/tasks.json
 
 # Helm
 charts/*.tgz
