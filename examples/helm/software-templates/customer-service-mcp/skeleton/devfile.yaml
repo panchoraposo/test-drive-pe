@@ -30,22 +30,22 @@ commands:
         if [ -f "${SETTINGS}" ] && grep -q "nexus-repository-manager.maven-repo.svc.cluster.local" "${SETTINGS}"; then
           exit 0
         fi
-        cat > "${SETTINGS}" <<'EOF'
-        <settings>
-          <mirrors>
-            <mirror>
-              <id>central</id>
-              <mirrorOf>central</mirrorOf>
-              <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>
-            </mirror>
-            <mirror>
-              <id>redhat-ga</id>
-              <mirrorOf>redhat-ga</mirrorOf>
-              <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>
-            </mirror>
-          </mirrors>
-        </settings>
-EOF
+        printf '%s\n' \
+          '<settings>' \
+          '  <mirrors>' \
+          '    <mirror>' \
+          '      <id>central</id>' \
+          '      <mirrorOf>central</mirrorOf>' \
+          '      <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>' \
+          '    </mirror>' \
+          '    <mirror>' \
+          '      <id>redhat-ga</id>' \
+          '      <mirrorOf>redhat-ga</mirrorOf>' \
+          '      <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>' \
+          '    </mirror>' \
+          '  </mirrors>' \
+          '</settings>' \
+          > "${SETTINGS}"
       workingDir: ${PROJECT_SOURCE}
   - id: build
     exec:
@@ -55,22 +55,22 @@ EOF
         mkdir -p /home/user/.m2
         SETTINGS="/home/user/.m2/settings.xml"
         if [ ! -f "${SETTINGS}" ] || ! grep -q "nexus-repository-manager.maven-repo.svc.cluster.local" "${SETTINGS}"; then
-          cat > "${SETTINGS}" <<'EOF'
-          <settings>
-            <mirrors>
-              <mirror>
-                <id>central</id>
-                <mirrorOf>central</mirrorOf>
-                <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>
-              </mirror>
-              <mirror>
-                <id>redhat-ga</id>
-                <mirrorOf>redhat-ga</mirrorOf>
-                <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>
-              </mirror>
-            </mirrors>
-          </settings>
-EOF
+          printf '%s\n' \
+            '<settings>' \
+            '  <mirrors>' \
+            '    <mirror>' \
+            '      <id>central</id>' \
+            '      <mirrorOf>central</mirrorOf>' \
+            '      <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>' \
+            '    </mirror>' \
+            '    <mirror>' \
+            '      <id>redhat-ga</id>' \
+            '      <mirrorOf>redhat-ga</mirrorOf>' \
+            '      <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>' \
+            '    </mirror>' \
+            '  </mirrors>' \
+            '</settings>' \
+            > "${SETTINGS}"
         fi
         mvn -s "${SETTINGS}" package -DskipTests
       workingDir: ${PROJECT_SOURCE}
@@ -85,22 +85,22 @@ EOF
         mkdir -p /home/user/.m2
         SETTINGS="/home/user/.m2/settings.xml"
         if [ ! -f "${SETTINGS}" ] || ! grep -q "nexus-repository-manager.maven-repo.svc.cluster.local" "${SETTINGS}"; then
-          cat > "${SETTINGS}" <<'EOF'
-          <settings>
-            <mirrors>
-              <mirror>
-                <id>central</id>
-                <mirrorOf>central</mirrorOf>
-                <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>
-              </mirror>
-              <mirror>
-                <id>redhat-ga</id>
-                <mirrorOf>redhat-ga</mirrorOf>
-                <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>
-              </mirror>
-            </mirrors>
-          </settings>
-EOF
+          printf '%s\n' \
+            '<settings>' \
+            '  <mirrors>' \
+            '    <mirror>' \
+            '      <id>central</id>' \
+            '      <mirrorOf>central</mirrorOf>' \
+            '      <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>' \
+            '    </mirror>' \
+            '    <mirror>' \
+            '      <id>redhat-ga</id>' \
+            '      <mirrorOf>redhat-ga</mirrorOf>' \
+            '      <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>' \
+            '    </mirror>' \
+            '  </mirrors>' \
+            '</settings>' \
+            > "${SETTINGS}"
         fi
         mvn -s "${SETTINGS}" quarkus:dev
       workingDir: ${PROJECT_SOURCE}
