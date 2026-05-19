@@ -20,6 +20,33 @@ components:
     volume:
       size: 2Gi
 commands:
+  - id: configure-maven
+    exec:
+      component: tools
+      commandLine: |
+        set -eu
+        mkdir -p /home/user/.m2
+        SETTINGS="/home/user/.m2/settings.xml"
+        if [ -f "${SETTINGS}" ] && grep -q "nexus-repository-manager.maven-repo.svc.cluster.local" "${SETTINGS}"; then
+          exit 0
+        fi
+        cat > "${SETTINGS}" <<'EOF'
+        <settings>
+          <mirrors>
+            <mirror>
+              <id>central</id>
+              <mirrorOf>central</mirrorOf>
+              <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>
+            </mirror>
+            <mirror>
+              <id>redhat-ga</id>
+              <mirrorOf>redhat-ga</mirrorOf>
+              <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>
+            </mirror>
+          </mirrors>
+        </settings>
+EOF
+      workingDir: ${PROJECT_SOURCE}
   - id: build
     exec:
       component: tools
@@ -80,3 +107,6 @@ EOF
       group:
         kind: run
         isDefault: true
+events:
+  postStart:
+    - configure-maven
