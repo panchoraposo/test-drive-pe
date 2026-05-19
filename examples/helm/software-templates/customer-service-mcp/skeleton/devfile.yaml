@@ -20,59 +20,12 @@ components:
     volume:
       size: 2Gi
 commands:
-  - id: configure-maven
-    exec:
-      component: tools
-      commandLine: |
-        set -eu
-        mkdir -p /home/user/.m2
-        SETTINGS="/home/user/.m2/settings.xml"
-        if [ -f "${SETTINGS}" ] && grep -q "nexus-repository-manager.maven-repo.svc.cluster.local" "${SETTINGS}"; then
-          exit 0
-        fi
-        printf '%s\n' \
-          '<settings>' \
-          '  <mirrors>' \
-          '    <mirror>' \
-          '      <id>central</id>' \
-          '      <mirrorOf>central</mirrorOf>' \
-          '      <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>' \
-          '    </mirror>' \
-          '    <mirror>' \
-          '      <id>redhat-ga</id>' \
-          '      <mirrorOf>redhat-ga</mirrorOf>' \
-          '      <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>' \
-          '    </mirror>' \
-          '  </mirrors>' \
-          '</settings>' \
-          > "${SETTINGS}"
-      workingDir: ${PROJECT_SOURCE}
   - id: build
     exec:
       component: tools
       commandLine: |
         set -eu
-        mkdir -p /home/user/.m2
-        SETTINGS="/home/user/.m2/settings.xml"
-        if [ ! -f "${SETTINGS}" ] || ! grep -q "nexus-repository-manager.maven-repo.svc.cluster.local" "${SETTINGS}"; then
-          printf '%s\n' \
-            '<settings>' \
-            '  <mirrors>' \
-            '    <mirror>' \
-            '      <id>central</id>' \
-            '      <mirrorOf>central</mirrorOf>' \
-            '      <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>' \
-            '    </mirror>' \
-            '    <mirror>' \
-            '      <id>redhat-ga</id>' \
-            '      <mirrorOf>redhat-ga</mirrorOf>' \
-            '      <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>' \
-            '    </mirror>' \
-            '  </mirrors>' \
-            '</settings>' \
-            > "${SETTINGS}"
-        fi
-        mvn -s "${SETTINGS}" package -DskipTests
+        mvn -ntp package -DskipTests
       workingDir: ${PROJECT_SOURCE}
       group:
         kind: build
@@ -82,32 +35,9 @@ commands:
       component: tools
       commandLine: |
         set -eu
-        mkdir -p /home/user/.m2
-        SETTINGS="/home/user/.m2/settings.xml"
-        if [ ! -f "${SETTINGS}" ] || ! grep -q "nexus-repository-manager.maven-repo.svc.cluster.local" "${SETTINGS}"; then
-          printf '%s\n' \
-            '<settings>' \
-            '  <mirrors>' \
-            '    <mirror>' \
-            '      <id>central</id>' \
-            '      <mirrorOf>central</mirrorOf>' \
-            '      <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>' \
-            '    </mirror>' \
-            '    <mirror>' \
-            '      <id>redhat-ga</id>' \
-            '      <mirrorOf>redhat-ga</mirrorOf>' \
-            '      <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>' \
-            '    </mirror>' \
-            '  </mirrors>' \
-            '</settings>' \
-            > "${SETTINGS}"
-        fi
-        mvn -s "${SETTINGS}" quarkus:dev
+        mvn -ntp quarkus:dev
       workingDir: ${PROJECT_SOURCE}
       group:
         kind: run
         isDefault: true
-events:
-  postStart:
-    - configure-maven
 
