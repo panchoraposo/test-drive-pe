@@ -68,7 +68,8 @@ spec:
                 curl -fsSLo "${dir}/pom.xml" "${url}"
                 # Scaffolded templates include Backstage placeholders in artifactId.
                 # Replace them so Maven can parse the POM for go-offline.
-                sed -i 's/\${{values.name}}/warmup/g' "${dir}/pom.xml" || true
+                # Note: avoid literal '{{' in this Helm template file.
+                sed -i 's#<artifactId>\\$\\{\\{values.name\\}\\}</artifactId>#<artifactId>warmup</artifactId>#' "${dir}/pom.xml" || true
                 echo "Warming Maven cache for ${name} (dependency:go-offline)"
                 mvn -q -s /tmp/settings.xml \
                   -Dmaven.repo.local=/tmp/.m2/repository \
