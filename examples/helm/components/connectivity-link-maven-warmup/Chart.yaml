@@ -1,0 +1,7 @@
+apiVersion: v2
+name: connectivity-link-maven-warmup
+description: Pre-warm Nexus Maven proxy caches for workshop builds
+type: application
+version: 0.1.0
+appVersion: "1.0"
+

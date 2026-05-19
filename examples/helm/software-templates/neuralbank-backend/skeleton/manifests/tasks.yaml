@@ -74,14 +74,14 @@ spec:
         <settings>
           <mirrors>
             <mirror>
-              <id>central-mirror</id>
+              <id>central</id>
               <mirrorOf>central</mirrorOf>
-              <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/central/</url>
+              <url>http://nexus3.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>
             </mirror>
             <mirror>
-              <id>redhat-ga-mirror</id>
+              <id>redhat-ga</id>
               <mirrorOf>redhat-ga</mirrorOf>
-              <url>http://maven-mirror.maven-mirror.svc.cluster.local:8080/ga/</url>
+              <url>http://nexus3.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>
             </mirror>
           </mirrors>
           <proxies></proxies>

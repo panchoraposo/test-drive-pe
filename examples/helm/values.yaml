@@ -92,10 +92,18 @@ connectivityLink:
       selfHeal: true
       skipDryRunOnMissingResource: false
     - id: connectivity-link-maven-mirror
-      enabled: true
+      enabled: false
       path: connectivity-link-maven-mirror
       destinationNamespace: maven-mirror
       syncWave: "4"
+      prune: true
+      selfHeal: true
+      skipDryRunOnMissingResource: true
+    - id: connectivity-link-maven-warmup
+      enabled: true
+      path: connectivity-link-maven-warmup
+      destinationNamespace: maven-repo
+      syncWave: "5"
       prune: true
       selfHeal: true
       skipDryRunOnMissingResource: true
@@ -289,6 +297,49 @@ connectivityLink:
           http:
             type: ClusterIP
             port: 3000
+    - id: nexus
+      enabled: true
+      repoURL: "https://sonatype.github.io/helm3-charts/"
+      chart: nexus-repository-manager
+      targetRevision: "61.0.2"
+      destinationNamespace: maven-repo
+      syncWave: "4"
+      values:
+        nexus:
+          env:
+            - name: NEXUS_SECURITY_RANDOMPASSWORD
+              value: "true"
+        persistence:
+          enabled: true
+          accessMode: ReadWriteOnce
+          storageSize: 50Gi
+        service:
+          name: nexus3
+          type: ClusterIP
+        deployment:
+          postStart:
+            command: >-
+              ["/bin/sh","-c","(
+              set -euo pipefail;
+              echo '[nexus-bootstrap] waiting for Nexus...';
+              for i in $(seq 1 180); do
+                curl -fsS http://127.0.0.1:8081/service/rest/v1/status >/dev/null && break || true;
+                sleep 2;
+              done;
+              PASS=$(cat /nexus-data/admin.password 2>/dev/null || true);
+              if [ -z \"${PASS}\" ]; then
+                echo '[nexus-bootstrap] admin password missing'; exit 0;
+              fi;
+              echo '[nexus-bootstrap] ensuring redhat-ga proxy repo exists';
+              if curl -fsS -u admin:${PASS} http://127.0.0.1:8081/service/rest/v1/repositories | grep -q '\"name\"\\s*:\\s*\"redhat-ga\"'; then
+                echo '[nexus-bootstrap] redhat-ga already present';
+                exit 0;
+              fi;
+              curl -fsS -u admin:${PASS} -H 'Content-Type: application/json' \\
+                -X POST http://127.0.0.1:8081/service/rest/v1/repositories/maven/proxy \\
+                -d '{\"name\":\"redhat-ga\",\"online\":true,\"storage\":{\"blobStoreName\":\"default\",\"strictContentTypeValidation\":true},\"proxy\":{\"remoteUrl\":\"https://maven.repository.redhat.com/ga/\",\"contentMaxAge\":1440,\"metadataMaxAge\":1440},\"negativeCache\":{\"enabled\":true,\"timeToLive\":1440},\"maven\":{\"versionPolicy\":\"RELEASE\",\"layoutPolicy\":\"STRICT\"}}';
+              echo '[nexus-bootstrap] redhat-ga created';
+              ) &"]
     - id: openshift-mcp-server
       enabled: true
       repoURL: "https://maximilianoPizarro.github.io/openshift-mcp-server"

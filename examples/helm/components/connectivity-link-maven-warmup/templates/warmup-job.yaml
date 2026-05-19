@@ -1,0 +1,67 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: maven-warmup
+  namespace: {{ .Values.mavenWarmup.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+spec:
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: warmup
+          image: maven:3.9-eclipse-temurin-17
+          command: ["bash","-lc"]
+          args:
+            - |
+              set -euo pipefail
+              NEXUS="http://{{ .Values.mavenWarmup.nexusServiceHost }}:{{ .Values.mavenWarmup.nexusPort }}"
+
+              echo "Waiting for Nexus at ${NEXUS}..."
+              for i in $(seq 1 240); do
+                curl -fsS "${NEXUS}/service/rest/v1/status" >/dev/null && break || true
+                sleep 2
+              done
+
+              mkdir -p /tmp/.m2/repository
+              cat > /tmp/settings.xml <<EOF
+              <settings>
+                <mirrors>
+                  <mirror>
+                    <id>central</id>
+                    <mirrorOf>central</mirrorOf>
+                    <url>${NEXUS}/repository/maven-central/</url>
+                  </mirror>
+                  <mirror>
+                    <id>redhat-ga</id>
+                    <mirrorOf>redhat-ga</mirrorOf>
+                    <url>${NEXUS}/repository/redhat-ga/</url>
+                  </mirror>
+                </mirrors>
+              </settings>
+              EOF
+
+              get() {
+                local artifact="$1"
+                echo "Warming: $artifact"
+                mvn -q -s /tmp/settings.xml -Dmaven.repo.local=/tmp/.m2/repository -Dtransitive=true \
+                  org.apache.maven.plugins:maven-dependency-plugin:3.6.1:get -Dartifact="$artifact"
+              }
+
+              # Quarkus backend template (old Quarkus for RHDA demo)
+              get "io.quarkus:quarkus-bom:pom:3.15.7.redhat-00001"
+              get "io.quarkus:quarkus-maven-plugin:3.15.7.redhat-00001"
+              get "io.quarkus:quarkus-rest:3.15.7.redhat-00001"
+              get "io.quarkus:quarkus-rest-jackson:3.15.7.redhat-00001"
+              get "io.quarkus:quarkus-smallrye-openapi:3.15.7.redhat-00001"
+
+              # MCP template (newer Quarkus + MCP extension)
+              get "io.quarkus:quarkus-bom:pom:3.27.3.redhat-00002"
+              get "io.quarkus:quarkus-maven-plugin:3.27.3.redhat-00002"
+              get "io.quarkiverse.mcp:quarkus-mcp-server-http:1.7.0.redhat-00001"
+
+              echo "Warmup done."

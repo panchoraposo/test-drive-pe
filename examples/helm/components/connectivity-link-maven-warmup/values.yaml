@@ -1,0 +1,5 @@
+mavenWarmup:
+  namespace: maven-repo
+  nexusServiceHost: nexus3.maven-repo.svc.cluster.local
+  nexusPort: 8081
+
