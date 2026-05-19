@@ -66,6 +66,9 @@ spec:
                 local dir="$3"
                 echo "Downloading ${name} pom from ${url}"
                 curl -fsSLo "${dir}/pom.xml" "${url}"
+                # Scaffolded templates include Backstage placeholders in artifactId.
+                # Replace them so Maven can parse the POM for go-offline.
+                sed -i 's/\${{values.name}}/warmup/g' "${dir}/pom.xml" || true
                 echo "Warming Maven cache for ${name} (dependency:go-offline)"
                 mvn -q -s /tmp/settings.xml \
                   -Dmaven.repo.local=/tmp/.m2/repository \
