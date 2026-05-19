@@ -1,0 +1,7 @@
+apiVersion: v2
+name: connectivity-link-maven-mirror
+description: Shared Maven HTTP cache (central + redhat-ga) for workshop builds
+type: application
+version: 0.1.0
+appVersion: "1.0"
+

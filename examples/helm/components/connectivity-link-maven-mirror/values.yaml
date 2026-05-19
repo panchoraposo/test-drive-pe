@@ -1,0 +1,6 @@
+mavenMirror:
+  namespace: maven-mirror
+  name: maven-mirror
+  image: docker.io/nginxinc/nginx-unprivileged:stable-alpine
+  replicaCount: 1
+
