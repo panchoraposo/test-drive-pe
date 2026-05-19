@@ -547,9 +547,15 @@ data:
         # "ALLOWED" (uppercase). Any other output triggers a violation.
         return {"content": "ALLOWED"}
 
-      # If the orchestrator already executed a tool, return a short final answer.
+      # If the orchestrator already executed a tool, return the tool output
+      # so the user can see real results (not a generic "Done").
       if _has_any_tool_result(messages):
-        return {"content": "Done. The requested operation has been executed."}
+        for m in reversed(messages or []):
+          if m.get("role") in ("tool", "function"):
+            tool_out = _flatten_content(m.get("content"))
+            if tool_out:
+              return {"content": tool_out}
+        return {"content": "Done."}
 
       user_text = _extract_user_text(messages)
       if not user_text:
@@ -592,6 +598,33 @@ data:
       # Tool calling (MCP Gateway). Prefer picking tool names from `tools` if present,
       # but fall back to canonical showroom tool names so demos still work.
       if True:
+        # Example: list Argo CD applications (via Kubernetes resources)
+        if ("argocd" in key or "argo cd" in key) and ("application" in key or "applications" in key) and ("list" in key or "show" in key):
+          tool_name = (
+            _pick_tool(tools, ["argolist_applications", "k8sresources_list"])
+            or _pick_tool_by_keywords(tools, ["resources", "list"])
+          )
+          if tool_name:
+            desired = {
+              # Argo CD Applications are typically in this namespace in the workshop
+              "namespace": "openshift-gitops",
+              # Common schema variants across MCP servers
+              "kind": "Application",
+              "resource": "applications",
+              "apiVersion": "argoproj.io/v1alpha1",
+              "group": "argoproj.io",
+            }
+            return {
+              "content": "",
+              "tool_calls": [
+                {
+                  "id": "call_list_argocd_apps",
+                  "type": "function",
+                  "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired) if tools else json.dumps(desired, ensure_ascii=False)},
+                }
+              ],
+            }
+
         # Example: install Redis via Helm
         if (
           ("redis" in key and "helm" in key and ("install" in key or "instal" in key))
