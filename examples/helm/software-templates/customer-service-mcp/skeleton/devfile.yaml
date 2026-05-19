@@ -72,7 +72,29 @@ commands:
   - id: 02-build
     exec:
       component: tools
-      commandLine: export PATH=/home/user/apache-maven-3.9.9/bin:$PATH && mvn package -DskipTests
+      commandLine: |
+        export PATH=/home/user/apache-maven-3.9.9/bin:$PATH
+        mkdir -p /home/user/.m2
+        SETTINGS="/home/user/.m2/settings.xml"
+        if [ ! -f "${SETTINGS}" ] || ! grep -q "nexus-repository-manager.maven-repo.svc.cluster.local" "${SETTINGS}"; then
+          cat > "${SETTINGS}" <<'EOF'
+          <settings>
+            <mirrors>
+              <mirror>
+                <id>central</id>
+                <mirrorOf>central</mirrorOf>
+                <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>
+              </mirror>
+              <mirror>
+                <id>redhat-ga</id>
+                <mirrorOf>redhat-ga</mirrorOf>
+                <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>
+              </mirror>
+            </mirrors>
+          </settings>
+EOF
+        fi
+        mvn -s "${SETTINGS}" package -DskipTests
       workingDir: ${PROJECT_SOURCE}
       group:
         kind: build
@@ -80,7 +102,29 @@ commands:
   - id: 03-run
     exec:
       component: tools
-      commandLine: export PATH=/home/user/apache-maven-3.9.9/bin:$PATH && mvn quarkus:dev
+      commandLine: |
+        export PATH=/home/user/apache-maven-3.9.9/bin:$PATH
+        mkdir -p /home/user/.m2
+        SETTINGS="/home/user/.m2/settings.xml"
+        if [ ! -f "${SETTINGS}" ] || ! grep -q "nexus-repository-manager.maven-repo.svc.cluster.local" "${SETTINGS}"; then
+          cat > "${SETTINGS}" <<'EOF'
+          <settings>
+            <mirrors>
+              <mirror>
+                <id>central</id>
+                <mirrorOf>central</mirrorOf>
+                <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>
+              </mirror>
+              <mirror>
+                <id>redhat-ga</id>
+                <mirrorOf>redhat-ga</mirrorOf>
+                <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>
+              </mirror>
+            </mirrors>
+          </settings>
+EOF
+        fi
+        mvn -s "${SETTINGS}" quarkus:dev
       workingDir: ${PROJECT_SOURCE}
       group:
         kind: run
