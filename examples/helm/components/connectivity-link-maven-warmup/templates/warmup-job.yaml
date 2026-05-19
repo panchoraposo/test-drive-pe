@@ -56,6 +56,42 @@ spec:
                     <url>${NEXUS}/repository/redhat-ga/</url>
                   </mirror>
                 </mirrors>
+                <profiles>
+                  <profile>
+                    <id>warmup</id>
+                    <repositories>
+                      <repository>
+                        <id>central</id>
+                        <url>https://repo1.maven.org/maven2/</url>
+                        <releases><enabled>true</enabled></releases>
+                        <snapshots><enabled>false</enabled></snapshots>
+                      </repository>
+                      <repository>
+                        <id>redhat-ga</id>
+                        <url>https://maven.repository.redhat.com/ga/</url>
+                        <releases><enabled>true</enabled></releases>
+                        <snapshots><enabled>false</enabled></snapshots>
+                      </repository>
+                    </repositories>
+                    <pluginRepositories>
+                      <pluginRepository>
+                        <id>central</id>
+                        <url>https://repo1.maven.org/maven2/</url>
+                        <releases><enabled>true</enabled></releases>
+                        <snapshots><enabled>false</enabled></snapshots>
+                      </pluginRepository>
+                      <pluginRepository>
+                        <id>redhat-ga</id>
+                        <url>https://maven.repository.redhat.com/ga/</url>
+                        <releases><enabled>true</enabled></releases>
+                        <snapshots><enabled>false</enabled></snapshots>
+                      </pluginRepository>
+                    </pluginRepositories>
+                  </profile>
+                </profiles>
+                <activeProfiles>
+                  <activeProfile>warmup</activeProfile>
+                </activeProfiles>
               </settings>
               EOF
 
