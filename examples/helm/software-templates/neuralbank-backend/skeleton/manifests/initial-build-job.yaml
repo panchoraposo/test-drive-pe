@@ -27,8 +27,27 @@ spec:
               set -euo pipefail
               NS="$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)"
               APP="${{values.name}}"
-              if oc -n "$NS" get pipelinerun -l "tekton.dev/pipeline=${{values.name}}-build" --no-headers 2>/dev/null | grep -q .; then
-                echo "A PipelineRun already exists for $APP; skipping initial build."
+              pipeline_label="tekton.dev/pipeline=${{values.name}}-build"
+
+              newest_pr_name() {
+                oc -n "$NS" get pipelinerun -l "${pipeline_label}" --sort-by=.metadata.creationTimestamp -o name 2>/dev/null \
+                  | awk -F/ 'END{print $2}'
+              }
+
+              # Avoid duplicate PipelineRuns: allow the webhook-triggered run to appear first.
+              PR_NAME="$(newest_pr_name || true)"
+              if [ -z "${PR_NAME}" ]; then
+                echo "No PipelineRun found yet for ${APP}. Waiting briefly for triggers/webhook..."
+                for _ in $(seq 1 60); do
+                  PR_NAME="$(newest_pr_name || true)"
+                  [ -n "${PR_NAME}" ] && break
+                  sleep 2
+                done
+              fi
+
+              if [ -n "${PR_NAME}" ]; then
+                echo "Found existing PipelineRun ${PR_NAME}. Waiting for it to Succeed..."
+                oc -n "$NS" wait --for=condition=Succeeded "pipelinerun/${PR_NAME}" --timeout=45m
                 exit 0
               fi
 
