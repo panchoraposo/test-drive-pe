@@ -519,10 +519,17 @@ data:
       t = (text or "").lower()
       m = re.search(r"\b(?:in|en)\s+(?:the\s+)?(?:namespace|proyecto|project)\s+([a-z0-9-]+)\b", t)
       if m:
-        return m.group(1)
+        ns = m.group(1)
+        # Handle prompts like "in my namespace" (no concrete namespace provided).
+        if ns in ("my", "mi"):
+          return None
+        return ns
       m = re.search(r"\b([a-z0-9-]+)\s+namespace\b", t)
       if m:
-        return m.group(1)
+        ns = m.group(1)
+        if ns in ("my", "mi"):
+          return None
+        return ns
       return None
 
 
