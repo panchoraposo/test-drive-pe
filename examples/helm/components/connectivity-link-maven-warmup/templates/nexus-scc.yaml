@@ -30,6 +30,9 @@ seLinuxContext:
 requiredDropCapabilities:
   - MKNOD
 
+seccompProfiles:
+  - runtime/default
+
 volumes:
   - configMap
   - csi
