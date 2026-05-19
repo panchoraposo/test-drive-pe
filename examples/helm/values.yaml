@@ -318,29 +318,40 @@ connectivityLink:
           name: nexus3
           type: ClusterIP
         deployment:
-          postStart:
-            command: >-
-              ["/bin/sh","-c","(
-              set -eu;
-              echo '[nexus-bootstrap] waiting for Nexus...';
-              for i in $(seq 1 180); do
-                curl -fsS http://127.0.0.1:8081/service/rest/v1/status >/dev/null && break || true;
-                sleep 2;
-              done;
-              PASS=$(cat /nexus-data/admin.password 2>/dev/null || true);
-              if [ -z \"${PASS}\" ]; then
-                echo '[nexus-bootstrap] admin password missing'; exit 0;
-              fi;
-              echo '[nexus-bootstrap] ensuring redhat-ga proxy repo exists';
-              if curl -fsS -u admin:${PASS} http://127.0.0.1:8081/service/rest/v1/repositories | grep -q '\"name\"\\s*:\\s*\"redhat-ga\"'; then
-                echo '[nexus-bootstrap] redhat-ga already present';
-                exit 0;
-              fi;
-              curl -fsS -u admin:${PASS} -H 'Content-Type: application/json' \\
-                -X POST http://127.0.0.1:8081/service/rest/v1/repositories/maven/proxy \\
-                -d '{\"name\":\"redhat-ga\",\"online\":true,\"storage\":{\"blobStoreName\":\"default\",\"strictContentTypeValidation\":true},\"proxy\":{\"remoteUrl\":\"https://maven.repository.redhat.com/ga/\",\"contentMaxAge\":1440,\"metadataMaxAge\":1440},\"negativeCache\":{\"enabled\":true,\"timeToLive\":1440},\"maven\":{\"versionPolicy\":\"RELEASE\",\"layoutPolicy\":\"STRICT\"}}';
-              echo '[nexus-bootstrap] redhat-ga created';
-              ) &"]
+          additionalContainers:
+            - name: nexus-bootstrap
+              image: docker.io/curlimages/curl:8.12.1
+              imagePullPolicy: IfNotPresent
+              command: ["sh","-c"]
+              args:
+                - |
+                  set -eu
+                  echo "[nexus-bootstrap] waiting for Nexus..."
+                  for i in $(seq 1 240); do
+                    curl -fsS http://127.0.0.1:8081/service/rest/v1/status >/dev/null && break || true
+                    sleep 2
+                  done
+
+                  PASS="$(cat /nexus-data/admin.password 2>/dev/null || true)"
+                  if [ -z "${PASS}" ]; then
+                    echo "[nexus-bootstrap] admin.password missing; nothing to do"
+                    sleep infinity
+                  fi
+
+                  if curl -fsS -u "admin:${PASS}" http://127.0.0.1:8081/service/rest/v1/repositories | grep -q '"name"\\s*:\\s*"redhat-ga"'; then
+                    echo "[nexus-bootstrap] redhat-ga already present"
+                    sleep infinity
+                  fi
+
+                  echo "[nexus-bootstrap] creating redhat-ga proxy repo"
+                  curl -fsS -u "admin:${PASS}" -H 'Content-Type: application/json' \
+                    -X POST http://127.0.0.1:8081/service/rest/v1/repositories/maven/proxy \
+                    -d '{"name":"redhat-ga","online":true,"storage":{"blobStoreName":"default","strictContentTypeValidation":true},"proxy":{"remoteUrl":"https://maven.repository.redhat.com/ga/","contentMaxAge":1440,"metadataMaxAge":1440},"negativeCache":{"enabled":true,"timeToLive":1440},"maven":{"versionPolicy":"RELEASE","layoutPolicy":"STRICT"}}'
+                  echo "[nexus-bootstrap] redhat-ga created"
+                  sleep infinity
+              volumeMounts:
+                - name: nexus-repository-manager-data
+                  mountPath: /nexus-data
     - id: openshift-mcp-server
       enabled: true
       repoURL: "https://maximilianoPizarro.github.io/openshift-mcp-server"
