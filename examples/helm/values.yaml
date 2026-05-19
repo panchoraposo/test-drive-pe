@@ -344,16 +344,7 @@ connectivityLink:
                   fi
 
                   echo "[nexus-bootstrap] creating redhat-ga proxy repo (based on maven-central)"
-                  central="$(curl -fsS -u "admin:${PASS}" http://127.0.0.1:8081/service/rest/v1/repositories/maven/proxy/maven-central || true)"
-                  if [ -z "${central}" ]; then
-                    echo "[nexus-bootstrap] unable to fetch maven-central config; will retry later"
-                    sleep infinity
-                  fi
-                  payload="$(echo "${central}" \
-                    | sed 's/\"name\":\"maven-central\"/\"name\":\"redhat-ga\"/' \
-                    | sed 's#\"remoteUrl\":\"https://repo1\\.maven\\.org/maven2/\"#\"remoteUrl\":\"https://maven.repository.redhat.com/ga/\"#' \
-                    | sed 's#\"remoteUrl\":\"https://repo\\.maven\\.apache\\.org/maven2/\"#\"remoteUrl\":\"https://maven.repository.redhat.com/ga/\"#' \
-                  )"
+                  payload='{"name":"redhat-ga","online":true,"storage":{"blobStoreName":"default","strictContentTypeValidation":false,"writePolicy":"ALLOW"},"cleanup":null,"proxy":{"remoteUrl":"https://maven.repository.redhat.com/ga/","contentMaxAge":-1,"metadataMaxAge":1440},"negativeCache":{"enabled":true,"timeToLive":1440},"httpClient":{"blocked":false,"autoBlock":false,"connection":{"retries":null,"userAgentSuffix":null,"timeout":null,"enableCircularRedirects":false,"enableCookies":false,"useTrustStore":false},"authentication":null},"routingRuleName":null,"maven":{"versionPolicy":"RELEASE","layoutPolicy":"PERMISSIVE","contentDisposition":"INLINE"},"format":"maven2","type":"proxy"}'
 
                   code="$(curl -sS -o /tmp/resp.txt -w '%{http_code}' -u "admin:${PASS}" -H 'Content-Type: application/json' \
                     -X POST http://127.0.0.1:8081/service/rest/v1/repositories/maven/proxy \
