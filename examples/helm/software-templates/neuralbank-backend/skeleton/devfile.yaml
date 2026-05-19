@@ -35,7 +35,18 @@ commands:
       component: tools
       commandLine: |
         set -eu
-        mvn -ntp quarkus:dev -Dquarkus.http.host=0.0.0.0 -Dquarkus.http.proxy.proxy-address-forwarding=true
+        # Quarkus 3.15 only supports exact host allow-list for Dev UI.
+        # In DevSpaces the external host is the workspace code-redirect route, which varies per workspace.
+        # We derive it from the resolved DevWorkspace metadata and pass it as a system property.
+        host_url="$(awk '/endpoint-url:/ {u=$2} /name: code-redirect-3/ {print u; exit}' /devworkspace-metadata/flattened.devworkspace.yaml 2>/dev/null || true)"
+        host="${host_url#https://}"
+        host="${host#http://}"
+        host="${host%%/*}"
+        extra=""
+        if [ -n "${host}" ]; then
+          extra="-Dquarkus.dev-ui.hosts=${host}"
+        fi
+        mvn -ntp ${extra} quarkus:dev -Dquarkus.http.host=0.0.0.0 -Dquarkus.http.proxy.proxy-address-forwarding=true
       workingDir: ${PROJECT_SOURCE}
       group:
         kind: run
