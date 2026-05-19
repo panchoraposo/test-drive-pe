@@ -656,17 +656,17 @@ data:
 
         # Example: deploy a Redis database via OpenShift helper tool
         if "deploy a redis database" in key or "deploy redis database" in key:
-      tool_name = _pick_tool(tools, ["ocpdeployDatabase", "deployDatabase"]) or _pick_tool_by_keywords(tools, ["deploy", "database"])
+          tool_name = _pick_tool(tools, ["ocpdeployDatabase", "deployDatabase"]) or _pick_tool_by_keywords(tools, ["deploy", "database"])
           if tool_name:
-        ns = _extract_namespace(user_text)
-        desired = {
-          # Some implementations expect `type` (required), others accept `databaseType`.
-          "type": "redis",
-          "databaseType": "redis",
-          "name": "redis",
-        }
-        if ns:
-          desired["namespace"] = ns
+            ns = _extract_namespace(user_text)
+            desired = {
+              # Some implementations expect `type` (required), others accept `databaseType`.
+              "type": "redis",
+              "databaseType": "redis",
+              "name": "redis",
+            }
+            if ns:
+              desired["namespace"] = ns
             return {
               "content": "",
               "tool_calls": [
