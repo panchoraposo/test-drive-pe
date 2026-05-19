@@ -97,22 +97,23 @@ spec:
 
               get() {
                 local artifact="$1"
-                local repoUrl="$2"
-                echo "Warming: $artifact (via $repoUrl)"
+                local repoId="$2"
+                local repoUrl="$3"
+                echo "Warming: $artifact (via $repoId $repoUrl)"
                 mvn -q -s /tmp/settings.xml -Dmaven.repo.local=/tmp/.m2/repository -Dtransitive=false \
-                  org.apache.maven.plugins:maven-dependency-plugin:3.6.1:get -Dartifact="$artifact" -DrepoUrl="$repoUrl"
+                  org.apache.maven.plugins:maven-dependency-plugin:3.6.1:get -Dartifact="$artifact" -DremoteRepositories="${repoId}::default::${repoUrl}"
               }
 
               # Quarkus backend template (old Quarkus for RHDA demo)
-              get "io.quarkus:quarkus-bom:pom:3.15.7.redhat-00001" "${NEXUS}/repository/redhat-ga/"
-              get "io.quarkus:quarkus-maven-plugin:3.15.7.redhat-00001" "${NEXUS}/repository/redhat-ga/"
-              get "io.quarkus:quarkus-rest:3.15.7.redhat-00001" "${NEXUS}/repository/redhat-ga/"
-              get "io.quarkus:quarkus-rest-jackson:3.15.7.redhat-00001" "${NEXUS}/repository/redhat-ga/"
-              get "io.quarkus:quarkus-smallrye-openapi:3.15.7.redhat-00001" "${NEXUS}/repository/redhat-ga/"
+              get "io.quarkus:quarkus-bom:pom:3.15.7.redhat-00001" "redhat-ga" "${NEXUS}/repository/redhat-ga/"
+              get "io.quarkus:quarkus-maven-plugin:3.15.7.redhat-00001" "redhat-ga" "${NEXUS}/repository/redhat-ga/"
+              get "io.quarkus:quarkus-rest:3.15.7.redhat-00001" "redhat-ga" "${NEXUS}/repository/redhat-ga/"
+              get "io.quarkus:quarkus-rest-jackson:3.15.7.redhat-00001" "redhat-ga" "${NEXUS}/repository/redhat-ga/"
+              get "io.quarkus:quarkus-smallrye-openapi:3.15.7.redhat-00001" "redhat-ga" "${NEXUS}/repository/redhat-ga/"
 
               # MCP template (newer Quarkus + MCP extension)
-              get "io.quarkus:quarkus-bom:pom:3.27.3.redhat-00002" "${NEXUS}/repository/redhat-ga/"
-              get "io.quarkus:quarkus-maven-plugin:3.27.3.redhat-00002" "${NEXUS}/repository/redhat-ga/"
-              get "io.quarkiverse.mcp:quarkus-mcp-server-http:1.7.0.redhat-00001" "${NEXUS}/repository/redhat-ga/"
+              get "io.quarkus:quarkus-bom:pom:3.27.3.redhat-00002" "redhat-ga" "${NEXUS}/repository/redhat-ga/"
+              get "io.quarkus:quarkus-maven-plugin:3.27.3.redhat-00002" "redhat-ga" "${NEXUS}/repository/redhat-ga/"
+              get "io.quarkiverse.mcp:quarkus-mcp-server-http:1.7.0.redhat-00001" "redhat-ga" "${NEXUS}/repository/redhat-ga/"
 
               echo "Warmup done."
