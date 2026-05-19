@@ -13,6 +13,13 @@ components:
       memoryLimit: 4Gi
       cpuLimit: "2"
       mountSources: true
+      endpoints:
+        - name: quarkus
+          targetPort: 8080
+          exposure: public
+          protocol: http
+          attributes:
+            urlRewriteSupported: true
       volumeMounts:
         - name: m2
           path: /home/user/.m2
@@ -20,7 +27,7 @@ components:
     volume:
       size: 2Gi
 commands:
-  - id: build
+  - id: 03-build
     exec:
       component: tools
       commandLine: |
@@ -30,7 +37,7 @@ commands:
       group:
         kind: build
         isDefault: true
-  - id: run
+  - id: 04-run
     exec:
       component: tools
       commandLine: |

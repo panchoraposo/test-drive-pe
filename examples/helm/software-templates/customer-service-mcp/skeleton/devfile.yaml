@@ -20,7 +20,7 @@ components:
     volume:
       size: 2Gi
 commands:
-  - id: build
+  - id: 03-build
     exec:
       component: tools
       commandLine: |
@@ -30,7 +30,7 @@ commands:
       group:
         kind: build
         isDefault: true
-  - id: run
+  - id: 04-run
     exec:
       component: tools
       commandLine: |
