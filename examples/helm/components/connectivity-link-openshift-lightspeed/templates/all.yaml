@@ -103,7 +103,6 @@ spec:
       dataCollector: {}
       database:
         replicas: 1
-      llamaStack: {}
       mcpServer: {}
     conversationCache:
       type: postgres
