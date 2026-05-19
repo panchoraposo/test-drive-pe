@@ -17,8 +17,7 @@ metadata:
 spec:
   project: {{ $.Values.argocd.project }}
   ignoreDifferences:
-    - group: ""
-      kind: Service
+    - kind: Service
       jsonPointers:
         - /spec/clusterIP
         - /spec/clusterIPs
@@ -37,12 +36,10 @@ spec:
         - /spec/template/metadata/annotations
         # Allow out-of-band patches for initContainers in vendor charts
         - /spec/template/spec/initContainers
-    - group: ""
-      kind: Secret
+    - kind: Secret
       jsonPointers:
         - /data
-    - group: ""
-      kind: Namespace
+    - kind: Namespace
       jsonPointers:
         - /metadata/annotations
         - /metadata/labels
@@ -100,8 +97,7 @@ spec:
       jsonPointers:
         - /metadata/annotations
         - /status
-    - group: ""
-      kind: ConfigMap
+    - kind: ConfigMap
       jsonPointers:
         - /metadata/annotations
     - group: apps
@@ -299,16 +295,14 @@ spec:
         - /spec/template/metadata/annotations
         # Allow out-of-band patches for initContainers in vendor charts
         - /spec/template/spec/initContainers
-    - group: ""
-      kind: Service
+    - kind: Service
       jsonPointers:
         - /spec/clusterIP
         - /spec/clusterIPs
         - /spec/ipFamilies
         - /spec/ipFamilyPolicy
         - /spec/internalTrafficPolicy
-    - group: ""
-      kind: Secret
+    - kind: Secret
       jsonPointers:
         - /data
   source:
