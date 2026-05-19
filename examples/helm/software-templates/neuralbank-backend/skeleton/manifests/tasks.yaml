@@ -76,12 +76,12 @@ spec:
             <mirror>
               <id>central</id>
               <mirrorOf>central</mirrorOf>
-              <url>http://nexus3.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>
+              <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>
             </mirror>
             <mirror>
               <id>redhat-ga</id>
               <mirrorOf>redhat-ga</mirrorOf>
-              <url>http://nexus3.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>
+              <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>
             </mirror>
           </mirrors>
           <proxies></proxies>
