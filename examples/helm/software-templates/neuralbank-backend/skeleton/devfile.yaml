@@ -13,13 +13,6 @@ components:
       memoryLimit: 4Gi
       cpuLimit: "2"
       mountSources: true
-      endpoints:
-        - name: quarkus
-          targetPort: 8080
-          exposure: public
-          protocol: http
-          attributes:
-            urlRewriteSupported: true
       volumeMounts:
         - name: m2
           path: /home/user/.m2
