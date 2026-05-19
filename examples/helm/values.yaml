@@ -306,7 +306,7 @@ connectivityLink:
       syncWave: "4"
       values:
         nexus:
-          securityContext: null
+          securityContext: {}
           env:
             - name: NEXUS_SECURITY_RANDOMPASSWORD
               value: "true"
