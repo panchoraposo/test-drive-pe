@@ -114,7 +114,7 @@ ${{ values.name }}/
 ├── argocd/
 │   └── application.yaml
 ├── catalog-info.yaml
-├── devfile.yaml
+├── devfile
 └── pom.xml
 ```
 

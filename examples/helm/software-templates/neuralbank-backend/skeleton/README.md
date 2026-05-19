@@ -86,7 +86,7 @@ ${{ values.name }}/
 ├── argocd/
 │   └── application.yaml              # ArgoCD Application
 ├── catalog-info.yaml                 # Backstage catalog entities
-├── devfile.yaml                      # DevSpaces workspace config
+├── devfile                          # DevSpaces workspace config
 └── pom.xml                           # Maven project
 ```
 
