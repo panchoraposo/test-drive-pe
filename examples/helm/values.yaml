@@ -325,7 +325,7 @@ connectivityLink:
               command: ["sh","-c"]
               args:
                 - |
-                  set -eu
+                  set -u
                   echo "[nexus-bootstrap] waiting for Nexus..."
                   for i in $(seq 1 240); do
                     curl -fsS http://127.0.0.1:8081/service/rest/v1/status >/dev/null && break || true
@@ -343,11 +343,27 @@ connectivityLink:
                     sleep infinity
                   fi
 
-                  echo "[nexus-bootstrap] creating redhat-ga proxy repo"
-                  curl -fsS -u "admin:${PASS}" -H 'Content-Type: application/json' \
+                  echo "[nexus-bootstrap] creating redhat-ga proxy repo (based on maven-central)"
+                  central="$(curl -fsS -u "admin:${PASS}" http://127.0.0.1:8081/service/rest/v1/repositories/maven/proxy/maven-central || true)"
+                  if [ -z "${central}" ]; then
+                    echo "[nexus-bootstrap] unable to fetch maven-central config; will retry later"
+                    sleep infinity
+                  fi
+                  payload="$(echo "${central}" \
+                    | sed 's/\"name\":\"maven-central\"/\"name\":\"redhat-ga\"/' \
+                    | sed 's#\"remoteUrl\":\"https://repo1\\.maven\\.org/maven2/\"#\"remoteUrl\":\"https://maven.repository.redhat.com/ga/\"#' \
+                    | sed 's#\"remoteUrl\":\"https://repo\\.maven\\.apache\\.org/maven2/\"#\"remoteUrl\":\"https://maven.repository.redhat.com/ga/\"#' \
+                  )"
+
+                  code="$(curl -sS -o /tmp/resp.txt -w '%{http_code}' -u "admin:${PASS}" -H 'Content-Type: application/json' \
                     -X POST http://127.0.0.1:8081/service/rest/v1/repositories/maven/proxy \
-                    -d '{"name":"redhat-ga","online":true,"storage":{"blobStoreName":"default","strictContentTypeValidation":true},"proxy":{"remoteUrl":"https://maven.repository.redhat.com/ga/","contentMaxAge":1440,"metadataMaxAge":1440},"negativeCache":{"enabled":true,"timeToLive":1440},"maven":{"versionPolicy":"RELEASE","layoutPolicy":"STRICT"}}'
-                  echo "[nexus-bootstrap] redhat-ga created"
+                    -d "${payload}" || true)"
+                  if [ "${code}" != "201" ] && [ "${code}" != "204" ]; then
+                    echo "[nexus-bootstrap] create repo failed (HTTP ${code})"
+                    cat /tmp/resp.txt || true
+                    sleep infinity
+                  fi
+                  echo "[nexus-bootstrap] redhat-ga created (HTTP ${code})"
                   sleep infinity
               volumeMounts:
                 - name: nexus-repository-manager-data
