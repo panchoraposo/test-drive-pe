@@ -2,4 +2,6 @@ mavenWarmup:
   namespace: maven-repo
   nexusServiceHost: nexus-repository-manager.maven-repo.svc.cluster.local
   nexusPort: 8081
+  backendPomUrl: "https://raw.githubusercontent.com/panchoraposo/test-drive-pe/main/examples/helm/software-templates/neuralbank-backend/skeleton/pom.xml"
+  mcpPomUrl: "https://raw.githubusercontent.com/panchoraposo/test-drive-pe/main/examples/helm/software-templates/customer-service-mcp/skeleton/pom.xml"
 

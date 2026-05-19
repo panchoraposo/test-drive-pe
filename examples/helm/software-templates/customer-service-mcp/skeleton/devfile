@@ -20,6 +20,38 @@ components:
     volume:
       size: 2Gi
 commands:
+  - id: 00-configure-maven-nexus
+    exec:
+      component: tools
+      commandLine: |
+        set -eu
+        mkdir -p /home/user/.m2
+        SETTINGS="/home/user/.m2/settings.xml"
+        if [ -f "${SETTINGS}" ] && grep -q "nexus-repository-manager.maven-repo.svc.cluster.local" "${SETTINGS}"; then
+          echo "Maven settings already configured for Nexus."
+          exit 0
+        fi
+        cat > "${SETTINGS}" <<'EOF'
+        <settings>
+          <mirrors>
+            <mirror>
+              <id>central</id>
+              <mirrorOf>central</mirrorOf>
+              <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>
+            </mirror>
+            <mirror>
+              <id>redhat-ga</id>
+              <mirrorOf>redhat-ga</mirrorOf>
+              <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>
+            </mirror>
+          </mirrors>
+        </settings>
+        EOF
+        echo "Wrote ${SETTINGS}"
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: build
+        isDefault: false
   - id: 01-init-maven
     exec:
       component: tools

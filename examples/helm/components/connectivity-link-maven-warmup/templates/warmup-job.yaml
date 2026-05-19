@@ -28,14 +28,12 @@ spec:
       restartPolicy: Never
       containers:
         - name: warmup
-          image: docker.io/curlimages/curl:8.12.1
-          command: ["sh","-c"]
+          image: maven:3.9-eclipse-temurin-17
+          command: ["bash","-lc"]
           args:
             - |
-              set -eu
+              set -euo pipefail
               NEXUS="http://{{ .Values.mavenWarmup.nexusServiceHost }}:{{ .Values.mavenWarmup.nexusPort }}"
-              CENTRAL="${NEXUS}/repository/maven-central"
-              RHGA="${NEXUS}/repository/redhat-ga"
 
               echo "Waiting for Nexus at ${NEXUS}..."
               for i in $(seq 1 240); do
@@ -43,41 +41,42 @@ spec:
                 sleep 2
               done
 
-              fetch_url() {
-                url="$1"
-                echo "GET $url"
-                code="$(curl -sS -o /dev/null -w '%{http_code}' "$url" || true)"
-                if [ "$code" != "200" ]; then
-                  echo "WARN: $url -> HTTP $code"
-                fi
+              mkdir -p /tmp/.m2/repository /tmp/warm/backend /tmp/warm/mcp
+
+              cat > /tmp/settings.xml <<'EOF'
+              <settings>
+                <mirrors>
+                  <mirror>
+                    <id>central</id>
+                    <mirrorOf>central</mirrorOf>
+                    <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>
+                  </mirror>
+                  <mirror>
+                    <id>redhat-ga</id>
+                    <mirrorOf>redhat-ga</mirrorOf>
+                    <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>
+                  </mirror>
+                </mirrors>
+              </settings>
+              EOF
+
+              warm_pom() {
+                local name="$1"
+                local url="$2"
+                local dir="$3"
+                echo "Downloading ${name} pom from ${url}"
+                curl -fsSLo "${dir}/pom.xml" "${url}"
+                echo "Warming Maven cache for ${name} (dependency:go-offline)"
+                mvn -q -s /tmp/settings.xml \
+                  -Dmaven.repo.local=/tmp/.m2/repository \
+                  -Dmaven.wagon.http.retryHandler.count=3 \
+                  -Dmaven.wagon.httpconnectionManager.ttlSeconds=120 \
+                  -DskipTests \
+                  -f "${dir}/pom.xml" \
+                  dependency:go-offline || echo "WARN: warmup failed for ${name}"
               }
 
-              fetch_gav() {
-                base="$1"
-                group="$2"
-                art="$3"
-                ver="$4"
-                ext="$5"
-                groupPath="$(echo "$group" | tr '.' '/')"
-                fetch_url "${base}/${groupPath}/${art}/${ver}/${art}-${ver}.${ext}"
-              }
-
-              # Quarkus backend template (old Quarkus for RHDA demo)
-              fetch_gav "$RHGA" "io.quarkus" "quarkus-bom" "3.15.7.redhat-00001" "pom"
-              fetch_gav "$RHGA" "io.quarkus" "quarkus-maven-plugin" "3.15.7.redhat-00001" "pom"
-              fetch_gav "$RHGA" "io.quarkus" "quarkus-maven-plugin" "3.15.7.redhat-00001" "jar"
-              fetch_gav "$RHGA" "io.quarkus" "quarkus-rest" "3.15.7.redhat-00001" "pom"
-              fetch_gav "$RHGA" "io.quarkus" "quarkus-rest" "3.15.7.redhat-00001" "jar"
-              fetch_gav "$RHGA" "io.quarkus" "quarkus-rest-jackson" "3.15.7.redhat-00001" "pom"
-              fetch_gav "$RHGA" "io.quarkus" "quarkus-rest-jackson" "3.15.7.redhat-00001" "jar"
-              fetch_gav "$RHGA" "io.quarkus" "quarkus-smallrye-openapi" "3.15.7.redhat-00001" "pom"
-              fetch_gav "$RHGA" "io.quarkus" "quarkus-smallrye-openapi" "3.15.7.redhat-00001" "jar"
-
-              # MCP template (newer Quarkus + MCP extension)
-              fetch_gav "$RHGA" "io.quarkus" "quarkus-bom" "3.27.3.redhat-00002" "pom"
-              fetch_gav "$RHGA" "io.quarkus" "quarkus-maven-plugin" "3.27.3.redhat-00002" "pom"
-              fetch_gav "$RHGA" "io.quarkus" "quarkus-maven-plugin" "3.27.3.redhat-00002" "jar"
-              fetch_gav "$RHGA" "io.quarkiverse.mcp" "quarkus-mcp-server-http" "1.7.0.redhat-00001" "pom"
-              fetch_gav "$RHGA" "io.quarkiverse.mcp" "quarkus-mcp-server-http" "1.7.0.redhat-00001" "jar"
+              warm_pom "backend" "{{ .Values.mavenWarmup.backendPomUrl }}" "/tmp/warm/backend"
+              warm_pom "mcp" "{{ .Values.mavenWarmup.mcpPomUrl }}" "/tmp/warm/mcp"
 
               echo "Warmup done."
