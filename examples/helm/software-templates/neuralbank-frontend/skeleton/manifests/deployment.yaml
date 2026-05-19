@@ -7,6 +7,8 @@ metadata:
     app.kubernetes.io/name: ${{values.name}}
     app.kubernetes.io/part-of: neuralbank
     backstage.io/kubernetes-id: ${{values.uniqueName}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
 spec:
   replicas: 1
   selector:

@@ -4,6 +4,8 @@ metadata:
   name: ${{values.uniqueName}}-pipeline-scc-privileged
   labels:
     backstage.io/kubernetes-id: ${{values.uniqueName}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -20,6 +22,40 @@ metadata:
   namespace: ${{values.namespace}}
   labels:
     backstage.io/kubernetes-id: ${{values.uniqueName}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ${{values.name}}-pipelinerun-reader
+  namespace: ${{values.namespace}}
+  labels:
+    backstage.io/kubernetes-id: ${{values.uniqueName}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+rules:
+  - apiGroups: ["tekton.dev"]
+    resources: ["pipelineruns"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ${{values.name}}-pipelinerun-reader
+  namespace: ${{values.namespace}}
+  labels:
+    backstage.io/kubernetes-id: ${{values.uniqueName}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ${{values.name}}-pipelinerun-reader
+subjects:
+  - kind: ServiceAccount
+    name: ${{values.name}}-trigger-sa
+    namespace: ${{values.namespace}}
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -28,6 +64,8 @@ metadata:
   namespace: ${{values.namespace}}
   labels:
     backstage.io/kubernetes-id: ${{values.uniqueName}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -43,6 +81,8 @@ metadata:
   name: ${{values.uniqueName}}-trigger-clusterbinding
   labels:
     backstage.io/kubernetes-id: ${{values.uniqueName}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

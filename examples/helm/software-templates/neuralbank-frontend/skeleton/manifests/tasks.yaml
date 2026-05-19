@@ -3,6 +3,8 @@ kind: Task
 metadata:
   name: ${{values.name}}-git-clone
   namespace: ${{values.namespace}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   params:
     - name: url
@@ -47,6 +49,8 @@ kind: Task
 metadata:
   name: ${{values.name}}-buildah
   namespace: ${{values.namespace}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   params:
     - name: IMAGE
@@ -84,6 +88,8 @@ kind: Task
 metadata:
   name: ${{values.name}}-openshift-client
   namespace: ${{values.namespace}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   params:
     - name: SCRIPT

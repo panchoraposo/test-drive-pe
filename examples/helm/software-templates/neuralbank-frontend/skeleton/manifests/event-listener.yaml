@@ -5,6 +5,8 @@ metadata:
   namespace: ${{values.namespace}}
   labels:
     backstage.io/kubernetes-id: ${{values.uniqueName}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   namespaceSelector: {}
   resources: {}
@@ -24,6 +26,8 @@ metadata:
   namespace: ${{values.namespace}}
   labels:
     backstage.io/kubernetes-id: ${{values.uniqueName}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 spec:
   port:
     targetPort: http-listener
