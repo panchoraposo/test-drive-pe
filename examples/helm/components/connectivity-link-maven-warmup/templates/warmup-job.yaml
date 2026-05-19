@@ -98,8 +98,9 @@ spec:
               get() {
                 local artifact="$1"
                 echo "Warming: $artifact"
+                local remoteRepos="central::default::${NEXUS}/repository/maven-central/,redhat-ga::default::${NEXUS}/repository/redhat-ga/"
                 mvn -q -s /tmp/settings.xml -Dmaven.repo.local=/tmp/.m2/repository -Dtransitive=true \
-                  org.apache.maven.plugins:maven-dependency-plugin:3.6.1:get -Dartifact="$artifact"
+                  org.apache.maven.plugins:maven-dependency-plugin:3.6.1:get -Dartifact="$artifact" -DremoteRepositories="$remoteRepos"
               }
 
               # Quarkus backend template (old Quarkus for RHDA demo)
