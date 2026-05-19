@@ -20,60 +20,11 @@ components:
     volume:
       size: 2Gi
 commands:
-  - id: 00-configure-maven-nexus
+  - id: build
     exec:
       component: tools
       commandLine: |
         set -eu
-        mkdir -p /home/user/.m2
-        SETTINGS="/home/user/.m2/settings.xml"
-        if [ -f "${SETTINGS}" ] && grep -q "nexus-repository-manager.maven-repo.svc.cluster.local" "${SETTINGS}"; then
-          echo "Maven settings already configured for Nexus."
-          exit 0
-        fi
-        cat > "${SETTINGS}" <<'EOF'
-        <settings>
-          <mirrors>
-            <mirror>
-              <id>central</id>
-              <mirrorOf>central</mirrorOf>
-              <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>
-            </mirror>
-            <mirror>
-              <id>redhat-ga</id>
-              <mirrorOf>redhat-ga</mirrorOf>
-              <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>
-            </mirror>
-          </mirrors>
-        </settings>
-        EOF
-        echo "Wrote ${SETTINGS}"
-      workingDir: ${PROJECT_SOURCE}
-      group:
-        kind: build
-        isDefault: false
-  - id: 01-init-maven
-    exec:
-      component: tools
-      commandLine: |
-        if ! mvn --version 2>/dev/null | grep -qE '3\.(8\.[6-9]|8\.[1-9][0-9]|9\.|[1-9][0-9])'; then
-          echo "Upgrading Maven..." &&
-          curl -sSL https://archive.apache.org/dist/maven/maven-3/3.9.9/binaries/apache-maven-3.9.9-bin.tar.gz | tar xz -C /home/user &&
-          echo 'export PATH=/home/user/apache-maven-3.9.9/bin:$PATH' >> /home/user/.bashrc &&
-          export PATH=/home/user/apache-maven-3.9.9/bin:$PATH &&
-          mvn --version;
-        else
-          echo "Maven version OK: $(mvn --version | head -1)";
-        fi
-      workingDir: ${PROJECT_SOURCE}
-      group:
-        kind: build
-        isDefault: false
-  - id: 02-build
-    exec:
-      component: tools
-      commandLine: |
-        export PATH=/home/user/apache-maven-3.9.9/bin:$PATH
         mkdir -p /home/user/.m2
         SETTINGS="/home/user/.m2/settings.xml"
         if [ ! -f "${SETTINGS}" ] || ! grep -q "nexus-repository-manager.maven-repo.svc.cluster.local" "${SETTINGS}"; then
@@ -99,11 +50,11 @@ EOF
       group:
         kind: build
         isDefault: true
-  - id: 03-run
+  - id: run
     exec:
       component: tools
       commandLine: |
-        export PATH=/home/user/apache-maven-3.9.9/bin:$PATH
+        set -eu
         mkdir -p /home/user/.m2
         SETTINGS="/home/user/.m2/settings.xml"
         if [ ! -f "${SETTINGS}" ] || ! grep -q "nexus-repository-manager.maven-repo.svc.cluster.local" "${SETTINGS}"; then
@@ -129,102 +80,3 @@ EOF
       group:
         kind: run
         isDefault: true
-  - id: 04-open-rhda-report
-    exec:
-      component: tools
-      commandLine: |
-        REPORT_PATH="${REPORT_PATH:-/tmp/redhatDependencyAnalyticsReport.html}"
-        echo "RHDA report path: ${REPORT_PATH}"
-        if [ -f "${REPORT_PATH}" ]; then
-          ls -lh "${REPORT_PATH}"
-          echo "Tip: open it from the file explorer inside Dev Spaces."
-        else
-          echo "Report file not found yet."
-          echo "Generate it in the IDE by opening pom.xml and clicking the pie-chart icon, or right-click pom.xml -> 'Red Hat Dependency Analytics Report...'"
-        fi
-      workingDir: ${PROJECT_SOURCE}
-      group:
-        kind: test
-        isDefault: false
-  - id: 05-update-quarkus-to-3.27.3.redhat-00002
-    exec:
-      component: tools
-      commandLine: |
-        export PATH=/home/user/apache-maven-3.9.9/bin:$PATH
-        mkdir -p /home/user/.m2
-        SETTINGS="/home/user/.m2/settings.xml"
-        if [ ! -f "${SETTINGS}" ] || ! grep -q "nexus-repository-manager.maven-repo.svc.cluster.local" "${SETTINGS}"; then
-          cat > "${SETTINGS}" <<'EOF'
-          <settings>
-            <mirrors>
-              <mirror>
-                <id>central</id>
-                <mirrorOf>central</mirrorOf>
-                <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>
-              </mirror>
-              <mirror>
-                <id>redhat-ga</id>
-                <mirrorOf>redhat-ga</mirrorOf>
-                <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>
-              </mirror>
-            </mirrors>
-          </settings>
-EOF
-        fi
-        python3 - <<'PY'
-        from pathlib import Path
-        import re
-        
-        pom = Path("pom.xml")
-        s = pom.read_text(encoding="utf-8")
-        new_version = "3.27.3.redhat-00002"
-        s2, n = re.subn(
-            r"(<quarkus\.platform\.version>)([^<]+)(</quarkus\.platform\.version>)",
-            r"\g<1>" + new_version + r"\g<3>",
-            s,
-            count=1,
-        )
-        if n != 1:
-            raise SystemExit("ERROR: Could not find <quarkus.platform.version>...</quarkus.platform.version> in pom.xml")
-        pom.write_text(s2, encoding="utf-8")
-        print(f"Updated quarkus.platform.version to {new_version}")
-        PY
-        mvn -s "${SETTINGS}" -q -DskipTests package
-      workingDir: ${PROJECT_SOURCE}
-      group:
-        kind: build
-        isDefault: false
-  - id: 06-run-dev-ui-and-swagger
-    exec:
-      component: tools
-      commandLine: |
-        export PATH=/home/user/apache-maven-3.9.9/bin:$PATH
-        mkdir -p /home/user/.m2
-        SETTINGS="/home/user/.m2/settings.xml"
-        if [ ! -f "${SETTINGS}" ] || ! grep -q "nexus-repository-manager.maven-repo.svc.cluster.local" "${SETTINGS}"; then
-          cat > "${SETTINGS}" <<'EOF'
-          <settings>
-            <mirrors>
-              <mirror>
-                <id>central</id>
-                <mirrorOf>central</mirrorOf>
-                <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/maven-central/</url>
-              </mirror>
-              <mirror>
-                <id>redhat-ga</id>
-                <mirrorOf>redhat-ga</mirrorOf>
-                <url>http://nexus-repository-manager.maven-repo.svc.cluster.local:8081/repository/redhat-ga/</url>
-              </mirror>
-            </mirrors>
-          </settings>
-EOF
-        fi
-        mvn -s "${SETTINGS}" quarkus:dev \
-          -Dquarkus.http.host=0.0.0.0 \
-          -Dquarkus.http.proxy.proxy-address-forwarding=true \
-          -Dquarkus.dev-ui.hosts=.* \
-          -Dquarkus.swagger-ui.always-include=true
-      workingDir: ${PROJECT_SOURCE}
-      group:
-        kind: run
-        isDefault: false
