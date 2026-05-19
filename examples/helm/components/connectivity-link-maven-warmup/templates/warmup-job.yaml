@@ -46,7 +46,10 @@ spec:
               fetch_url() {
                 url="$1"
                 echo "GET $url"
-                curl -fsS -o /dev/null "$url"
+                code="$(curl -sS -o /dev/null -w '%{http_code}' "$url" || true)"
+                if [ "$code" != "200" ]; then
+                  echo "WARN: $url -> HTTP $code"
+                fi
               }
 
               fetch_gav() {
