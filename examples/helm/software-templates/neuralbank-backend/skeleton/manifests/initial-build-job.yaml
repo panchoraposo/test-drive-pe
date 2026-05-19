@@ -6,7 +6,8 @@ metadata:
   labels:
     backstage.io/kubernetes-id: ${{values.uniqueName}}
   annotations:
-    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/sync-wave: "1"
     argocd.argoproj.io/hook-delete-policy: HookSucceeded
 spec:
   backoffLimit: 1
@@ -31,7 +32,7 @@ spec:
                 exit 0
               fi
 
-              oc -n "$NS" create -f - <<'EOF'
+              PR_NAME="$(oc -n "$NS" create -f - -o jsonpath='{.metadata.name}' <<'EOF'
               apiVersion: tekton.dev/v1
               kind: PipelineRun
               metadata:
@@ -60,3 +61,7 @@ spec:
                   - name: maven-repo
                     emptyDir: {}
               EOF
+              )"
+
+              echo "Created PipelineRun ${PR_NAME}. Waiting for it to Succeed..."
+              oc -n "$NS" wait --for=condition=Succeeded "pipelinerun/${PR_NAME}" --timeout=45m

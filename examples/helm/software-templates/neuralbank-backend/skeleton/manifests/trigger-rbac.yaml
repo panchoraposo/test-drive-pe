@@ -4,6 +4,8 @@ metadata:
   name: ${{values.uniqueName}}-pipeline-scc-privileged
   labels:
     backstage.io/kubernetes-id: ${{values.uniqueName}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -20,6 +22,8 @@ metadata:
   namespace: ${{values.namespace}}
   labels:
     backstage.io/kubernetes-id: ${{values.uniqueName}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -28,6 +32,8 @@ metadata:
   namespace: ${{values.namespace}}
   labels:
     backstage.io/kubernetes-id: ${{values.uniqueName}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
@@ -43,6 +49,8 @@ metadata:
   name: ${{values.uniqueName}}-trigger-clusterbinding
   labels:
     backstage.io/kubernetes-id: ${{values.uniqueName}}
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
