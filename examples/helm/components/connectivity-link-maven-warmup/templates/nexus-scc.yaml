@@ -1,0 +1,46 @@
+apiVersion: security.openshift.io/v1
+kind: SecurityContextConstraints
+metadata:
+  name: nexus-anyuid
+  annotations:
+    kubernetes.io/description: "SCC for Nexus Repository Manager (workshop Maven cache)"
+  labels:
+    app.kubernetes.io/name: connectivity-link-maven-warmup
+priority: 20
+
+allowHostDirVolumePlugin: false
+allowHostIPC: false
+allowHostNetwork: false
+allowHostPID: false
+allowHostPorts: false
+allowPrivilegeEscalation: true
+allowPrivilegedContainer: false
+
+readOnlyRootFilesystem: false
+
+runAsUser:
+  type: RunAsAny
+fsGroup:
+  type: RunAsAny
+supplementalGroups:
+  type: RunAsAny
+seLinuxContext:
+  type: MustRunAs
+
+requiredDropCapabilities:
+  - MKNOD
+
+volumes:
+  - configMap
+  - csi
+  - downwardAPI
+  - emptyDir
+  - ephemeral
+  - image
+  - persistentVolumeClaim
+  - projected
+  - secret
+
+users:
+  - system:serviceaccount:{{ .Values.mavenWarmup.namespace }}:nexus-repository-manager
+
