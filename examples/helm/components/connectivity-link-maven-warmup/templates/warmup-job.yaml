@@ -28,12 +28,14 @@ spec:
       restartPolicy: Never
       containers:
         - name: warmup
-          image: maven:3.9-eclipse-temurin-17
-          command: ["bash","-lc"]
+          image: docker.io/curlimages/curl:8.12.1
+          command: ["sh","-c"]
           args:
             - |
-              set -euo pipefail
+              set -eu
               NEXUS="http://{{ .Values.mavenWarmup.nexusServiceHost }}:{{ .Values.mavenWarmup.nexusPort }}"
+              CENTRAL="${NEXUS}/repository/maven-central"
+              RHGA="${NEXUS}/repository/redhat-ga"
 
               echo "Waiting for Nexus at ${NEXUS}..."
               for i in $(seq 1 240); do
@@ -41,79 +43,38 @@ spec:
                 sleep 2
               done
 
-              mkdir -p /tmp/.m2/repository
-              cat > /tmp/settings.xml <<EOF
-              <settings>
-                <mirrors>
-                  <mirror>
-                    <id>central</id>
-                    <mirrorOf>central</mirrorOf>
-                    <url>${NEXUS}/repository/maven-central/</url>
-                  </mirror>
-                  <mirror>
-                    <id>redhat-ga</id>
-                    <mirrorOf>redhat-ga</mirrorOf>
-                    <url>${NEXUS}/repository/redhat-ga/</url>
-                  </mirror>
-                </mirrors>
-                <profiles>
-                  <profile>
-                    <id>warmup</id>
-                    <repositories>
-                      <repository>
-                        <id>central</id>
-                        <url>https://repo1.maven.org/maven2/</url>
-                        <releases><enabled>true</enabled></releases>
-                        <snapshots><enabled>false</enabled></snapshots>
-                      </repository>
-                      <repository>
-                        <id>redhat-ga</id>
-                        <url>https://maven.repository.redhat.com/ga/</url>
-                        <releases><enabled>true</enabled></releases>
-                        <snapshots><enabled>false</enabled></snapshots>
-                      </repository>
-                    </repositories>
-                    <pluginRepositories>
-                      <pluginRepository>
-                        <id>central</id>
-                        <url>https://repo1.maven.org/maven2/</url>
-                        <releases><enabled>true</enabled></releases>
-                        <snapshots><enabled>false</enabled></snapshots>
-                      </pluginRepository>
-                      <pluginRepository>
-                        <id>redhat-ga</id>
-                        <url>https://maven.repository.redhat.com/ga/</url>
-                        <releases><enabled>true</enabled></releases>
-                        <snapshots><enabled>false</enabled></snapshots>
-                      </pluginRepository>
-                    </pluginRepositories>
-                  </profile>
-                </profiles>
-                <activeProfiles>
-                  <activeProfile>warmup</activeProfile>
-                </activeProfiles>
-              </settings>
-              EOF
+              fetch_url() {
+                url="$1"
+                echo "GET $url"
+                curl -fsS -o /dev/null "$url"
+              }
 
-              get() {
-                local artifact="$1"
-                local repoId="$2"
-                local repoUrl="$3"
-                echo "Warming: $artifact (via $repoId $repoUrl)"
-                mvn -q -s /tmp/settings.xml -Dmaven.repo.local=/tmp/.m2/repository -Dtransitive=false \
-                  org.apache.maven.plugins:maven-dependency-plugin:3.6.1:get -Dartifact="$artifact" -DremoteRepositories="${repoId}::default::${repoUrl}"
+              fetch_gav() {
+                base="$1"
+                group="$2"
+                art="$3"
+                ver="$4"
+                ext="$5"
+                groupPath="$(echo "$group" | tr '.' '/')"
+                fetch_url "${base}/${groupPath}/${art}/${ver}/${art}-${ver}.${ext}"
               }
 
               # Quarkus backend template (old Quarkus for RHDA demo)
-              get "io.quarkus:quarkus-bom:pom:3.15.7.redhat-00001" "redhat-ga" "${NEXUS}/repository/redhat-ga/"
-              get "io.quarkus:quarkus-maven-plugin:3.15.7.redhat-00001" "redhat-ga" "${NEXUS}/repository/redhat-ga/"
-              get "io.quarkus:quarkus-rest:3.15.7.redhat-00001" "redhat-ga" "${NEXUS}/repository/redhat-ga/"
-              get "io.quarkus:quarkus-rest-jackson:3.15.7.redhat-00001" "redhat-ga" "${NEXUS}/repository/redhat-ga/"
-              get "io.quarkus:quarkus-smallrye-openapi:3.15.7.redhat-00001" "redhat-ga" "${NEXUS}/repository/redhat-ga/"
+              fetch_gav "$RHGA" "io.quarkus" "quarkus-bom" "3.15.7.redhat-00001" "pom"
+              fetch_gav "$RHGA" "io.quarkus" "quarkus-maven-plugin" "3.15.7.redhat-00001" "pom"
+              fetch_gav "$RHGA" "io.quarkus" "quarkus-maven-plugin" "3.15.7.redhat-00001" "jar"
+              fetch_gav "$RHGA" "io.quarkus" "quarkus-rest" "3.15.7.redhat-00001" "pom"
+              fetch_gav "$RHGA" "io.quarkus" "quarkus-rest" "3.15.7.redhat-00001" "jar"
+              fetch_gav "$RHGA" "io.quarkus" "quarkus-rest-jackson" "3.15.7.redhat-00001" "pom"
+              fetch_gav "$RHGA" "io.quarkus" "quarkus-rest-jackson" "3.15.7.redhat-00001" "jar"
+              fetch_gav "$RHGA" "io.quarkus" "quarkus-smallrye-openapi" "3.15.7.redhat-00001" "pom"
+              fetch_gav "$RHGA" "io.quarkus" "quarkus-smallrye-openapi" "3.15.7.redhat-00001" "jar"
 
               # MCP template (newer Quarkus + MCP extension)
-              get "io.quarkus:quarkus-bom:pom:3.27.3.redhat-00002" "redhat-ga" "${NEXUS}/repository/redhat-ga/"
-              get "io.quarkus:quarkus-maven-plugin:3.27.3.redhat-00002" "redhat-ga" "${NEXUS}/repository/redhat-ga/"
-              get "io.quarkiverse.mcp:quarkus-mcp-server-http:1.7.0.redhat-00001" "redhat-ga" "${NEXUS}/repository/redhat-ga/"
+              fetch_gav "$RHGA" "io.quarkus" "quarkus-bom" "3.27.3.redhat-00002" "pom"
+              fetch_gav "$RHGA" "io.quarkus" "quarkus-maven-plugin" "3.27.3.redhat-00002" "pom"
+              fetch_gav "$RHGA" "io.quarkus" "quarkus-maven-plugin" "3.27.3.redhat-00002" "jar"
+              fetch_gav "$RHGA" "io.quarkiverse.mcp" "quarkus-mcp-server-http" "1.7.0.redhat-00001" "pom"
+              fetch_gav "$RHGA" "io.quarkiverse.mcp" "quarkus-mcp-server-http" "1.7.0.redhat-00001" "jar"
 
               echo "Warmup done."
