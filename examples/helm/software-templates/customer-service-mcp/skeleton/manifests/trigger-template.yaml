@@ -37,3 +37,11 @@ spec:
                     storage: 1Gi
           - name: maven-settings
             emptyDir: {}
+          - name: maven-repo
+            volumeClaimTemplate:
+              spec:
+                accessModes:
+                  - ReadWriteOnce
+                resources:
+                  requests:
+                    storage: 2Gi
