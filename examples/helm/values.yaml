@@ -306,6 +306,7 @@ connectivityLink:
       syncWave: "4"
       values:
         nexus:
+          securityContext: null
           env:
             - name: NEXUS_SECURITY_RANDOMPASSWORD
               value: "true"
@@ -320,7 +321,7 @@ connectivityLink:
           postStart:
             command: >-
               ["/bin/sh","-c","(
-              set -euo pipefail;
+              set -eu;
               echo '[nexus-bootstrap] waiting for Nexus...';
               for i in $(seq 1 180); do
                 curl -fsS http://127.0.0.1:8081/service/rest/v1/status >/dev/null && break || true;
