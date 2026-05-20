@@ -266,3 +266,72 @@ spec:
       port: 15008
       protocol: HBONE
 {{- end }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ambient-mesh-enroll
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: ambient-mesh-enroll
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+rules:
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: ambient-mesh-enroll
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+subjects:
+- kind: ServiceAccount
+  name: ambient-mesh-enroll
+  namespace: openshift-gitops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: ambient-mesh-enroll
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ambient-mesh-enroll
+  namespace: openshift-gitops
+  annotations:
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      serviceAccountName: ambient-mesh-enroll
+      restartPolicy: OnFailure
+      containers:
+      - name: enroll
+        image: registry.redhat.io/openshift4/ose-cli:latest
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -euo pipefail
+          USER_COUNT="{{ .Values.userCount | default 200 }}"
+          echo "Enrolling user namespaces into Istio ambient mode (no sidecars) with waypoint..."
+          for i in $(seq 1 "$USER_COUNT"); do
+            ns="user${i}-neuralbank"
+            if ! oc get namespace "$ns" >/dev/null 2>&1; then
+              continue
+            fi
+            oc label namespace "$ns" istio.io/dataplane-mode=ambient istio.io/use-waypoint=waypoint --overwrite >/dev/null
+            echo "Labeled $ns"
+          done
+          echo "Done."
