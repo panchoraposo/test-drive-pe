@@ -122,11 +122,17 @@ data:
         # - /%27modules%27/
         # - /"modules"/
         # Redirect these to the real component roots so refresh never 404s.
+        rewrite ^/%27modules%27$ /modules/ permanent;
         rewrite ^/%27modules%27/(.*)$ /modules/$1 permanent;
+        rewrite ^/%27modules-es%27$ /modules-es/ permanent;
         rewrite ^/%27modules-es%27/(.*)$ /modules-es/$1 permanent;
+        rewrite ^/'modules'$ /modules/ permanent;
         rewrite ^/'modules'/(.*)$ /modules/$1 permanent;
+        rewrite ^/'modules-es'$ /modules-es/ permanent;
         rewrite ^/'modules-es'/(.*)$ /modules-es/$1 permanent;
+        rewrite ^/\"modules\"$ /modules/ permanent;
         rewrite ^/\"modules\"/(.*)$ /modules/$1 permanent;
+        rewrite ^/\"modules-es\"$ /modules-es/ permanent;
         rewrite ^/\"modules-es\"/(.*)$ /modules-es/$1 permanent;
         # Prevent stale lab guide content in embedded views.
         # The Showroom UI can be opened in multiple frames; aggressive browser caching
