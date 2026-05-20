@@ -81,7 +81,35 @@ spec:
                   curl -sS -o /dev/null -X PUT "$BASE/api/v1/teams/${TID}/members/${U}" \
                     -u "$AUTH" || true
                 fi
-                echo "${U}: user=${C} org=${O}"
+
+                # Create a per-user demo repo with a unique Backstage entity.
+                # This is used by the workshop to demonstrate OLS Developer Hub tool calls:
+                # register-catalog-entities from a Gitea raw URL.
+                REPO="ols-import-demo"
+                R_JSON=$(printf '{"name":"%s","private":false,"auto_init":true,"default_branch":"main","description":"OLS catalog import demo for %s"}' "$REPO" "$U")
+                RC=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$BASE/api/v1/org/${ORG}/repos" \
+                  -u "$AUTH" -H "Content-Type: application/json" -d "$R_JSON" || true)
+
+                ENTITY_NAME="ols-import-demo-${U}"
+                CONTENT=$(cat <<EOF
+apiVersion: backstage.io/v1alpha1
+kind: Component
+metadata:
+  name: ${ENTITY_NAME}
+  title: OLS Import Demo (${U})
+  description: Demo entity to register via OpenShift Lightspeed (register-catalog-entities).
+spec:
+  type: service
+  owner: ${U}
+  lifecycle: experimental
+EOF
+)
+                B64=$(printf "%s" "$CONTENT" | base64 | tr -d '\n')
+                F_JSON=$(printf '{"message":"Add demo catalog-info for %s","content":"%s","branch":"main"}' "$U" "$B64")
+                FC=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$BASE/api/v1/repos/${ORG}/${REPO}/contents/catalog-info.yaml" \
+                  -u "$AUTH" -H "Content-Type: application/json" -d "$F_JSON" || true)
+
+                echo "${U}: user=${C} org=${O} repo=${RC} catalog=${FC}"
               done
               echo "All users and orgs created."
   backoffLimit: 5
