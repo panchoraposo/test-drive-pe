@@ -19,8 +19,8 @@ spec:
     devfileRegistry: {}
     imagePuller:
       enable: true
-      spec:
-        images: "udi-rhel9=registry.redhat.io/devspaces/udi-rhel9:latest"
+      # Let the Dev Spaces operator manage the default image list
+      # (see Red Hat Dev Spaces docs: "Cache images for faster workspace start").
     metrics:
       enable: true
     pluginRegistry: {}
