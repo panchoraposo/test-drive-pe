@@ -883,20 +883,24 @@ data:
             elif "backend" in key:
               dep = "neuralbank-backend"
 
+          # `resources_scale` currently returns a Scale YAML but does not apply changes.
+          # Use a lightweight create-or-update on the Deployment's `spec.replicas` instead.
           tool_name = (
-            _pick_tool(tools, ["resources_scale", "k8sresources_scale", "scale"])
-            or _pick_tool_by_keywords(tools, ["scale", "deployment"])
+            _pick_tool(tools, ["resources_create_or_update", "k8sresources_create_or_update"])
+            or _pick_tool_by_keywords(tools, ["create", "update", "resource"])
+            or _pick_tool(tools, ["resources_scale", "k8sresources_scale", "scale"])
           )
-          if tool_name and dep and replicas is not None:
-            desired = {
-              "apiVersion": "apps/v1",
-              "kind": "Deployment",
-              "name": dep,
-              # k8s MCP server uses `scale` (not `replicas`)
-              "scale": replicas,
-            }
-            if ns:
-              desired["namespace"] = ns
+          if tool_name and dep and replicas is not None and ns:
+            resource_yaml = (
+              "apiVersion: apps/v1\n"
+              "kind: Deployment\n"
+              "metadata:\n"
+              f"  name: {dep}\n"
+              f"  namespace: {ns}\n"
+              "spec:\n"
+              f"  replicas: {replicas}\n"
+            )
+            desired = {"resource": resource_yaml}
             return {
               "content": "",
               "tool_calls": [

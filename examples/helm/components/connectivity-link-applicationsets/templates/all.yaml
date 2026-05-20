@@ -338,6 +338,11 @@ spec:
       # Workshop repos may share certain resources (Tekton Tasks, shared RBAC, etc.).
       # Ignore benign/operator-added drift and Argo tracking-id differences so apps stay Synced.
       ignoreDifferences:
+        # Allow scaling via `oc scale` / OpenShift Lightspeed without GitOps reverting it.
+        - group: apps
+          kind: Deployment
+          jsonPointers:
+            - /spec/replicas
         - group: tekton.dev
           kind: Task
           jsonPointers:
