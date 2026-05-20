@@ -253,6 +253,10 @@ spec:
           service: connectivity-link-collector-collector.openshift-opentelemetry.svc.cluster.local
       trustDomain: cluster.local
     pilot:
+      env:
+        # Required for ingress gateway traffic to use destination waypoints in ambient mode
+        # when istio.io/ingress-use-waypoint=true is set on the namespace/service.
+        ENABLE_INGRESS_WAYPOINT_ROUTING: "true"
       trustedZtunnelNamespace: ztunnel
   version: v1.27.3
 ---
