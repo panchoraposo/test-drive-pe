@@ -91,7 +91,7 @@ spec:
                   -u "$AUTH" -H "Content-Type: application/json" -d "$R_JSON" || true)
 
                 ENTITY_NAME="ols-import-demo-${U}"
-                CONTENT=$(cat <<EOF
+                CONTENT=$(printf "%s" "\
 apiVersion: backstage.io/v1alpha1
 kind: Component
 metadata:
@@ -102,8 +102,7 @@ spec:
   type: service
   owner: ${U}
   lifecycle: experimental
-EOF
-)
+")
                 B64=$(printf "%s" "$CONTENT" | base64 | tr -d '\n')
                 F_JSON=$(printf '{"message":"Add demo catalog-info for %s","content":"%s","branch":"main"}' "$U" "$B64")
                 FC=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$BASE/api/v1/repos/${ORG}/${REPO}/contents/catalog-info.yaml" \
