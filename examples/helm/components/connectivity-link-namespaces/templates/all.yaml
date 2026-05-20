@@ -199,6 +199,8 @@ metadata:
   labels:
     purpose: application-deployment
     user: {{ $user }}
+    istio.io/dataplane-mode: ambient
+    istio.io/use-waypoint: waypoint
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -247,4 +249,20 @@ subjects:
 - kind: ServiceAccount
   name: pipeline
   namespace: {{ $appNs }}
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: waypoint
+  namespace: {{ $appNs }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+  labels:
+    istio.io/waypoint-for: service
+spec:
+  gatewayClassName: istio-waypoint
+  listeners:
+    - name: mesh
+      port: 15008
+      protocol: HBONE
 {{- end }}
