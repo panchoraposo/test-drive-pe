@@ -764,7 +764,23 @@ data:
           if tool_name:
             m = re.search(r"https?://\\S+", user_text or "")
             url = m.group(0).rstrip(").,") if m else ""
-            desired = {"url": url, "location": url, "entityUrl": url, "targetUrl": url}
+            # Backstage typically expects a "raw" URL, not a GitHub "blob" HTML page.
+            # Example:
+            # - https://github.com/org/repo/blob/main/path/file.yaml
+            # - https://raw.githubusercontent.com/org/repo/main/path/file.yaml
+            m_blob = re.match(r"^https://github\\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.*)$", url)
+            if m_blob:
+              url = f"https://raw.githubusercontent.com/{m_blob.group(1)}/{m_blob.group(2)}/{m_blob.group(3)}/{m_blob.group(4)}"
+
+            # Try multiple common parameter names; _args_for_tool will keep the ones the tool supports.
+            desired = {
+              "locationURL": url,
+              "locationUrl": url,
+              "url": url,
+              "location": url,
+              "entityUrl": url,
+              "targetUrl": url,
+            }
             return {
               "content": "",
               "tool_calls": [
