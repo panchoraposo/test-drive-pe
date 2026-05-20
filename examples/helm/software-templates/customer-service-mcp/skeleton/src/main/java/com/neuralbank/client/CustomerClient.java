@@ -14,7 +14,7 @@ import org.jboss.resteasy.reactive.RestQuery;
 
 import java.util.Map;
 
-@Path("/api/v1/customers")
+@Path("/api/customers")
 @RegisterRestClient(configKey = "customerclient")
 @Produces(MediaType.APPLICATION_JSON)
 @Consumes(MediaType.APPLICATION_JSON)
