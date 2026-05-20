@@ -368,6 +368,8 @@ connectivityLink:
       syncWave: "8"
       values:
         namespace: openshift-lightspeed
+        kubernetesMcp:
+          enabled: false
         litellm:
           model:
             name: qwen25-7b-instruct

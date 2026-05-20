@@ -249,7 +249,7 @@ data:
         listen 8080;
 
         location / {
-          proxy_pass http://openshift-mcp-server-k8s-mcp.openshift-lightspeed.svc.cluster.local:8085;
+          proxy_pass http://workshop-k8s-mcp-server.openshift-lightspeed.svc.cluster.local:8085;
           proxy_set_header Host $host;
           proxy_set_header Accept "application/json, text/event-stream";
           proxy_set_header Connection "";
@@ -260,6 +260,134 @@ data:
         }
       }
     }
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: workshop-k8s-mcp-server
+  namespace: openshift-lightspeed
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+data:
+  config.toml: |
+    log_level = 3
+    port = "8085"
+    read_only = false
+    disable_destructive = false
+    toolsets = ["core", "helm"]
+
+    denied_resources = [
+      {group = "rbac.authorization.k8s.io", version = "v1"}
+    ]
+  repositories.yaml: |
+    apiVersion: ""
+    generated: "0001-01-01T00:00:00Z"
+    repositories:
+      - caFile: ""
+        certFile: ""
+        insecure_skip_tls_verify: false
+        keyFile: ""
+        name: openshift-helm-charts
+        password: ""
+        url: https://charts.openshift.io/
+        username: ""
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: workshop-k8s-mcp-server
+  namespace: openshift-lightspeed
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: workshop-k8s-mcp-server
+  template:
+    metadata:
+      labels:
+        app: workshop-k8s-mcp-server
+    spec:
+      serviceAccountName: openshift-mcp-server
+      volumes:
+        - name: config
+          configMap:
+            name: workshop-k8s-mcp-server
+        - name: helm-cache
+          emptyDir: {}
+        - name: helm-data
+          emptyDir: {}
+      containers:
+        - name: kubernetes-mcp-server
+          image: quay.io/redhat-user-workloads/crt-nshift-lightspeed-tenant/openshift-mcp-server:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/openshift-mcp-server"]
+          args:
+            - "--config"
+            - "/etc/k8s-mcp/config.toml"
+          env:
+            - name: HELM_CACHE_HOME
+              value: /tmp/helm/cache
+            - name: HELM_CONFIG_HOME
+              value: /tmp/helm/config
+            - name: HELM_DATA_HOME
+              value: /tmp/helm/data
+          volumeMounts:
+            - name: config
+              mountPath: /etc/k8s-mcp/config.toml
+              subPath: config.toml
+              readOnly: true
+            - name: config
+              mountPath: /tmp/helm/config/repositories.yaml
+              subPath: repositories.yaml
+              readOnly: true
+            - name: helm-cache
+              mountPath: /tmp/helm/cache
+            - name: helm-data
+              mountPath: /tmp/helm/data
+          ports:
+            - name: http
+              containerPort: 8085
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: workshop-k8s-mcp-server
+  namespace: openshift-lightspeed
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  selector:
+    app: workshop-k8s-mcp-server
+  ports:
+    - name: http
+      port: 8085
+      targetPort: http
 ---
 apiVersion: apps/v1
 kind: Deployment
