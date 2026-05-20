@@ -604,16 +604,30 @@ data:
 
 
     def _extract_first_url(text: str) -> str:
-      t = (text or "").strip()
+      t = (text or "")
       if not t:
         return ""
-      m = re.search(r"https?://[^\s]+", t)
-      if not m:
+      # Normalize common invisible/odd whitespace that can appear in chat UIs.
+      t = t.replace("\u200b", "").replace("\u00a0", " ").strip()
+      if not t:
         return ""
-      url = m.group(0)
-      # Trim common trailing delimiters/punctuation from chat UIs
+
+      # Prefer explicit http(s) URLs first.
+      m = re.search(r"https?://[^\\s<>]+", t)
+      url = m.group(0) if m else ""
+
+      # Fallback: some prompts may omit the scheme (rare, but happens in copy/paste).
+      if not url:
+        m2 = re.search(r"\\b(gitea-[^\\s/]+\\.[^\\s/]+/[^\\s]+)\\b", t)
+        if m2:
+          url = "https://" + m2.group(1)
+
+      if not url:
+        return ""
+
+      # Trim common trailing delimiters/punctuation from chat UIs.
       url = url.rstrip('"\').,;]}>`')
-      # Also trim a trailing ')' if it looks like markdown "(url)"
+      # Also trim a trailing ')' if it looks like markdown "(url)".
       url = url.rstrip(")")
       return url
 
@@ -778,6 +792,9 @@ data:
           )
           if tool_name:
             url = _extract_first_url(user_text)
+            if not url:
+              # Don't call the tool with an empty locationURL; the UI shows it as '-' and Backstage rejects it.
+              return {"content": "Please include a full URL to a catalog-info.yaml (or template.yaml) after 'from'."}
             # Backstage typically expects a "raw" URL, not a GitHub "blob" HTML page.
             # Example:
             # - https://github.com/org/repo/blob/main/path/file.yaml
