@@ -76,12 +76,7 @@ metadata:
   namespace: openshift-cluster-observability-operator
 spec:
   namespaceSelector:
-    matchNames:
-    - nfl-wallet-prod
-    - nfl-wallet-test
-    - neuralbank-stack
-    - litemaas
-    - istio-system
+    any: true
   podMetricsEndpoints:
   - interval: 30s
     path: /stats/prometheus
