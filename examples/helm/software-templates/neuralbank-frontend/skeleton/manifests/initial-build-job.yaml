@@ -37,7 +37,8 @@ spec:
               PR_NAME="$(newest_pr_name || true)"
               if [ -z "${PR_NAME}" ]; then
                 echo "No PipelineRun found yet for ${APP}. Waiting briefly for triggers/webhook..."
-                for _ in $(seq 1 60); do
+                # Keep this short: if the webhook doesn't trigger quickly, create the run ourselves.
+                for _ in $(seq 1 8); do
                   PR_NAME="$(newest_pr_name || true)"
                   [ -n "${PR_NAME}" ] && break
                   sleep 2
