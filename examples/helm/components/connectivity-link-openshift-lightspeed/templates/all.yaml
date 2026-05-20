@@ -603,6 +603,21 @@ data:
       return int(m.group(1)) if m else None
 
 
+    def _extract_first_url(text: str) -> str:
+      t = (text or "").strip()
+      if not t:
+        return ""
+      m = re.search(r"https?://[^\s]+", t)
+      if not m:
+        return ""
+      url = m.group(0)
+      # Trim common trailing delimiters/punctuation from chat UIs
+      url = url.rstrip('"\').,;]}>`')
+      # Also trim a trailing ')' if it looks like markdown "(url)"
+      url = url.rstrip(")")
+      return url
+
+
     def _tool_by_name(tools: Any, name: str) -> Dict[str, Any] | None:
       if not isinstance(tools, list):
         return None
@@ -762,8 +777,7 @@ data:
             or _pick_tool_by_keywords(tools, ["register", "catalog"])
           )
           if tool_name:
-            m = re.search(r"https?://\\S+", user_text or "")
-            url = m.group(0).rstrip(").,") if m else ""
+            url = _extract_first_url(user_text)
             # Backstage typically expects a "raw" URL, not a GitHub "blob" HTML page.
             # Example:
             # - https://github.com/org/repo/blob/main/path/file.yaml
@@ -771,6 +785,14 @@ data:
             m_blob = re.match(r"^https://github\\.com/([^/]+)/([^/]+)/blob/([^/]+)/(.*)$", url)
             if m_blob:
               url = f"https://raw.githubusercontent.com/{m_blob.group(1)}/{m_blob.group(2)}/{m_blob.group(3)}/{m_blob.group(4)}"
+
+            # Gitea "blob" HTML -> raw
+            # Example:
+            # - https://gitea-gitea.apps.../org/repo/src/branch/main/catalog-info.yaml
+            # - https://gitea-gitea.apps.../org/repo/raw/branch/main/catalog-info.yaml
+            m_gitea = re.match(r"^(https?://[^/]+/[^/]+/[^/]+)/src/branch/([^/]+)/(.*)$", url)
+            if m_gitea:
+              url = f"{m_gitea.group(1)}/raw/branch/{m_gitea.group(2)}/{m_gitea.group(3)}"
 
             # Try multiple common parameter names; _args_for_tool will keep the ones the tool supports.
             desired = {
