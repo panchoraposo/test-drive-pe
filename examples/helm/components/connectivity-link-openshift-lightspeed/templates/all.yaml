@@ -688,6 +688,26 @@ data:
       # Lightspeed preset buttons sometimes send the full question (not just the title).
       # Match by keywords/contains so the workshop "expected" answers show up.
       if "software template" in key or ("template" in key and "developer hub" in key):
+        # If the user is asking to list/search templates, call the Developer Hub MCP tool instead of answering generically.
+        if ("list" in key or "search" in key or "available" in key) and ("catalog" in key or "developer hub" in key):
+          tool_name = (
+            _pick_tool(tools, ["fetch-template-metadata", "fetch_template_metadata"])
+            or _pick_tool_by_keywords(tools, ["template", "metadata"])
+          )
+          if tool_name:
+            desired: Dict[str, Any] = {}
+            # If the user included a search term, pass it through to common parameter names.
+            m = re.search(r'["“](.+?)["”]', user_text or "")
+            if m:
+              q = m.group(1).strip()
+              if q:
+                desired.update({"query": q, "q": q, "search": q, "term": q})
+            return {
+              "content": "",
+              "tool_calls": [
+                {"id": "call_fetch_template_metadata", "type": "function", "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired) if tools else json.dumps(desired, ensure_ascii=False)}}
+              ],
+            }
         return {"content": PRESET_ANSWERS["software templates"]}
       if "getting started" in key or ("first step" in key and "developer hub" in key):
         return {"content": PRESET_ANSWERS["getting started with developer hub"]}
@@ -721,6 +741,37 @@ data:
       # Tool calling (MCP Gateway). Prefer picking tool names from `tools` if present,
       # but fall back to canonical showroom tool names so demos still work.
       if True:
+        # Developer Hub / Backstage tools (direct SSE, no gateway prefix)
+        if ("registered components" in key or "catalog entities" in key or ("registered" in key and "components" in key)):
+          tool_name = (
+            _pick_tool(tools, ["fetch-catalog-entities", "fetch_catalog_entities"])
+            or _pick_tool_by_keywords(tools, ["catalog", "entities"])
+          )
+          if tool_name:
+            desired = {}
+            return {
+              "content": "",
+              "tool_calls": [
+                {"id": "call_fetch_catalog_entities", "type": "function", "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired) if tools else json.dumps(desired, ensure_ascii=False)}}
+              ],
+            }
+
+        if ("register a new entity" in key) or ("register" in key and "catalog" in key and "entity" in key):
+          tool_name = (
+            _pick_tool(tools, ["register-catalog-entities", "register_catalog_entities"])
+            or _pick_tool_by_keywords(tools, ["register", "catalog"])
+          )
+          if tool_name:
+            m = re.search(r"https?://\\S+", user_text or "")
+            url = m.group(0).rstrip(").,") if m else ""
+            desired = {"url": url, "location": url, "entityUrl": url, "targetUrl": url}
+            return {
+              "content": "",
+              "tool_calls": [
+                {"id": "call_register_catalog_entities", "type": "function", "function": {"name": tool_name, "arguments": _args_for_tool(tools, tool_name, desired) if tools else json.dumps(desired, ensure_ascii=False)}}
+              ],
+            }
+
         # Example: list Argo CD applications (via Kubernetes resources)
         if ("argocd" in key or "argo cd" in key) and ("application" in key or "applications" in key) and ("list" in key or "show" in key):
           tool_name = (
