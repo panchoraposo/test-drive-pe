@@ -10,7 +10,9 @@ components:
   - name: tools
     container:
       image: registry.redhat.io/devspaces/udi-rhel9:latest
+      memoryRequest: 1Gi
       memoryLimit: 4Gi
+      cpuRequest: "500m"
       cpuLimit: "2"
       mountSources: true
       volumeMounts:

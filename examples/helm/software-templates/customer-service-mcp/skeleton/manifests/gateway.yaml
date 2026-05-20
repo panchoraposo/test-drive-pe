@@ -6,6 +6,7 @@ metadata:
   labels:
     app.kubernetes.io/name: ${{values.name}}
     backstage.io/kubernetes-id: ${{values.uniqueName}}
+    app.openshift.io/runtime: istio
   annotations:
     networking.istio.io/service-type: ClusterIP
     kuadrant.io/namespace: kuadrant-system
