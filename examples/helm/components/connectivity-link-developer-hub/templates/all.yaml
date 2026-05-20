@@ -1192,7 +1192,8 @@ data:
       url: "http://localhost:8321"
     inference:
       default_provider: vllm
-      default_model: {{ .Values.litellmModel | default "qwen25-7b-instruct" }}
+      # Use fully-scoped model id to avoid routing-table fallbacks.
+      default_model: vllm/{{ .Values.litellmModel | default "qwen25-7b-instruct" }}
     user_data_collection:
       feedback_storage: "/tmp/data/feedback"
       transcripts_storage: "/tmp/data/transcripts"
@@ -1455,15 +1456,19 @@ data:
               - CI/CD
               - GitOps
               - Pipelines
+              - Tekton
+              - Argo CD
               - Developer Portals
               - Deployments
               - Software Catalogs
               - Software Templates
               - Tech Docs
+              - DevSpaces / Cloud IDEs
+              - Application development for this workshop (backend/frontend, Java/Quarkus/Maven, Node.js/React)
 
-              Your job is to determine if a user's question is related to the categories you are an expert in. If the question is related to those categories, \
-              or any features that may be related to those categories, you will answer with ${allowed}.
-              If a question is not related to your expert categories, answer with ${rejected}.
+              Your job is to determine if a user's question is related to the categories you are an expert in.
+              If the question is related to those categories, or any features/workflows commonly used with them in this workshop, answer with ${allowed}.
+              If the question is not related to your expert categories, answer with ${rejected}.
               You do not need to explain your answer.
               Below are some example questions:
               Example Question:
@@ -1475,9 +1480,17 @@ data:
               Example Response:
               ${allowed}
               Example Question:
-              How do I create import an existing software template in Backstage?
+              How do I create or import an existing software template in Backstage?
               Example Response:
               ${allowed}
+              Example Question:
+              build a backend
+              Example Response:
+              ${allowed}
+              Example Question:
+              Write a poem about the ocean.
+              Example Response:
+              ${rejected}
               Question:
               ${message}
               Response:

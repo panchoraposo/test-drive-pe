@@ -668,15 +668,10 @@ data:
         # "ALLOWED" (uppercase). Any other output triggers a violation.
         return {"content": "ALLOWED"}
 
-      # If the orchestrator already executed a tool, return the tool output
-      # so the user can see real results (not a generic "Done").
+      # If the orchestrator already executed a tool, keep the assistant message short.
+      # The UI already renders the full tool result in the "Tool output" panel.
       if _has_any_tool_result(messages):
-        for m in reversed(messages or []):
-          if m.get("role") in ("tool", "function"):
-            tool_out = _flatten_content(m.get("content"))
-            if tool_out:
-              return {"content": tool_out}
-        return {"content": "Done."}
+        return {"content": "Done. See Tool output for details."}
 
       user_text = _extract_user_text(messages)
       if not user_text:
