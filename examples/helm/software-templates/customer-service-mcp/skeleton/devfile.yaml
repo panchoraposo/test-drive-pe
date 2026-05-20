@@ -37,6 +37,21 @@ commands:
       component: tools
       commandLine: |
         set -eu
+        # In DevSpaces, the MCP server runs in {user}-devspaces but the backend is deployed in {user}-neuralbank.
+        # Compute the backend namespace and export an env var Quarkus can use.
+        DEV_NS="${DEVWORKSPACE_NAMESPACE:-${CHE_NAMESPACE:-}}"
+        if [ -z "${DEV_NS}" ]; then
+          DEV_NS="$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace 2>/dev/null || true)"
+        fi
+        if [ -n "${DEV_NS}" ] && echo "${DEV_NS}" | grep -q -- '-devspaces$'; then
+          APP_NS="${DEV_NS%-devspaces}-neuralbank"
+        else
+          APP_NS="${DEV_NS}"
+        fi
+        if [ -n "${APP_NS}" ]; then
+          export NEURALBANK_BACKEND_URL="http://neuralbank-backend.${APP_NS}.svc.cluster.local:8080"
+          echo "Using backend URL: ${NEURALBANK_BACKEND_URL}"
+        fi
         mvn -ntp quarkus:dev
       workingDir: ${PROJECT_SOURCE}
       group:
