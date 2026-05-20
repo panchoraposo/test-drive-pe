@@ -27,6 +27,29 @@ stringData:
   header: "Bearer {{ .Values.rhdhBackendSecret | default "a01bb6ee68d5afbd9e82402b1a37a73d900bc653d6dc2375dec06bce6d62f34d" }}"
 ---
 ##
+## Allow all workshop users to access OLS console plugin endpoints
+## (the operator creates ClusterRole `lightspeed-operator-query-access` for /ols-access and /ls-access).
+##
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: lightspeed-operator-query-access-authenticated
+  annotations:
+    argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: lightspeed-operator-query-access
+subjects:
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: system:authenticated
+  - kind: Group
+    apiGroup: rbac.authorization.k8s.io
+    name: system:authenticated:oauth
+---
+##
 ## OLSConfig — LiteLLM + MCP servers for tool calling
 ##
 apiVersion: ols.openshift.io/v1alpha1
