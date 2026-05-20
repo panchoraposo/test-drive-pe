@@ -37,7 +37,7 @@ commands:
       component: tools
       commandLine: |
         set -eu
-        mvn -ntp quarkus:dev -Dquarkus.http.host=0.0.0.0 -Dquarkus.http.proxy.proxy-address-forwarding=true
+        mvn -ntp quarkus:dev
       workingDir: ${PROJECT_SOURCE}
       group:
         kind: run
