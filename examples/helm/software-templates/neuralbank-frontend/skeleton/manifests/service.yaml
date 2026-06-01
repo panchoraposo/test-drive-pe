@@ -9,6 +9,7 @@ metadata:
 spec:
   selector:
     app.kubernetes.io/name: ${{values.name}}
+    app.kubernetes.io/component: application
   ports:
     - name: http
       port: 8080

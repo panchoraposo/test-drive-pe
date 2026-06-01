@@ -8,6 +8,7 @@ metadata:
     backstage.io/kubernetes-id: ${{values.uniqueName}}
     app.openshift.io/runtime: istio
   annotations:
+    argocd.argoproj.io/sync-wave: "0"
     networking.istio.io/service-type: ClusterIP
     kuadrant.io/namespace: kuadrant-system
 spec:

@@ -327,12 +327,26 @@ spec:
           set -euo pipefail
           USER_COUNT="{{ .Values.userCount | default 200 }}"
           echo "Enrolling user namespaces into Istio ambient mode (no sidecars) with waypoint..."
+          label_ns() {
+            local ns="$1"
+            oc label namespace "$ns" \
+              istio.io/dataplane-mode=ambient \
+              istio.io/use-waypoint=waypoint \
+              istio.io/ingress-use-waypoint=true \
+              --overwrite >/dev/null
+            echo "Labeled $ns"
+          }
           for i in $(seq 1 "$USER_COUNT"); do
             ns="user${i}-neuralbank"
-            if ! oc get namespace "$ns" >/dev/null 2>&1; then
-              continue
+            if oc get namespace "$ns" >/dev/null 2>&1; then
+              label_ns "$ns"
             fi
-            oc label namespace "$ns" istio.io/dataplane-mode=ambient istio.io/use-waypoint=waypoint istio.io/ingress-use-waypoint=true --overwrite >/dev/null
-            echo "Labeled $ns"
+          done
+          # Catch application namespaces created by Argo CD (CreateNamespace) before connectivity-link-namespaces.
+          for ns in $(oc get ns -l purpose=application-deployment -o jsonpath='{range .items[*]}{.metadata.name}{"\n"}{end}' 2>/dev/null || true); do
+            [ -n "$ns" ] || continue
+            if ! oc get namespace "$ns" -o jsonpath='{.metadata.labels.istio\.io/dataplane-mode}' 2>/dev/null | grep -q ambient; then
+              label_ns "$ns"
+            fi
           done
           echo "Done."

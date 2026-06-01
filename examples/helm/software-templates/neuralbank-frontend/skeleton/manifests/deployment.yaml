@@ -5,6 +5,7 @@ metadata:
   namespace: ${{values.namespace}}
   labels:
     app.kubernetes.io/name: ${{values.name}}
+    app.kubernetes.io/component: application
     app.kubernetes.io/part-of: neuralbank
     app.openshift.io/runtime: apache
     backstage.io/kubernetes-id: ${{values.uniqueName}}
@@ -19,6 +20,7 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: ${{values.name}}
+        app.kubernetes.io/component: application
         app.openshift.io/runtime: apache
         backstage.io/kubernetes-id: ${{values.uniqueName}}
     spec:
