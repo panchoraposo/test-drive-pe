@@ -268,31 +268,41 @@ spec:
                         DEVFILE_B64=$(echo "$DEVFILE_RESP" | sed -n 's/.*"content":"\([^"]*\)".*/\1/p')
                         if [ -n "$DEVFILE_SHA" ] && [ -n "$DEVFILE_B64" ]; then
                           DEVFILE_CONTENT=$(printf '%s' "$DEVFILE_B64" | tr -d '\n' | base64 -d 2>/dev/null || true)
-                          if [ -n "$DEVFILE_CONTENT" ] && ! printf '%s\n' "$DEVFILE_CONTENT" | grep -qE '^projects:'; then
-                            ORIGIN_URL="https://gitea-gitea.${DOMAIN}/${ORG}/${REPO}.git"
-                            NEW_DEVFILE=$(printf '%s\n' "$DEVFILE_CONTENT" | awk -v repo="$REPO" -v origin="$ORIGIN_URL" '
-                              BEGIN { inserted=0 }
-                              (!inserted && $0 ~ /^components:/) {
-                                print "projects:"
-                                print "  - name: " repo
-                                print "    git:"
-                                print "      remotes:"
-                                print "        origin: " origin
-                                print "      checkoutFrom:"
-                                print "        revision: main"
-                                print ""
-                                inserted=1
-                              }
-                              { print }
-                            ')
+                          if [ -n "$DEVFILE_CONTENT" ]; then
+                            NEW_DEVFILE="$DEVFILE_CONTENT"
+
+                            # Inject `projects:` so workspaces created from a raw devfile URL clone the repo.
+                            if ! printf '%s\n' "$NEW_DEVFILE" | grep -qE '^projects:'; then
+                              ORIGIN_URL="https://gitea-gitea.${DOMAIN}/${ORG}/${REPO}.git"
+                              NEW_DEVFILE=$(printf '%s\n' "$NEW_DEVFILE" | awk -v repo="$REPO" -v origin="$ORIGIN_URL" '
+                                BEGIN { inserted=0 }
+                                (!inserted && $0 ~ /^components:/) {
+                                  print "projects:"
+                                  print "  - name: " repo
+                                  print "    git:"
+                                  print "      remotes:"
+                                  print "        origin: " origin
+                                  print "      checkoutFrom:"
+                                  print "        revision: main"
+                                  print ""
+                                  inserted=1
+                                }
+                                { print }
+                              ')
+                            fi
+
+                            # Avoid flaky Quarkus `package` in DevSpaces build task; compile is enough.
+                            NEW_DEVFILE=$(printf '%s\n' "$NEW_DEVFILE" | sed \
+                              -e 's|mvn -ntp package -DskipTests|mvn -ntp -DskipTests compile|g')
+
                             if [ -n "$NEW_DEVFILE" ] && [ "$DEVFILE_CONTENT" != "$NEW_DEVFILE" ]; then
                               NEW_DEVFILE_B64=$(printf '%s' "$NEW_DEVFILE" | base64 | tr -d '\n')
                               PUT_CODE=$(curl -sS -o /dev/null -w "%{http_code}" -X PUT \
                                 "${GITEA}/api/v1/repos/${ORG}/${REPO}/contents/devfile.yaml" \
                                 -u "${ADMIN_USER}:${ADMIN_PASS}" \
                                 -H "Content-Type: application/json" \
-                                -d "$(printf '{"message":"Add projects to devfile for auto-clone","content":"%s","sha":"%s","branch":"main"}' "$NEW_DEVFILE_B64" "$DEVFILE_SHA")" || true)
-                              echo "  devfile projects injection ${ORG}/${REPO}: HTTP ${PUT_CODE}"
+                                -d "$(printf '{"message":"Update devfile for DevSpaces auto-clone/build","content":"%s","sha":"%s","branch":"main"}' "$NEW_DEVFILE_B64" "$DEVFILE_SHA")" || true)
+                              echo "  devfile migration ${ORG}/${REPO}: HTTP ${PUT_CODE}"
                             fi
                           fi
                         fi

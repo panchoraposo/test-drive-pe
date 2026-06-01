@@ -34,7 +34,9 @@ commands:
       component: tools
       commandLine: |
         set -eu
-        mvn -ntp package -DskipTests
+        # In DevSpaces we only need to compile/download deps; `package` runs Quarkus augmentation,
+        # which has proven flaky on some workspace filesystems.
+        mvn -ntp -DskipTests compile
       workingDir: ${PROJECT_SOURCE}
       group:
         kind: build
