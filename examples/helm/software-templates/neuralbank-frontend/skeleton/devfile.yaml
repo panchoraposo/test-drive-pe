@@ -6,6 +6,13 @@ metadata:
   description: ${{values.description}}
   language: HTML
   projectType: Static
+projects:
+  - name: ${{values.name}}
+    git:
+      remotes:
+        origin: https://gitea-gitea.${{values.clusterDomain}}/ws-${{values.owner}}/${{values.name}}.git
+      checkoutFrom:
+        revision: main
 components:
   - name: tools
     container:

@@ -259,6 +259,45 @@ spec:
                         fi
                       fi
 
+                      # If starting from a devfile URL, Che/Dev Spaces only clones repositories defined in `projects:`.
+                      # Older workshop repos shipped devfiles without `projects`, which results in an empty workspace.
+                      DEVFILE_RESP=$(curl -sS -u "${ADMIN_USER}:${ADMIN_PASS}" \
+                        "${GITEA}/api/v1/repos/${ORG}/${REPO}/contents/devfile.yaml?ref=main" 2>/dev/null || true)
+                      if echo "$DEVFILE_RESP" | grep -q '"sha"'; then
+                        DEVFILE_SHA=$(echo "$DEVFILE_RESP" | sed -n 's/.*"sha":"\([^"]*\)".*/\1/p')
+                        DEVFILE_B64=$(echo "$DEVFILE_RESP" | sed -n 's/.*"content":"\([^"]*\)".*/\1/p')
+                        if [ -n "$DEVFILE_SHA" ] && [ -n "$DEVFILE_B64" ]; then
+                          DEVFILE_CONTENT=$(printf '%s' "$DEVFILE_B64" | tr -d '\n' | base64 -d 2>/dev/null || true)
+                          if [ -n "$DEVFILE_CONTENT" ] && ! printf '%s\n' "$DEVFILE_CONTENT" | grep -qE '^projects:'; then
+                            ORIGIN_URL="https://gitea-gitea.${DOMAIN}/${ORG}/${REPO}.git"
+                            NEW_DEVFILE=$(printf '%s\n' "$DEVFILE_CONTENT" | awk -v repo="$REPO" -v origin="$ORIGIN_URL" '
+                              BEGIN { inserted=0 }
+                              (!inserted && $0 ~ /^components:/) {
+                                print "projects:"
+                                print "  - name: " repo
+                                print "    git:"
+                                print "      remotes:"
+                                print "        origin: " origin
+                                print "      checkoutFrom:"
+                                print "        revision: main"
+                                print ""
+                                inserted=1
+                              }
+                              { print }
+                            ')
+                            if [ -n "$NEW_DEVFILE" ] && [ "$DEVFILE_CONTENT" != "$NEW_DEVFILE" ]; then
+                              NEW_DEVFILE_B64=$(printf '%s' "$NEW_DEVFILE" | base64 | tr -d '\n')
+                              PUT_CODE=$(curl -sS -o /dev/null -w "%{http_code}" -X PUT \
+                                "${GITEA}/api/v1/repos/${ORG}/${REPO}/contents/devfile.yaml" \
+                                -u "${ADMIN_USER}:${ADMIN_PASS}" \
+                                -H "Content-Type: application/json" \
+                                -d "$(printf '{"message":"Add projects to devfile for auto-clone","content":"%s","sha":"%s","branch":"main"}' "$NEW_DEVFILE_B64" "$DEVFILE_SHA")" || true)
+                              echo "  devfile projects injection ${ORG}/${REPO}: HTTP ${PUT_CODE}"
+                            fi
+                          fi
+                        fi
+                      fi
+
                       HOOKS=$(curl -sS -u "${ADMIN_USER}:${ADMIN_PASS}" \
                         "${GITEA}/api/v1/repos/${ORG}/${REPO}/hooks" 2>/dev/null || echo "[]")
 
