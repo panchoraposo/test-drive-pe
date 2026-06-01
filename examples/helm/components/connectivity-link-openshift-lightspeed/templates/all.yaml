@@ -647,12 +647,12 @@ data:
         return ""
 
       # Prefer explicit http(s) URLs first.
-      m = re.search(r"https?://[^\\s<>]+", t)
+      m = re.search(r"https?://[^\s<>]+", t)
       url = m.group(0) if m else ""
 
       # Fallback: some prompts may omit the scheme (rare, but happens in copy/paste).
       if not url:
-        m2 = re.search(r"\\b(gitea-[^\\s/]+\\.[^\\s/]+/[^\\s]+)\\b", t)
+        m2 = re.search(r"\b(gitea-[^\s/]+\.[^\s/]+/[^\s]+)\b", t)
         if m2:
           url = "https://" + m2.group(1)
 
@@ -660,8 +660,8 @@ data:
       # If the extracted URL looks truncated (common symptom: ends at `https://gitea-gitea.app`),
       # retry extraction on a whitespace-stripped version of the text.
       if url and (".yaml" not in url or url.endswith(".app")):
-        compact = re.sub(r"\\s+", "", t)
-        m3 = re.search(r"https?://[^\\s<>]+", compact)
+        compact = re.sub(r"\s+", "", t)
+        m3 = re.search(r"https?://[^\s<>]+", compact)
         url2 = m3.group(0) if m3 else ""
         if url2 and ".yaml" in url2:
           url = url2
