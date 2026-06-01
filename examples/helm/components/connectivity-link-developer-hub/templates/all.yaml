@@ -486,8 +486,6 @@ data:
         - type: url
           target: https://github.com/panchoraposo/test-drive-pe/blob/{{ .Values.gitopsRevision }}/examples/helm/components/connectivity-link-neuralbank-stack/catalog-info.yaml
         - type: url
-          target: https://github.com/panchoraposo/test-drive-pe/blob/{{ .Values.gitopsRevision }}/examples/helm/components/connectivity-link-nfl-wallet/catalog-info.yaml
-        - type: url
           target: https://github.com/panchoraposo/test-drive-pe/blob/{{ .Values.gitopsRevision }}/examples/helm/components/connectivity-link-observability/catalog-info.yaml
         - type: url
           target: https://github.com/panchoraposo/test-drive-pe/blob/{{ .Values.gitopsRevision }}/examples/helm/components/connectivity-link-mailpit/catalog-info.yaml
