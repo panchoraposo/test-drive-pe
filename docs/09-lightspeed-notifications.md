@@ -56,7 +56,8 @@ Los componentes se ejecutan como sidecars junto al backend de Developer Hub:
 
 | Pregunta sugerida | Qué obtendrás |
 | --- | --- |
-| "How do I create and use Software Templates?" | Flujo de scaffolding y golden paths |
+| "How do I create and use Software Templates?" | Flujo de scaffolding y golden paths (Create → Template, parámetros, enlaces generados) |
+| "How do I build a backend service for this workshop using Software Templates, and how does it get built with Tekton and deployed with Argo CD?" | Recorrido completo: plantilla → PipelineRun inicial → sync en Argo CD; dónde mirar (CI, app Argo CD, pods) |
 | "What components make up the Neuralbank platform?" | Arquitectura backend, frontend y MCP |
 | "How are Tekton pipelines configured for CI/CD?" | Configuración de pipelines y triggers |
 | "What is the OIDCPolicy pattern in Connectivity Link?" | Patrón de autenticación con Keycloak |

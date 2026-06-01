@@ -118,6 +118,16 @@ Sustituye `YOUR_ROUTE_HOST` por el hostname que muestra la Route en OpenShift.
 1. Haz clic en el icono de **campana** (notificaciones) en la barra superior de Developer Hub.
 2. Deberías ver una notificación con el título "Neuralbank Backend deployed successfully" indicando el componente creado y el namespace de despliegue.
 
+## Opcional: preguntar a Developer Hub Lightspeed
+
+En **Lightspeed** (menú lateral de Developer Hub), puedes usar este prompt para obtener un resumen del flujo Tekton + Argo CD (distinto del prompt genérico de Software Templates):
+
+```text
+How do I build a backend service for this workshop using Software Templates, and how does it get built with Tekton and deployed with Argo CD?
+```
+
+La respuesta esperada describe el scaffold, el PipelineRun inicial, el despliegue por Argo CD y dónde seguir el progreso (pestaña **CI**, aplicación en Argo CD, pods en OpenShift).
+
 ## Resumen
 
 Has recorrido el camino completo **Hub → plantilla → Gitea → Argo CD → Tekton → OpenShift → Notificación**, validando además la API en `/api/customers` y `/api/credits`. Cada componente usa un nombre único con prefijo de usuario para evitar colisiones en el entorno compartido. Este flujo es la base para los módulos de pipelines, frontend y Dev Spaces.

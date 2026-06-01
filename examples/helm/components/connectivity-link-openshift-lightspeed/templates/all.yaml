@@ -530,6 +530,17 @@ data:
         "- Argo CD syncs changes to the cluster\n\n"
         "To debug: check the PipelineRun logs and then confirm Argo CD shows the app as Healthy/Synced."
       ),
+      "backend scaffold tekton argocd": (
+        "Workshop flow — Software Template → Tekton → Argo CD:\n\n"
+        "1) **Scaffold** (Create → *Neuralbank: Backend API*): Gitea repo + Tekton manifests + Argo CD Application in `YOUR_USER-neuralbank`.\n"
+        "2) **Initial build**: one Tekton PipelineRun (build/test, then image build/push).\n"
+        "3) **Deploy**: Argo CD syncs and rolls out pods on OpenShift.\n\n"
+        "Watch progress:\n"
+        "- Developer Hub → component → **CI** (PipelineRuns)\n"
+        "- Argo CD → app `YOUR_USER-neuralbank-backend` (Synced/Healthy)\n"
+        "- OpenShift → project `YOUR_USER-neuralbank` → Pods/Route\n\n"
+        "Use the scaffolder output links to jump to repo, pipeline run, and Argo CD app."
+      ),
     }
 
 
@@ -700,6 +711,24 @@ data:
       return json.dumps(out, ensure_ascii=False)
 
 
+    def _is_backend_scaffold_pipeline_prompt(key: str) -> bool:
+      """Full workshop path: build backend via template + Tekton + Argo CD."""
+      # Be permissive: the prompt often mentions Software Templates alongside Tekton/Argo CD.
+      has_build_backend = (
+        ("backend" in key and ("build" in key or "scaffold" in key or "create" in key))
+        or ("build backend" in key)
+      )
+      has_pipeline_deploy = (
+        "tekton" in key
+        or "ci/cd" in key
+        or "cicd" in key
+        or "argo cd" in key
+        or "argocd" in key
+      )
+      has_templates = ("software template" in key) or ("software templates" in key)
+      return (has_build_backend and has_pipeline_deploy) or (("backend" in key) and has_templates and has_pipeline_deploy)
+
+
     def _extract_namespace(text: str) -> str | None:
       # English + Spanish-ish patterns
       t = (text or "").lower()
@@ -739,6 +768,8 @@ data:
 
       # Lightspeed preset buttons sometimes send the full question (not just the title).
       # Match by keywords/contains so the workshop "expected" answers show up.
+      if _is_backend_scaffold_pipeline_prompt(key):
+        return {"content": PRESET_ANSWERS["backend scaffold tekton argocd"]}
       if "software template" in key or ("template" in key and "developer hub" in key):
         # If the user is asking to list/search templates, call the Developer Hub MCP tool instead of answering generically.
         if ("list" in key or "search" in key or "available" in key) and ("catalog" in key or "developer hub" in key):
