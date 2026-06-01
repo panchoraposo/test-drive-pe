@@ -134,6 +134,14 @@ data:
         rewrite ^/\"modules\"/(.*)$ /modules/$1 permanent;
         rewrite ^/\"modules-es\"$ /modules-es/ permanent;
         rewrite ^/\"modules-es\"/(.*)$ /modules-es/$1 permanent;
+        # Antora sources live under content/ and content-es/; published site uses /modules/ and /modules-es/.
+        rewrite ^/content-es/?$ /modules-es/ permanent;
+        rewrite ^/content-es/(.*)$ /modules-es/$1 permanent;
+        rewrite ^/content/?$ /modules/ permanent;
+        rewrite ^/content/(.*)$ /modules/$1 permanent;
+        # Extensionless lab page URLs (client router, bookmark, or refresh) must map to .html files.
+        rewrite ^/www/(modules(?:-es)?)/([^./?#]+)/?$ /www/$1/$2.html last;
+        rewrite ^/(modules(?:-es)?)/([^./?#]+)/?$ /$1/$2.html last;
         # Prevent stale lab guide content in embedded views.
         # The Showroom UI can be opened in multiple frames; aggressive browser caching
         # may cause users to keep seeing old pages after updates.
@@ -166,6 +174,16 @@ data:
         {{- end }}
       }
     }
+---
+# Patched supplemental UI (refresh-safe paths); applied before Antora build.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.showroom.name }}-ui-patch
+  namespace: {{ .Values.showroom.namespace }}
+data:
+  header-content.hbs: |
+{{ .Files.Get "files/header-content.hbs" | indent 4 }}
 ---
 # Showroom User Data ConfigMap
 apiVersion: v1
@@ -244,6 +262,22 @@ spec:
         - mountPath: /showroom/repo
           name: showroom-files
           subPath: repo
+      - name: patch-supplemental-ui
+        image: "quay.io/rhpds/git-cloner:v1.1.2"
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            set -e
+            dest="/showroom/repo/content/supplemental-ui/partials/header-content.hbs"
+            mkdir -p "$(dirname "$dest")"
+            cp /patch/header-content.hbs "$dest"
+        volumeMounts:
+        - mountPath: /showroom/repo
+          name: showroom-files
+          subPath: repo
+        - mountPath: /patch
+          name: showroom-ui-patch
+          readOnly: true
       - name: antora-builder
         image: "quay.io/rhpds/antora:v1.0.1"
         env:
@@ -346,6 +380,9 @@ spec:
       - name: user-data
         configMap:
           name: {{ .Values.showroom.name }}-userdata
+      - name: showroom-ui-patch
+        configMap:
+          name: {{ .Values.showroom.name }}-ui-patch
       - name: nginx-config
         configMap:
           defaultMode: 420

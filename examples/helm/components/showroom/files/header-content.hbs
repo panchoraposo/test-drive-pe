@@ -1,0 +1,87 @@
+<header class="header">
+  <nav class="navbar">
+    <div class="navbar-brand" style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+      <span class="navbar-item" style="margin-left: 2.5%; display:flex; align-items:center;">
+        <img src="{{{uiRootPath}}}/img/redhat-hat.svg" alt="Red Hat" style="height:28px;width:auto;">
+      </span>
+      <span class="navbar-item site-title" style="color:#fff !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:70vw;">
+        {{site.title}}
+      </span>
+      <span class="navbar-item" style="margin-left:auto;display:flex;gap:8px;align-items:center;">
+        <a id="link-lang-en" href="/modules/" style="color:#fff;font-size:0.8rem;text-decoration:none;padding:3px 8px;border:1px solid #444;border-radius:4px;" title="English">EN</a>
+        <a id="link-lang-es" href="/modules-es/" style="color:#fff;font-size:0.8rem;text-decoration:none;padding:3px 8px;border:1px solid #444;border-radius:4px;" title="Español">ES</a>
+      </span>
+    </div>
+  </nav>
+</header>
+<script>
+(function() {
+  function normalizeShowroomPath(pathname) {
+    if (!pathname) return pathname;
+    var p = pathname;
+    try { p = decodeURIComponent(p); } catch (e) {}
+
+    if (p === '/content-es' || p.indexOf('/content-es/') === 0) {
+      p = '/modules-es' + p.slice('/content-es'.length);
+    } else if (p === '/content' || p.indexOf('/content/') === 0) {
+      p = '/modules' + p.slice('/content'.length);
+    }
+
+    var rules = [
+      { from: "/'modules-es'/", to: "/modules-es/" },
+      { from: "/'modules-es'", to: "/modules-es" },
+      { from: '/"modules-es"/', to: "/modules-es/" },
+      { from: '/"modules-es"', to: "/modules-es" },
+      { from: "/'modules'/", to: "/modules/" },
+      { from: "/'modules'", to: "/modules" },
+      { from: '/"modules"/', to: "/modules/" },
+      { from: '/"modules"', to: "/modules" }
+    ];
+    for (var i = 0; i < rules.length; i++) {
+      if (p.indexOf(rules[i].from) === 0) {
+        p = rules[i].to + p.slice(rules[i].from.length);
+        break;
+      }
+    }
+
+    var page = p.match(/^(\/www)?\/(modules(?:-es)?)\/([^./?#]+)\/?$/);
+    if (page && !/\.html$/i.test(p)) {
+      p = (page[1] || '') + '/' + page[2] + '/' + page[3] + '.html';
+    }
+
+    if ((p === '/modules' || p === '/modules-es') && p.charAt(p.length - 1) !== '/') {
+      p = p + '/';
+    }
+
+    return p;
+  }
+
+  function init() {
+    var langEn = document.getElementById('link-lang-en');
+    var langEs = document.getElementById('link-lang-es');
+    if (!langEn || !langEs) return;
+
+    var qs = window.location.search || '';
+    var h = window.location.hash || '';
+    var current = window.location.pathname || '/';
+    var normalized = normalizeShowroomPath(current);
+
+    if (normalized && normalized !== current) {
+      window.location.replace(normalized + qs + h);
+      return;
+    }
+
+    langEn.href = '/modules/' + qs + h;
+    langEs.href = '/modules-es/' + qs + h;
+
+    var onEs = (current.indexOf('/modules-es/') === 0 || current.indexOf('/www/modules-es/') === 0);
+    langEs.style.opacity = onEs ? '1.0' : '0.75';
+    langEn.style.opacity = onEs ? '0.75' : '1.0';
+    langEs.style.borderColor = onEs ? '#73bcf7' : '#444';
+    langEn.style.borderColor = onEs ? '#444' : '#73bcf7';
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
+</script>
