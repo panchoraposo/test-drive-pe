@@ -1,0 +1,178 @@
+= 11. Stack de observabilidad
+
+La plataforma del workshop incluye un stack de observabilidad completo para monitorear, trazar y visualizar la salud de tus aplicaciones y del service mesh.
+
+== Herramientas de observabilidad
+
+[cols="1,2,1"]
+|===
+| Herramienta | Propósito | URL
+
+| **Grafana**
+| Dashboards de monitoreo y alertas
+| https://grafana-observability.{cluster_domain}
+
+| **Kiali**
+| Observabilidad del service mesh y visualización de tráfico
+| https://kiali-openshift-cluster-observability-operator.{cluster_domain}
+
+| **Jaeger**
+| Trazas distribuidas entre microservicios
+| https://jaeger.{cluster_domain}
+|===
+
+TIP: Estas herramientas también están disponibles desde los **Console Links** del menú de aplicaciones de OpenShift y desde la tarjeta **Observability** en la home de Developer Hub.
+
+== Dashboards en Grafana
+
+. Abre Grafana en `https://grafana-observability.{cluster_domain}`
+. Explora dashboards preconfigurados para:
+** Salud del cluster y uso de recursos
+** Métricas por namespace para `{user_name}-neuralbank`
+** Tráfico y latencia del mesh Istio
+
+=== Métricas clave a observar
+
+* **Request rate** — requests por segundo hacia el Gateway
+* **Error rate** — porcentaje de respuestas 4xx/5xx
+* **Latency** — tiempos de respuesta p50/p95/p99
+* **Rechazos por rate limit** — respuestas 429 desde Kuadrant
+
+== Kiali: visualización del service mesh
+
+. Abre Kiali en `https://kiali-openshift-cluster-observability-operator.{cluster_domain}`
+. Navega a la vista **Graph**.
+. Selecciona el namespace `{user_name}-neuralbank` (no `showroom`).
+. Observa el flujo de tráfico entre servicios.
++
+TIP: Si el grafo aparece vacío, normalmente significa que **no hay tráfico en la ventana de tiempo seleccionada** (o que aún no han pasado requests por esos nodos). Prueba:
++
+* Cambiar el rango de tiempo a **Last 1h**
+* Hacer clic en **Display idle nodes**
+* Generar tráfico desde esta terminal (ver abajo). La terminal embebida corre en `showroom`, por lo que por defecto no puede hacer `oc exec` en tu namespace.
+
+=== Rutas del backend (verificadas)
+
+| Ruta | Código típico | Notas
+| `/api/customers` | 200 | Endpoint principal para demos
+| `/q/health` | 200 | Health Quarkus (sin API key)
+| `/api/hello` | 404 o 200 | No está en el template base; usa `/api/customers`
+| Gateway sin `X-API-Key` | 401 | Se ve como tráfico fallido en Kiali
+| Gateway con API key válida | 200 o 503 | 503 = problema gateway→backend vía waypoint
+
+=== Generar tráfico exitoso (recomendado)
+
+[.console-input]
+[source,bash]
+----
+USER_NS="{user_name}-neuralbank"
+DOMAIN="<dominio-apps-del-cluster>"
+
+# 1) Frontend Route (debería devolver 200; genera tráfico de usuario)
+for i in $(seq 1 20); do
+  curl -sk -o /dev/null -w "frontend %{http_code}\n" \
+    "https://neuralbank-frontend-${USER_NS}.${DOMAIN}/" || true
+  sleep 0.3
+done
+
+# 2) Backend Service (FQDN) (debería devolver 200; sin API key)
+BE="http://neuralbank-backend.${USER_NS}.svc.cluster.local:8080"
+for i in $(seq 1 20); do
+  curl -sS -o /dev/null -w "backend %{http_code}\n" \
+    "${BE}/api/customers" || true
+  sleep 0.3
+done
+
+# 3) MCP Service (FQDN) (debería devolver 200 en /q/health si hay endpoints)
+MCP="http://customer-service-mcp.${USER_NS}.svc.cluster.local:8080"
+for i in $(seq 1 10); do
+  curl -sS -o /dev/null -w "mcp %{http_code}\n" \
+    "${MCP}/q/health" || true
+  sleep 0.3
+done
+----
+
+Si falta el nodo **MCP**: comprueba `oc -n {user_name}-neuralbank get endpoints customer-service-mcp`. Si está `<none>`, el pod no tiene la etiqueta `app.kubernetes.io/component=application` (re-despliega MCP o sincroniza ArgoCD).
+
+O abre `https://neuralbank-frontend-{user_name}-neuralbank.{cluster_domain}` y refresca la página **Credits**.
+
+Kiali muestra:
+
+* **Ruteo de tráfico** a través del Istio Gateway
+* **Indicadores de salud** por servicio
+* **Métricas request/response** entre componentes
+* **Aplicación de políticas Kuadrant** a nivel gateway
+
+[mermaid]
+....
+graph LR
+    EXT[External Traffic] -->|HTTPS| GW[Istio Gateway]
+    GW -->|AuthPolicy| BE[neuralbank-backend]
+    GW -->|AuthPolicy| MCP[customer-service-mcp]
+    FE[neuralbank-frontend] -->|proxy| GW
+    BE --> DB[PostgreSQL]
+
+    style GW fill:#f9f,stroke:#333
+    style BE fill:#9cf,stroke:#333
+    style MCP fill:#9cf,stroke:#333
+....
+
+== Jaeger y pestaña Traces en Kiali
+
+. Abre Jaeger en `https://jaeger.{cluster_domain}`
+. Tras generar tráfico in-mesh, busca servicios como `neuralbank-backend.{user_name}-neuralbank`.
+
+Si **Kiali → Traces** está vacío: Istio debe enviar OTLP a `jaeger.openshift-opentelemetry:4317` (el chart del workshop lo configura en `connectivity-link-servicemeshoperator3`; clusters antiguos apuntaban a un collector inexistente). El muestreo por defecto es 10% — genera 20–30 requests. No esperes `x-b3-traceid` en respuestas `curl -I`.
+
+[source,bash]
+----
+oc -n openshift-opentelemetry exec deploy/jaeger -- \
+  wget -qO- http://127.0.0.1:16686/api/services
+----
+
+Cada traza muestra el camino completo de una request:
+
+. Client -> Istio Gateway (TLS termination)
+. Gateway -> Kuadrant AuthPolicy (authentication check)
+. AuthPolicy -> RateLimitPolicy (rate limit check)
+. Limitador -> Backend Service (business logic)
+. Backend -> PostgreSQL (data access)
+
+== Monitorear el stack de Kuadrant
+
+[.console-input]
+[source,bash]
+----
+# Check Kuadrant operator status
+oc get pods -n kuadrant-system
+
+# Check Authorino (authentication engine)
+oc get pods -n kuadrant-system -l app=authorino
+
+# Check Limitador (rate limiting engine)
+oc get pods -n kuadrant-system -l app=limitador
+
+# View rate limit counters
+oc logs -n kuadrant-system -l app=limitador --tail=20
+----
+
+== Health checks desde el frontend
+
+La SPA del frontend Neuralbank incluye indicadores de health:
+
+* **Backend Gateway** — estado verde/rojo para `http://neuralbank-backend-gateway-istio:8080`
+* **MCP Gateway** — estado verde/rojo para `http://customer-service-mcp-gateway-istio:8080`
+* **MCP Tools** — lista tools disponibles invocables por IA desde el MCP server
+
+Estos indicadores dan visibilidad inmediata de conectividad del gateway sin salir de la aplicación.
+
+== Resumen
+
+El stack de observabilidad provee visibilidad end-to-end a través de la plataforma:
+
+* **Grafana** para métricas y dashboards
+* **Kiali** para visualización de tráfico del service mesh
+* **Jaeger** para trazas distribuidas
+* **Indicadores del frontend** para estado del gateway en tiempo real
+
+Combinado con políticas de Kuadrant y GitOps con ArgoCD, esto crea una plataforma completamente observable.

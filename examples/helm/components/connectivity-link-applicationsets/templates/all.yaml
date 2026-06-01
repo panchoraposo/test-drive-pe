@@ -329,7 +329,7 @@ spec:
                                   if [ "$MFILE" = "manifests/service.yaml" ] && ! printf '%s' "$NEW_M" | grep -q 'app.kubernetes.io/component: application'; then
                                     NEW_M=$(printf '%s' "$NEW_M" | awk '
                                       /^  selector:/ { sel=1 }
-                                      sel && /app.kubernetes.io\/name:/ { print; print "    app.kubernetes.io/component: application"; sel=0; next }
+                                      sel && (/app.kubernetes.io\/name:/ || /app:[[:space:]]*[A-Za-z0-9_.-]+/) { print; print "    app.kubernetes.io/component: application"; sel=0; next }
                                       { print }
                                     ')
                                   fi
@@ -337,11 +337,11 @@ spec:
                                     NEW_M=$(printf '%s' "$NEW_M" | awk '
                                       /^  selector:/ { dep=1 }
                                       dep && /matchLabels:/ { ml=1 }
-                                      ml && /app.kubernetes.io\/name:/ { print; print "      app.kubernetes.io/component: application"; ml=0; next }
+                                      ml && (/app.kubernetes.io\/name:/ || /app:[[:space:]]*[A-Za-z0-9_.-]+/) { print; print "      app.kubernetes.io/component: application"; ml=0; next }
                                       /^      labels:/ { pod=1 }
-                                      pod && /app.kubernetes.io\/name:/ { print; print "        app.kubernetes.io/component: application"; pod=0; next }
+                                      pod && (/app.kubernetes.io\/name:/ || /app:[[:space:]]*[A-Za-z0-9_.-]+/) { print; print "        app.kubernetes.io/component: application"; pod=0; next }
                                       /^  labels:/ { top=1 }
-                                      top && /app.kubernetes.io\/name:/ { print; print "    app.kubernetes.io/component: application"; top=0; next }
+                                      top && (/app.kubernetes.io\/name:/ || /app:[[:space:]]*[A-Za-z0-9_.-]+/) { print; print "    app.kubernetes.io/component: application"; top=0; next }
                                       { print }
                                     ')
                                   fi

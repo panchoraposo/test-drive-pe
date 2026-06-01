@@ -175,7 +175,7 @@ data:
       }
     }
 ---
-# Patched supplemental UI (refresh-safe paths); applied before Antora build.
+# Patched supplemental UI and lab pages; applied before Antora build.
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -184,6 +184,10 @@ metadata:
 data:
   header-content.hbs: |
 {{ .Files.Get "files/header-content.hbs" | indent 4 }}
+  13-observability.adoc: |
+{{ .Files.Get "files/13-observability.adoc" | indent 4 }}
+  13-observability-es.adoc: |
+{{ .Files.Get "files/13-observability-es.adoc" | indent 4 }}
 ---
 # Showroom User Data ConfigMap
 apiVersion: v1
@@ -271,6 +275,8 @@ spec:
             dest="/showroom/repo/content/supplemental-ui/partials/header-content.hbs"
             mkdir -p "$(dirname "$dest")"
             cp /patch/header-content.hbs "$dest"
+            cp /patch/13-observability.adoc /showroom/repo/content/modules/ROOT/pages/13-observability.adoc
+            cp /patch/13-observability-es.adoc /showroom/repo/content-es/modules/ROOT/pages/13-observability.adoc
         volumeMounts:
         - mountPath: /showroom/repo
           name: showroom-files

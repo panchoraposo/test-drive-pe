@@ -250,7 +250,9 @@ spec:
       - name: otel-tracing
         opentelemetry:
           port: 4317
-          service: connectivity-link-collector-collector.openshift-opentelemetry.svc.cluster.local
+          # Jaeger all-in-one in openshift-opentelemetry exports OTLP on 4317.
+          # (connectivity-link-collector is not deployed in this workshop stack.)
+          service: jaeger.openshift-opentelemetry.svc.cluster.local
       trustDomain: cluster.local
     pilot:
       env:
