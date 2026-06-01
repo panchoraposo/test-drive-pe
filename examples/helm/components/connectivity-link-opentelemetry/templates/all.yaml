@@ -84,12 +84,23 @@ spec:
               KUBE_API="https://kubernetes.default.svc"
               CA=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 
+              # If the target secret already exists and looks complete, keep it.
+              # If it exists but has empty fields (bucket/keys), recreate it from the OBC.
               EXISTING=$(curl -sS -o /dev/null -w "%{http_code}" \
                 "$KUBE_API/api/v1/namespaces/${NS}/secrets/${TARGET}" \
                 -H "Authorization: Bearer $KUBE_TOKEN" --cacert "$CA" || true)
               if [ "$EXISTING" = "200" ]; then
-                echo "${TARGET} already exists; skipping sync"
-                exit 0
+                TJSON=$(curl -sS "$KUBE_API/api/v1/namespaces/${NS}/secrets/${TARGET}" \
+                  -H "Authorization: Bearer $KUBE_TOKEN" --cacert "$CA" || echo "{}")
+                # Base64-encoded data fields (Kubernetes Secret JSON).
+                TB=$(echo "$TJSON" | sed -n 's/.*"bucket":"\([^"]*\)".*/\1/p' | head -1)
+                TAK=$(echo "$TJSON" | sed -n 's/.*"access_key_id":"\([^"]*\)".*/\1/p' | head -1)
+                TSK=$(echo "$TJSON" | sed -n 's/.*"access_key_secret":"\([^"]*\)".*/\1/p' | head -1)
+                if [ -n "$TB" ] && [ -n "$TAK" ] && [ -n "$TSK" ]; then
+                  echo "${TARGET} already exists and is complete; skipping sync"
+                  exit 0
+                fi
+                echo "${TARGET} exists but is incomplete; re-syncing from OBC..."
               fi
 
               echo "Waiting for OBC secret ${OBC}..."
@@ -107,13 +118,16 @@ spec:
                 -H "Authorization: Bearer $KUBE_TOKEN" --cacert "$CA")
               CM_JSON=$(curl -sS "$KUBE_API/api/v1/namespaces/${NS}/configmaps/${OBC}" \
                 -H "Authorization: Bearer $KUBE_TOKEN" --cacert "$CA" || echo "{}")
+              # OBC resource has the bucket name (not in the OBC secret).
+              OBC_JSON=$(curl -sS "$KUBE_API/apis/objectbucket.io/v1alpha1/namespaces/${NS}/objectbucketclaims/${OBC}" \
+                -H "Authorization: Bearer $KUBE_TOKEN" --cacert "$CA" || echo "{}")
 
               b64dec() { echo "$1" | tr -d '\n' | base64 -d 2>/dev/null; }
               get_data() { echo "$1" | sed -n "s/.*\"$2\":\"\\([^\"]*\\)\".*/\\1/p" | head -1; }
 
               AK=$(get_data "$SEC_JSON" "AWS_ACCESS_KEY_ID")
               SK=$(get_data "$SEC_JSON" "AWS_SECRET_ACCESS_KEY")
-              BUCKET=$(get_data "$SEC_JSON" "BUCKET_NAME")
+              BUCKET=$(echo "$OBC_JSON" | sed -n 's/.*"bucketName":"\([^"]*\)".*/\1/p' | head -1)
               HOST=$(get_data "$CM_JSON" "BUCKET_HOST")
               PORT=$(get_data "$CM_JSON" "BUCKET_PORT")
               [ -z "$HOST" ] && HOST="s3.openshift-storage.svc"
@@ -123,7 +137,7 @@ spec:
 
               AK=$(b64dec "$AK")
               SK=$(b64dec "$SK")
-              BUCKET=$(b64dec "$BUCKET")
+              [ -n "$BUCKET" ] || { echo "Bucket name not found in OBC ${OBC}" >&2; exit 1; }
 
               echo "Bucket=${BUCKET} endpoint=${ENDPOINT}"
 
