@@ -287,6 +287,15 @@ spec:
             dest="/showroom/repo/content/supplemental-ui/partials/header-content.hbs"
             mkdir -p "$(dirname "$dest")"
             cp /patch/header-content.hbs "$dest"
+            # Remove direct references to Kiali/Jaeger from the published UI.
+            # The 3D model labels live in head-meta.hbs in both EN/ES content trees.
+            for f in \
+              /showroom/repo/content/supplemental-ui/partials/head-meta.hbs \
+              /showroom/repo/content-es/supplemental-ui/partials/head-meta.hbs; do
+              if [ -f "$f" ]; then
+                sed -i 's/Grafana \\/ Kiali/Grafana \\/ Service Mesh/g' "$f" || true
+              fi
+            done
             cp /patch/nav.adoc /showroom/repo/content/modules/ROOT/nav.adoc
             cp /patch/nav-es.adoc /showroom/repo/content-es/modules/ROOT/nav.adoc
             cp /patch/index.adoc /showroom/repo/content/modules/ROOT/pages/index.adoc
