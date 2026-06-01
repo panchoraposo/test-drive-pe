@@ -230,6 +230,35 @@ spec:
                       | grep -o '"name":"[^"]*"' | sed 's/"name":"//;s/"//' || true)
 
                     for REPO in $REPOS; do
+                      # Migrate legacy DevSpaces factory URLs (.git?devfilePath= or raw.gitea subdomain)
+                      # to Gitea /raw/branch/main/devfile.yaml path on the main host (avoids raw.* SAN errors).
+                      CATALOG_RESP=$(curl -sS -u "${ADMIN_USER}:${ADMIN_PASS}" \
+                        "${GITEA}/api/v1/repos/${ORG}/${REPO}/contents/catalog-info.yaml?ref=main" 2>/dev/null || true)
+                      if echo "$CATALOG_RESP" | grep -q '"sha"'; then
+                        CATALOG_SHA=$(echo "$CATALOG_RESP" | sed -n 's/.*"sha":"\([^"]*\)".*/\1/p')
+                        CATALOG_B64=$(echo "$CATALOG_RESP" | sed -n 's/.*"content":"\([^"]*\)".*/\1/p')
+                        if [ -n "$CATALOG_SHA" ] && [ -n "$CATALOG_B64" ]; then
+                          CATALOG_CONTENT=$(printf '%s' "$CATALOG_B64" | tr -d '\n' | base64 -d 2>/dev/null || true)
+                          if printf '%s' "$CATALOG_CONTENT" | grep -qE 'devfilePath=devfile\.yaml|raw\.gitea-gitea'; then
+                            FACTORY_URL="https://devspaces.${DOMAIN}/#https://gitea-gitea.${DOMAIN}/${ORG}/${REPO}/raw/branch/main/devfile.yaml?new"
+                            NEW_CATALOG=$(printf '%s' "$CATALOG_CONTENT" | sed \
+                              -e 's|\.git?new&devfilePath=devfile\.yaml|/raw/branch/main/devfile.yaml?new|g' \
+                              -e 's|raw\.gitea-gitea\.|gitea-gitea.|g' \
+                              -e "s|devspaces.io/factory: \"[^\"]*\"|devspaces.io/factory: \"${FACTORY_URL}\"|" \
+                              -e "s|- url: \"https://devspaces\\.[^\"]*\"|- url: \"${FACTORY_URL}\"|")
+                            if [ "$CATALOG_CONTENT" != "$NEW_CATALOG" ]; then
+                              NEW_CATALOG_B64=$(printf '%s' "$NEW_CATALOG" | base64 | tr -d '\n')
+                              PUT_CODE=$(curl -sS -o /dev/null -w "%{http_code}" -X PUT \
+                                "${GITEA}/api/v1/repos/${ORG}/${REPO}/contents/catalog-info.yaml" \
+                                -u "${ADMIN_USER}:${ADMIN_PASS}" \
+                                -H "Content-Type: application/json" \
+                                -d "$(printf '{"message":"Migrate DevSpaces factory URL to Gitea raw path","content":"%s","sha":"%s","branch":"main"}' "$NEW_CATALOG_B64" "$CATALOG_SHA")" || true)
+                              echo "  catalog-info DevSpaces URL migration ${ORG}/${REPO}: HTTP ${PUT_CODE}"
+                            fi
+                          fi
+                        fi
+                      fi
+
                       HOOKS=$(curl -sS -u "${ADMIN_USER}:${ADMIN_PASS}" \
                         "${GITEA}/api/v1/repos/${ORG}/${REPO}/hooks" 2>/dev/null || echo "[]")
 
