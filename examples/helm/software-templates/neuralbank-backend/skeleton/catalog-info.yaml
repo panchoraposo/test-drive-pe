@@ -81,7 +81,14 @@ spec:
     paths:
       /api/customers:
         get:
-          summary: List customers
+          summary: Search customers (paginated)
+        post:
+          summary: Create customer
+      /api/customers/{customerId}:
+        get:
+          summary: Get customer by ID
+        put:
+          summary: Update customer
       /api/credits:
         get:
           summary: List credits

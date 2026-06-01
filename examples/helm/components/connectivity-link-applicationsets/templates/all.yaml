@@ -308,6 +308,81 @@ spec:
                         fi
                       fi
 
+                      # neuralbank-backend + customer-service-mcp: keep Istio gateway pods out of the app Service
+                      # and normalize MCP REST client API key header (X-API-Key).
+                      case "$REPO" in
+                        neuralbank-backend|customer-service-mcp)
+                          for MFILE in manifests/gateway.yaml manifests/service.yaml manifests/deployment.yaml; do
+                            MRESP=$(curl -sS -u "${ADMIN_USER}:${ADMIN_PASS}" \
+                              "${GITEA}/api/v1/repos/${ORG}/${REPO}/contents/${MFILE}?ref=main" 2>/dev/null || true)
+                            if echo "$MRESP" | grep -q '"sha"'; then
+                              MSHA=$(echo "$MRESP" | sed -n 's/.*"sha":"\([^"]*\)".*/\1/p')
+                              MB64=$(echo "$MRESP" | sed -n 's/.*"content":"\([^"]*\)".*/\1/p')
+                              if [ -n "$MSHA" ] && [ -n "$MB64" ]; then
+                                MCONTENT=$(printf '%s' "$MB64" | tr -d '\n' | base64 -d 2>/dev/null || true)
+                                if [ -n "$MCONTENT" ]; then
+                                  NEW_M="$MCONTENT"
+                                  if [ "$MFILE" = "manifests/gateway.yaml" ] && printf '%s' "$NEW_M" | grep -q "kind: Gateway" \
+                                    && ! printf '%s' "$NEW_M" | grep -q "app.kubernetes.io/name: ${REPO}-gateway"; then
+                                    NEW_M=$(printf '%s' "$NEW_M" | sed "s|app.kubernetes.io/name: ${REPO}|app.kubernetes.io/name: ${REPO}-gateway|")
+                                  fi
+                                  if [ "$MFILE" = "manifests/service.yaml" ] && ! printf '%s' "$NEW_M" | grep -q 'app.kubernetes.io/component: application'; then
+                                    NEW_M=$(printf '%s' "$NEW_M" | awk '
+                                      /^  selector:/ { sel=1 }
+                                      sel && /app.kubernetes.io\/name:/ { print; print "    app.kubernetes.io/component: application"; sel=0; next }
+                                      { print }
+                                    ')
+                                  fi
+                                  if [ "$MFILE" = "manifests/deployment.yaml" ] && ! printf '%s' "$NEW_M" | grep -q 'app.kubernetes.io/component: application'; then
+                                    NEW_M=$(printf '%s' "$NEW_M" | awk '
+                                      /^  selector:/ { dep=1 }
+                                      dep && /matchLabels:/ { ml=1 }
+                                      ml && /app.kubernetes.io\/name:/ { print; print "      app.kubernetes.io/component: application"; ml=0; next }
+                                      /^      labels:/ { pod=1 }
+                                      pod && /app.kubernetes.io\/name:/ { print; print "        app.kubernetes.io/component: application"; pod=0; next }
+                                      /^  labels:/ { top=1 }
+                                      top && /app.kubernetes.io\/name:/ { print; print "    app.kubernetes.io/component: application"; top=0; next }
+                                      { print }
+                                    ')
+                                  fi
+                                  if [ "$MCONTENT" != "$NEW_M" ]; then
+                                    NEW_M_B64=$(printf '%s' "$NEW_M" | base64 | tr -d '\n')
+                                    PUT_CODE=$(curl -sS -o /dev/null -w "%{http_code}" -X PUT \
+                                      "${GITEA}/api/v1/repos/${ORG}/${REPO}/contents/${MFILE}" \
+                                      -u "${ADMIN_USER}:${ADMIN_PASS}" \
+                                      -H "Content-Type: application/json" \
+                                      -d "$(printf '{"message":"Fix app Service selector vs Istio gateway","content":"%s","sha":"%s","branch":"main"}' "$NEW_M_B64" "$MSHA")" || true)
+                                    echo "  manifest migration ${ORG}/${REPO}/${MFILE}: HTTP ${PUT_CODE}"
+                                  fi
+                                fi
+                              fi
+                            fi
+                          done
+                          if [ "$REPO" = "customer-service-mcp" ]; then
+                            PRESP=$(curl -sS -u "${ADMIN_USER}:${ADMIN_PASS}" \
+                              "${GITEA}/api/v1/repos/${ORG}/${REPO}/contents/src/main/resources/application.properties?ref=main" 2>/dev/null || true)
+                            if echo "$PRESP" | grep -q '"sha"'; then
+                              PSHA=$(echo "$PRESP" | sed -n 's/.*"sha":"\([^"]*\)".*/\1/p')
+                              PB64=$(echo "$PRESP" | sed -n 's/.*"content":"\([^"]*\)".*/\1/p')
+                              if [ -n "$PSHA" ] && [ -n "$PB64" ]; then
+                                PCONTENT=$(printf '%s' "$PB64" | tr -d '\n' | base64 -d 2>/dev/null || true)
+                                NEW_P=$(printf '%s' "$PCONTENT" | sed \
+                                  -e 's|quarkus.rest-client."customerclient".headers.x-api-key=devspaces|quarkus.rest-client."customerclient".headers."X-API-Key"=devspaces|g')
+                                if [ -n "$PCONTENT" ] && [ "$PCONTENT" != "$NEW_P" ]; then
+                                  NEW_P_B64=$(printf '%s' "$NEW_P" | base64 | tr -d '\n')
+                                  PUT_CODE=$(curl -sS -o /dev/null -w "%{http_code}" -X PUT \
+                                    "${GITEA}/api/v1/repos/${ORG}/${REPO}/contents/src/main/resources/application.properties" \
+                                    -u "${ADMIN_USER}:${ADMIN_PASS}" \
+                                    -H "Content-Type: application/json" \
+                                    -d "$(printf '{"message":"Use X-API-Key for backend REST client","content":"%s","sha":"%s","branch":"main"}' "$NEW_P_B64" "$PSHA")" || true)
+                                  echo "  application.properties migration ${ORG}/${REPO}: HTTP ${PUT_CODE}"
+                                fi
+                              fi
+                            fi
+                          fi
+                          ;;
+                      esac
+
                       HOOKS=$(curl -sS -u "${ADMIN_USER}:${ADMIN_PASS}" \
                         "${GITEA}/api/v1/repos/${ORG}/${REPO}/hooks" 2>/dev/null || echo "[]")
 

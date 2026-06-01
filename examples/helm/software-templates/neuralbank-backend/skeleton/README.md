@@ -34,7 +34,12 @@ mvn quarkus:dev
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/customers` | List all customers |
+| `GET` | `/api/customers` | Search customers (paginated) |
+| `POST` | `/api/customers` | Create customer |
+| `GET` | `/api/customers/{customerId}` | Get customer by numeric ID |
+| `GET` | `/api/customers/identification/{id}` | Get customer by identification |
+| `PUT` | `/api/customers/{customerId}` | Update customer |
+| `GET` | `/api/customers/{customerId}/credit-score` | Get credit score |
 | `GET` | `/api/credits` | List all credits |
 | `POST` | `/api/credits/{id}/update` | Update a credit entry |
 | `GET` | `/q/health` | Health check (liveness + readiness) |

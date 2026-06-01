@@ -21,7 +21,8 @@ ${{ values.description }}
 
 | Method | Path | Description |
 |--------|------|-------------|
-| `GET` | `/api/customers` | List all customers |
+| `GET` | `/api/customers` | Search customers (paginated) |
+| `GET` | `/api/customers/{customerId}` | Get customer by ID |
 | `GET` | `/api/credits` | List all credits |
 | `POST` | `/api/credits/{id}/update` | Update a credit entry |
 | `GET` | `/q/health` | Health check (liveness + readiness) |

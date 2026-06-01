@@ -4,7 +4,7 @@ metadata:
   name: ${{values.name}}-gateway
   namespace: ${{values.namespace}}
   labels:
-    app.kubernetes.io/name: ${{values.name}}
+    app.kubernetes.io/name: ${{values.name}}-gateway
     backstage.io/kubernetes-id: ${{values.uniqueName}}
     app.openshift.io/runtime: istio
   annotations:

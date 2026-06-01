@@ -32,17 +32,6 @@ public class CreditResource {
     }
 
     @GET
-    @Path("/customers")
-    @Produces(MediaType.APPLICATION_JSON)
-    public List<Map<String, Object>> listCustomers() {
-        return List.of(
-            Map.of("id", "C001", "name", "Juan Pérez", "email", "juan@neuralbank.com", "creditScore", 750),
-            Map.of("id", "C002", "name", "María García", "email", "maria@neuralbank.com", "creditScore", 820),
-            Map.of("id", "C003", "name", "Carlos López", "email", "carlos@neuralbank.com", "creditScore", 680)
-        );
-    }
-
-    @GET
     @Path("/credits")
     @Produces(MediaType.APPLICATION_JSON)
     public List<Map<String, Object>> listCredits() {
