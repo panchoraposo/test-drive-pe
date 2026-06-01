@@ -293,7 +293,7 @@ spec:
               /showroom/repo/content/supplemental-ui/partials/head-meta.hbs \
               /showroom/repo/content-es/supplemental-ui/partials/head-meta.hbs; do
               if [ -f "$f" ]; then
-                sed -i 's/Grafana \\/ Kiali/Grafana \\/ Service Mesh/g' "$f" || true
+                sed -i 's|Grafana / Kiali|Grafana / Service Mesh|g' "$f" || true
               fi
             done
             cp /patch/nav.adoc /showroom/repo/content/modules/ROOT/nav.adoc
