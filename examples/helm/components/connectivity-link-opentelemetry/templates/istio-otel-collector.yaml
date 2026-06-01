@@ -12,7 +12,7 @@ spec:
     metrics: {}
   config:
     exporters:
-      otlp:
+      otlp_grpc:
         endpoint: tempo-distributor.openshift-opentelemetry.svc.cluster.local:4317
         tls:
           insecure: true
@@ -27,6 +27,6 @@ spec:
       pipelines:
         traces:
           exporters:
-            - otlp
+            - otlp_grpc
           receivers:
             - otlp
