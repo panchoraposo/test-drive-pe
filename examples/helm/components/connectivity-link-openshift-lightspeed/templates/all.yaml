@@ -656,6 +656,16 @@ data:
         if m2:
           url = "https://" + m2.group(1)
 
+      # Some console UIs may visually wrap long URLs and inject whitespace inside them.
+      # If the extracted URL looks truncated (common symptom: ends at `https://gitea-gitea.app`),
+      # retry extraction on a whitespace-stripped version of the text.
+      if url and (".yaml" not in url or url.endswith(".app")):
+        compact = re.sub(r"\\s+", "", t)
+        m3 = re.search(r"https?://[^\\s<>]+", compact)
+        url2 = m3.group(0) if m3 else ""
+        if url2 and ".yaml" in url2:
+          url = url2
+
       if not url:
         return ""
 
