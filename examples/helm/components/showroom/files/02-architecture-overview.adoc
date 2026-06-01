@@ -1,0 +1,135 @@
+= Workshop Architecture Overview
+
+This page describes the logical architecture of the Neuralbank scenario: how Developer Hub, GitOps, CI/CD, identity, API security, AI, and observability fit together on OpenShift.
+
+== Component View
+
+image::02-component-view.svg[Workshop component diagram, width=100%, link=_images/02-component-view.svg]
+
+Each block has a clear role: the Hub orchestrates the experience; Git is the source of truth; ArgoCD applies the declarative model; Tekton automates the software supply chain; the gateway and policy layer exposes and protects traffic; Lightspeed adds AI assistance; and the observability stack monitors everything.
+
+== Main Flow: From Template to Deployment
+
+image::02-scaffolding-flow.svg[Scaffolding flow from Developer Hub to deployment, width=100%, link=_images/02-scaffolding-flow.svg]
+
+. The developer opens **Developer Hub** and runs a **Software Template**.
+. The template **publishes** a repository in **Gitea** with code, manifests, `devfile`, and pipeline definition.
+. **ArgoCD** detects the Application and **synchronizes** manifests to the `{user_name}-neuralbank` namespace.
+. **Tekton** runs a **PipelineRun** (clone, build, image, deploy) triggered by a **Gitea webhook**.
+. OpenShift **schedules pods**, exposes **Services**, and creates **Gateway API** resources.
+. The component is **registered** in the Developer Hub catalog.
+
+== Connectivity Link Pattern
+
+image::02-connectivity-link.svg[Connectivity Link pattern with Gateway API and Kuadrant, width=100%, link=_images/02-connectivity-link.svg]
+
+The **Connectivity Link** pattern uses **Gateway API** with **Kuadrant** policies to secure exposed services:
+
+* **Gateway** — traffic entry point (host, listeners, TLS)
+* **HTTPRoute** — hostnames and routing rules to backend Services
+* **AuthPolicy** — authentication via OIDC (Keycloak JWT) or API Key (X-API-Key header)
+* **RateLimitPolicy** — rate limits to protect backends
+
+=== AuthPolicy YAML Structure
+
+[source,yaml,subs="attributes+"]
+----
+apiVersion: kuadrant.io/v1
+kind: AuthPolicy
+metadata:
+  name: neuralbank-backend-auth
+spec:
+  targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
+    name: neuralbank-backend-route
+  defaults:
+    rules:
+      authentication:
+        api-key-auth:
+          apiKey:
+            allNamespaces: true
+            selector:
+              matchLabels:
+                app: neuralbank-backend
+                kuadrant.io/apikey: "true"
+          credentials:
+            customHeader:
+              name: X-API-Key
+          priority: 0
+        oidc:
+          jwt:
+            issuerUrl: https://rhbk.{cluster_domain}/realms/neuralbank
+          credentials:
+            authorizationHeader:
+              prefix: Bearer
+          priority: 1
+----
+
+== MCP Gateway (Kuadrant Community Extension)
+
+The **MCP Gateway** extends Kuadrant with support for the **Model Context Protocol**, allowing AI assistants (OpenShift Lightspeed) to call cluster tools securely:
+
+[mermaid]
+....
+graph LR
+    OLS[OpenShift Lightspeed] -->|MCP Protocol| GW[MCP Gateway]
+    GW --> K8S[k8s-mcp-server]
+    GW --> OCP[ocp-mcp-server]
+    K8S -->|kubectl| CLUSTER[OpenShift Cluster]
+    OCP -->|oc| CLUSTER
+....
+
+== Console Links Integration
+
+All workshop tools are accessible from the **OpenShift Console application menu** via Console Links:
+
+[cols="1,1"]
+|===
+| Section | Tools
+
+| **Workshop Tools**
+| Developer Hub, Gitea, ArgoCD, Keycloak, Workshop Registration, Mailpit
+
+| **Observability**
+| Grafana; Service Mesh graph and traces in the OpenShift console
+|===
+
+These same links appear as quick access cards on the Developer Hub home page.
+
+== Acronym Glossary
+
+[cols="1,3",options="header"]
+|===
+|Acronym |Meaning
+
+|RHDH |Red Hat Developer Hub — developer portal based on Backstage
+|MCP |Model Context Protocol — protocol for AI tool servers
+|OLS |OpenShift Lightspeed — AI assistant integrated in OpenShift
+|OIDC |OpenID Connect — authentication protocol on OAuth 2.0
+|RBAC |Role-Based Access Control
+|CI/CD |Continuous Integration / Continuous Delivery
+|GitOps |Declarative management of infrastructure and applications from Git
+|LLM |Large Language Model
+|SPA |Single Page Application
+|===
+
+== Role of Each Component
+
+[cols="1,3",options="header"]
+|===
+|Component |Role
+
+|Developer Hub |Developer portal: catalog, templates, plugins, AI chat
+|Gitea |Internal Git: source code, manifests, pipeline triggers
+|ArgoCD |GitOps sync from Git to cluster state
+|Tekton |Pipeline execution: clone, build, image, deploy
+|Keycloak |Identity and SSO; feeds OIDC policies and Hub access
+|Dev Spaces |Cloud IDE based on `devfile`, connected to the same repo
+|Gateway API / Kuadrant |Traffic ingress, routing, and auth/rate-limit policies
+|OpenShift Lightspeed |AI assistant with MCP Gateway for cluster operations
+|LiteLLM |LLM proxy for Developer Lightspeed
+|Grafana |Monitoring dashboards and alerting
+|OpenShift Service Mesh |Traffic graph and distributed traces in the web console
+|Mailpit |Email testing for notifications
+|===

@@ -12,16 +12,12 @@ The workshop platform includes a comprehensive observability stack for monitorin
 | Monitoring dashboards and alerting
 | https://grafana-observability.{cluster_domain}
 
-| **Kiali**
-| Service mesh observability and traffic visualization
-| https://kiali-openshift-cluster-observability-operator.{cluster_domain}
-
-| **Jaeger**
-| Distributed tracing across microservices
-| https://jaeger.{cluster_domain}
+| **OpenShift web console — Service Mesh**
+| Traffic graph and distributed traces for workloads in your project
+| OpenShift Console → switch to project `{user_name}-neuralbank` → **Service Mesh**
 |===
 
-TIP: These tools are also accessible from the **Console Links** in the OpenShift application menu and the **Observability** card on the Developer Hub home page.
+TIP: Grafana is also accessible from **Console Links** in the OpenShift application menu and the **Observability** card on the Developer Hub home page. Use the console **Service Mesh** tabs for mesh traffic and traces (no separate observability URLs required).
 
 == Grafana Dashboards
 
@@ -38,11 +34,11 @@ TIP: These tools are also accessible from the **Console Links** in the OpenShift
 * **Latency** — p50/p95/p99 response times
 * **Rate limit rejections** — 429 responses from Kuadrant
 
-== Kiali: Service Mesh Visualization
+== OpenShift Console: Service Mesh graph
 
-. Open Kiali at `https://kiali-openshift-cluster-observability-operator.{cluster_domain}`
-. Navigate to the **Graph** view.
-. Select namespace `{user_name}-neuralbank` (not `showroom`).
+. Open the **OpenShift web console** and switch to project `{user_name}-neuralbank` (not `showroom`).
+. In the left navigation, open **Service Mesh**.
+. Select the **Graph** tab.
 . Observe the traffic flow between services.
 +
 TIP: If the graph is empty, it usually means there is **no traffic in the selected time window** (or nodes haven’t seen requests yet). Try:
@@ -71,7 +67,7 @@ TIP: If the graph is empty, it usually means there is **no traffic in the select
 
 | Gateway `/api/*` without `X-API-Key`
 | 401
-| Shows as **failed** traffic in Kiali (Kuadrant AuthPolicy)
+| Shows as **failed** traffic in the Service Mesh graph (Kuadrant AuthPolicy)
 
 | Gateway `/api/*` with valid `X-API-Key`
 | 200 or 503
@@ -112,13 +108,7 @@ done
 
 Or open `https://neuralbank-frontend-{user_name}-neuralbank.{cluster_domain}` and refresh the **Credits** page.
 
-=== If MCP or frontend nodes are missing in Kiali
-
-* Click **Display idle nodes** and set the time range to **Last 1h**.
-* **Frontend** (`neuralbank-frontend`): appears after in-mesh or browser traffic; the SPA route does not require an API key.
-* **MCP** (`customer-service-mcp`): the Service selector requires labels `app.kubernetes.io/name` **and** `app.kubernetes.io/component=application`. If `oc -n {user_name}-neuralbank get endpoints customer-service-mcp` shows `<none>`, the pod is missing the `component` label (re-sync ArgoCD / re-run the MCP pipeline, or patch the Deployment pod template to match the software template).
-
-Kiali shows:
+The **Graph** tab shows:
 
 * **Traffic routing** through the Istio Gateway
 * **Health indicators** for each service
@@ -139,22 +129,28 @@ graph LR
     style MCP fill:#9cf,stroke:#333
 ....
 
-== Jaeger and Kiali Traces tab
+=== If MCP or frontend nodes are missing in the graph
 
-. Open Jaeger at `https://jaeger.{cluster_domain}`
-. After generating in-mesh traffic, search for services such as `neuralbank-backend.{user_name}-neuralbank` or `neuralbank-backend-gateway-istio.{user_name}-neuralbank`.
+* Click **Display idle nodes** and set the time range to **Last 1h**.
+* **Frontend** (`neuralbank-frontend`): appears after in-mesh or browser traffic; the SPA route does not require an API key.
+* **MCP** (`customer-service-mcp`): the Service selector requires labels `app.kubernetes.io/name` **and** `app.kubernetes.io/component=application`. If `oc -n {user_name}-neuralbank get endpoints customer-service-mcp` shows `<none>`, the pod is missing the `component` label (re-sync ArgoCD / re-run the MCP pipeline, or patch the Deployment pod template to match the software template).
 
-In **Kiali → Traces**, the UI queries Jaeger at `http://jaeger.openshift-opentelemetry.svc.cluster.local:16686`. If the tab is empty:
+== OpenShift Console: Service Mesh traces
+
+. In project `{user_name}-neuralbank`, open **Service Mesh** → **Traces**.
+. After generating in-mesh traffic, search for services such as `neuralbank-backend` or the gateway workload in your namespace.
+
+If **Traces** is empty:
 
 * **No OTLP receiver**: Istio exports spans to the mesh OpenTelemetry Collector (`mesh-collector.istio-system:4317`), which forwards to Tempo (`tempo-distributor.openshift-opentelemetry:4317`). This is configured in `connectivity-link-opentelemetry` and `connectivity-link-servicemeshoperator3`.
 * **Sampling**: mesh default is `randomSamplingPercentage: 10` — generate at least 20–30 requests or temporarily raise sampling in `istio-system/telemetry` `mesh-default`.
-* **Response headers**: ambient/Istio typically does **not** return `x-b3-traceid` to clients; use Jaeger/Kiali Traces, not `curl -I`.
-* **Verify Jaeger**:
+* **Response headers**: ambient/Istio typically does **not** return `x-b3-traceid` to clients; use the console **Traces** tab, not `curl -I`.
+* **Verify trace backend** (optional):
 +
 [.console-input]
 [source,bash]
 ----
-# Should list workload services after in-mesh traffic (not only jaeger-all-in-one)
+# Should list workload services after in-mesh traffic
 oc -n openshift-opentelemetry exec deploy/tempo-connectivity-query-frontend -- \
   wget -qO- http://127.0.0.1:16686/api/services
 ----
@@ -200,8 +196,7 @@ These give developers immediate visibility into gateway connectivity without lea
 The observability stack provides end-to-end visibility across the platform:
 
 * **Grafana** for metrics and dashboards
-* **Kiali** for service mesh traffic visualization
-* **Jaeger** for distributed tracing across microservices
+* **OpenShift console Service Mesh** (**Graph** and **Traces**) for mesh traffic and distributed tracing
 * **Frontend health indicators** for real-time gateway status
 
 Combined with Kuadrant policies and ArgoCD GitOps, this creates a fully observable platform.

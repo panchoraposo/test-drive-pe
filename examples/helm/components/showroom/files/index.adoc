@@ -1,0 +1,98 @@
+= From Zero To Hero with Red Hat Developer Hub
+
+++++
+<div style="text-align:center;margin:16px 0 8px;">
+  <img class="techday-banner" src="https://mktdevzone.com/redhat/2026/SAC/SOLA_WEST/2604-TechDay-Chile/AGENDA/mailing/imagenes/img-01.jpg" alt="Red Hat Tech Day Chile">
+</div>
+++++
+
+== Welcome to the Workshop
+
+In this workshop you will use **Red Hat Developer Hub** as a self-service development portal to build, deploy, secure, and observe applications on OpenShift — enhanced by AI assistance through **Lightspeed** and the **MCP Gateway**.
+
+=== What You Will Learn
+
+* Use **Software Templates** to scaffold backend, frontend, and MCP services
+* Observe automated **Tekton pipelines**, **ArgoCD GitOps**, and **Topology** views
+* Secure APIs with **Connectivity Link** policies (OIDC and API Key via Kuadrant)
+* Interact with **Developer Lightspeed** for AI-assisted development
+* Use **OpenShift Lightspeed** with **MCP Gateway** for cluster operations
+* Monitor the platform with **Grafana** and the OpenShift console **Service Mesh** graph and traces
+
+=== The Business Case: Neuralbank
+
+Neuralbank is a financial institution modernizing its technology stack. As a developer, you will build three components through Developer Hub:
+
+[cols="1,3"]
+|===
+| Component | Description
+
+| **Customer Service MCP**
+| MCP (Model Context Protocol) server — exposes backend operations as AI-callable tools
+
+| **Neuralbank Backend**
+| Quarkus REST API for customer management and credit scoring
+
+| **Neuralbank Frontend**
+| Web SPA connected to backend and MCP through the Kuadrant gateway
+|===
+
+=== Environment Access
+
+When you registered on the portal, credentials were assigned automatically:
+
+* **Username**: `{user_name}`
+* **Password**: `Welcome123!`
+
+Your workspace namespace is **`{user_name}-neuralbank`**. All services deploy there.
+
+NOTE: Your assigned username appears in the badge in the top bar. Click the edit (pencil) icon to change it.
+
+=== Workshop Platform Links
+
+[cols="1,2"]
+|===
+| Tool | URL
+
+| **Developer Hub**
+| https://backstage-developer-hub-developer-hub.{cluster_domain}
+
+| **Gitea**
+| https://gitea-gitea.{cluster_domain}
+
+| **ArgoCD**
+| https://openshift-gitops-server-openshift-gitops.{cluster_domain}
+
+| **Keycloak**
+| https://rhbk.{cluster_domain}/admin/master/console
+
+| **Grafana**
+| https://grafana-observability.{cluster_domain}
+
+| **Mailpit**
+| https://n8n-mailpit-openshift-lightspeed.{cluster_domain}
+
+| **Showroom**
+| https://showroom-from-zero-to-hero.{cluster_domain}
+
+| **OpenShift Console**
+| https://console-openshift-console.{cluster_domain}
+|===
+
+TIP: These links are also available as quick access shortcuts on the **Developer Hub home page** and as **Console Links** in the OpenShift web console application menu.
+
+=== Workshop Flow
+
+[mermaid]
+....
+graph LR
+    A[Developer Hub] -->|Templates| B[Gitea]
+    B -->|Webhook| C[Tekton Pipeline]
+    C -->|Image Build| D[OpenShift]
+    B -->|GitOps| E[ArgoCD]
+    E -->|Sync| D
+    D -->|Gateway API| F[Kuadrant Policies]
+    F -->|OIDC / API Key| G[Secured APIs]
+    A -->|Lightspeed| H[AI Assistant]
+    H -->|MCP Gateway| I[Cluster Tools]
+....

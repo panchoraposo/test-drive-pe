@@ -1,0 +1,22 @@
+* xref:index.adoc[From Zero To Hero]
+
+.Fundamentos de la plataforma
+* xref:01-developer-hub-value.adoc[1. Propuesta de valor de Developer Hub]
+* xref:02-architecture-overview.adoc[2. Visión general de la arquitectura]
+
+.Construyendo con Software Templates
+* xref:03-software-templates.adoc[3. Entendiendo los Software Templates]
+* xref:04-deploy-backend.adoc[4. Desplegar backend con templates]
+* xref:05-explore-pipelines.adoc[5. Explorar Pipelines y Topology]
+* xref:06-deploy-frontend-gateway.adoc[6. Desplegar frontend y gateway]
+
+.GitOps y desarrollo
+* xref:07-explore-argocd-apis.adoc[7. Explorar ArgoCD y APIs]
+* xref:08-devspaces-update.adoc[8. Actualizar código con Dev Spaces]
+
+.Desarrollo asistido por IA
+* xref:11-developer-lightspeed.adoc[9. Developer Lightspeed]
+* xref:12-openshift-lightspeed-mcp.adoc[10. OpenShift Lightspeed y MCP Gateway]
+
+.Operaciones
+* xref:13-observability.adoc[11. Stack de observabilidad]

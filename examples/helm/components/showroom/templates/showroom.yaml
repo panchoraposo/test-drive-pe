@@ -184,6 +184,18 @@ metadata:
 data:
   header-content.hbs: |
 {{ .Files.Get "files/header-content.hbs" | indent 4 }}
+  nav.adoc: |
+{{ .Files.Get "files/nav.adoc" | indent 4 }}
+  nav-es.adoc: |
+{{ .Files.Get "files/nav-es.adoc" | indent 4 }}
+  index.adoc: |
+{{ .Files.Get "files/index.adoc" | indent 4 }}
+  index-es.adoc: |
+{{ .Files.Get "files/index-es.adoc" | indent 4 }}
+  02-architecture-overview.adoc: |
+{{ .Files.Get "files/02-architecture-overview.adoc" | indent 4 }}
+  02-architecture-overview-es.adoc: |
+{{ .Files.Get "files/02-architecture-overview-es.adoc" | indent 4 }}
   13-observability.adoc: |
 {{ .Files.Get "files/13-observability.adoc" | indent 4 }}
   13-observability-es.adoc: |
@@ -275,6 +287,12 @@ spec:
             dest="/showroom/repo/content/supplemental-ui/partials/header-content.hbs"
             mkdir -p "$(dirname "$dest")"
             cp /patch/header-content.hbs "$dest"
+            cp /patch/nav.adoc /showroom/repo/content/modules/ROOT/nav.adoc
+            cp /patch/nav-es.adoc /showroom/repo/content-es/modules/ROOT/nav.adoc
+            cp /patch/index.adoc /showroom/repo/content/modules/ROOT/pages/index.adoc
+            cp /patch/index-es.adoc /showroom/repo/content-es/modules/ROOT/pages/index.adoc
+            cp /patch/02-architecture-overview.adoc /showroom/repo/content/modules/ROOT/pages/02-architecture-overview.adoc
+            cp /patch/02-architecture-overview-es.adoc /showroom/repo/content-es/modules/ROOT/pages/02-architecture-overview.adoc
             cp /patch/13-observability.adoc /showroom/repo/content/modules/ROOT/pages/13-observability.adoc
             cp /patch/13-observability-es.adoc /showroom/repo/content-es/modules/ROOT/pages/13-observability.adoc
         volumeMounts:
