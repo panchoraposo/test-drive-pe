@@ -37,7 +37,7 @@ metadata:
 rules:
   - apiGroups: ["tekton.dev"]
     resources: ["pipelineruns"]
-    verbs: ["get", "list", "watch"]
+    verbs: ["get", "list", "watch", "create"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding

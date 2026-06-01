@@ -27,39 +27,34 @@ spec:
               set -euo pipefail
               NS="$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace)"
               APP="${{values.name}}"
+              PR_INITIAL="${APP}-initial"
               pipeline_label="tekton.dev/pipeline=${{values.name}}-build"
 
               newest_pr_name() {
-                oc -n "$NS" get pipelinerun -l "${pipeline_label}" --sort-by=.metadata.creationTimestamp -o name 2>/dev/null \
-                  | awk -F/ 'END{print $2}'
+                oc -n "$NS" get pipelinerun -l "${pipeline_label}" \
+                  --sort-by=.metadata.creationTimestamp \
+                  -o jsonpath='{.items[-1].metadata.name}' 2>/dev/null || true
               }
 
-              # Avoid duplicate PipelineRuns: allow the webhook-triggered run to appear first.
-              PR_NAME="$(newest_pr_name || true)"
-              if [ -z "${PR_NAME}" ]; then
-                echo "No PipelineRun found yet for ${APP}. Waiting briefly for triggers/webhook..."
-                # Keep this short: if the webhook doesn't trigger quickly, create the run ourselves.
-                for _ in $(seq 1 8); do
-                  PR_NAME="$(newest_pr_name || true)"
-                  [ -n "${PR_NAME}" ] && break
-                  sleep 2
-                done
-              fi
-
+              # Any existing run (e.g. from a git push webhook) wins; only create the deterministic initial run once.
+              PR_NAME="$(newest_pr_name)"
               if [ -n "${PR_NAME}" ]; then
-                echo "Found existing PipelineRun ${PR_NAME}. Waiting for it to Succeed..."
+                echo "Found PipelineRun ${PR_NAME}. Waiting for Succeeded..."
                 oc -n "$NS" wait --for=condition=Succeeded "pipelinerun/${PR_NAME}" --timeout=45m
                 exit 0
               fi
 
-              PR_NAME="$(oc -n "$NS" create -f - -o jsonpath='{.metadata.name}' <<'EOF'
+              if ! oc -n "$NS" get pipelinerun "${PR_INITIAL}" >/dev/null 2>&1; then
+                echo "Creating deterministic initial PipelineRun ${PR_INITIAL}..."
+                oc -n "$NS" create -f - <<'EOF'
               apiVersion: tekton.dev/v1
               kind: PipelineRun
               metadata:
-                generateName: ${{values.name}}-run-
+                name: ${{values.name}}-initial
                 labels:
                   backstage.io/kubernetes-id: ${{values.uniqueName}}
                   tekton.dev/pipeline: ${{values.name}}-build
+                  test-drive.io/initial-build: "true"
               spec:
                 pipelineRef:
                   name: ${{values.name}}-build
@@ -81,7 +76,8 @@ spec:
                   - name: maven-repo
                     emptyDir: {}
               EOF
-              )"
+              fi
 
-              echo "Created PipelineRun ${PR_NAME}. Waiting for it to Succeed..."
+              PR_NAME="${PR_INITIAL}"
+              echo "Waiting for PipelineRun ${PR_NAME} to Succeed..."
               oc -n "$NS" wait --for=condition=Succeeded "pipelinerun/${PR_NAME}" --timeout=45m
