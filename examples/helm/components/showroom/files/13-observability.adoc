@@ -143,7 +143,7 @@ graph LR
 If **Traces** is empty:
 
 * **No OTLP receiver**: Istio exports spans to the mesh OpenTelemetry Collector (`mesh-collector.istio-system:4317`), which forwards to Tempo (`tempo-distributor.openshift-opentelemetry:4317`). This is configured in `connectivity-link-opentelemetry` and `connectivity-link-servicemeshoperator3`.
-* **Sampling**: mesh default is `randomSamplingPercentage: 10` — generate at least 20–30 requests or temporarily raise sampling in `istio-system/telemetry` `mesh-default`.
+* **Sampling**: mesh default is `randomSamplingPercentage: 50` — fewer requests needed than at 10%; override in `istio-system/telemetry` `mesh-default` if needed.
 * **Response headers**: ambient/Istio typically does **not** return `x-b3-traceid` to clients; use the console **Traces** tab, not `curl -I`.
 * **Verify trace backend** (optional):
 +
