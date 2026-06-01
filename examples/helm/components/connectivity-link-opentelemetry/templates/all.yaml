@@ -84,8 +84,17 @@ spec:
               KUBE_API="https://kubernetes.default.svc"
               CA=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
 
+              EXISTING=$(curl -sS -o /dev/null -w "%{http_code}" \
+                "$KUBE_API/api/v1/namespaces/${NS}/secrets/${TARGET}" \
+                -H "Authorization: Bearer $KUBE_TOKEN" --cacert "$CA" || true)
+              if [ "$EXISTING" = "200" ]; then
+                echo "${TARGET} already exists; skipping sync"
+                exit 0
+              fi
+
               echo "Waiting for OBC secret ${OBC}..."
-              for i in $(seq 1 90); do
+              SC="000"
+              for i in $(seq 1 120); do
                 SC=$(curl -sS -o /dev/null -w "%{http_code}" \
                   "$KUBE_API/api/v1/namespaces/${NS}/secrets/${OBC}" \
                   -H "Authorization: Bearer $KUBE_TOKEN" --cacert "$CA" || true)
@@ -157,13 +166,15 @@ spec:
         cpu: "2"
   template:
     distributor:
-      replicas: 1
+      component:
+        replicas: 1
     ingester:
       replicas: 1
     querier:
       replicas: 1
     queryFrontend:
-      replicas: 1
+      component:
+        replicas: 1
       jaegerQuery:
         enabled: true
     compactor:
