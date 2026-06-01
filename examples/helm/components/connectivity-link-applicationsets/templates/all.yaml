@@ -407,10 +407,22 @@ spec:
                             IB64=$(echo "$IRESP" | sed -n 's/.*"content":"\([^"]*\)".*/\1/p')
                             if [ -n "$ISHA" ] && [ -n "$IB64" ]; then
                               ICONTENT=$(printf '%s' "$IB64" | tr -d '\n' | base64 -d 2>/dev/null || true)
-                              if [ -n "$ICONTENT" ] && ! printf '%s' "$ICONTENT" | grep -q 'function unwrapList'; then
+                              NEED_INDEX_FIX=0
+                              if [ -n "$ICONTENT" ]; then
+                                if ! printf '%s' "$ICONTENT" | grep -q 'function unwrapList'; then
+                                  NEED_INDEX_FIX=1
+                                elif printf '%s' "$ICONTENT" | grep -q "c.name + '</td><td>' + c.email"; then
+                                  # Broken partial migration left duplicate loadCustomers tail (invalid JS).
+                                  NEED_INDEX_FIX=1
+                                fi
+                              fi
+                              if [ "$NEED_INDEX_FIX" = 1 ]; then
                                 NEW_I=$(printf '%s' "$ICONTENT" | awk '
-                                  BEGIN { helpers=0; in_load=0; in_cust_then=0; inj=0 }
+                                  BEGIN { helpers=0; in_load=0; in_cust_then=0; inj=0; skip_orphan=0 }
                                   /function unwrapList/ { helpers=1 }
+                                  /document\.getElementById\('"'"'customers-body'"'"'\)\.innerHTML = data\.map\(function\(c\)/ && /c\.name/ { skip_orphan=1 }
+                                  skip_orphan && /^  function loadCredits\(\)/ { skip_orphan=0 }
+                                  skip_orphan { next }
                                   /^  function setGatewayStatus\(id, status\) \{/ && !helpers {
                                     print "  /** Backend GET /api/customers returns a Spring-style page ({ content: [...] }); credits is a plain array. */"
                                     print "  function unwrapList(data) {"
@@ -431,8 +443,7 @@ spec:
                                     print ""
                                     helpers=1
                                   }
-                                  /function loadCustomers\(\)/ { in_load=1 }
-                                  in_load && /function loadCredits\(\)/ { in_load=0; in_cust_then=0 }
+                                  /function loadCustomers\(\)/ { in_load=1; lc_closed=0 }
                                   {
                                     gsub(/apiFetch\('"'"'\/api\/backend\/customers'"'"'\)/, "apiFetch('"'"'/api/backend/customers?size=100'"'"')")
                                     if (in_load && /\.then\(function\(data\)/) {
@@ -457,6 +468,14 @@ spec:
                                     if (/\.then\(function\(data\) \{ setGatewayStatus\('"'"'backend'"'"'/) {
                                       sub(/function\(data\)/, "function(raw)")
                                       sub(/data\.length/, "customerListCount(raw)")
+                                    }
+                                    if (in_load && inj == 1 && /^  \}$/ && !lc_closed) {
+                                      lc_closed=1
+                                      in_load=0
+                                      in_cust_then=0
+                                      print
+                                      skip_orphan=1
+                                      next
                                     }
                                     print
                                   }
