@@ -308,6 +308,23 @@
     });
   }
 
+  /** Backend GET /api/customers returns a Spring-style page ({ content: [...] }); credits is a plain array. */
+  function unwrapList(data) {
+    if (Array.isArray(data)) return data;
+    if (data && Array.isArray(data.content)) return data.content;
+    return [];
+  }
+
+  function customerListCount(raw) {
+    if (raw && typeof raw.totalElements === 'number') return raw.totalElements;
+    return unwrapList(raw).length;
+  }
+
+  function customerDisplayName(c) {
+    if (c.nombreCompleto) return c.nombreCompleto;
+    return ((c.nombre || '') + ' ' + (c.apellido || '')).trim() || '—';
+  }
+
   function setGatewayStatus(id, status) {
     var dot = document.getElementById('gw-' + id + '-dot');
     dot.className = 'gw-dot ' + (status === 'ok' ? 'ok' : status === 'err' ? 'err' : 'pending');
@@ -337,16 +354,17 @@
   function loadCustomers() {
     document.getElementById('customers-alert').innerHTML = '';
     document.getElementById('customers-body').innerHTML = '<tr><td colspan="4" style="text-align:center;padding:1.5rem;color:var(--text-muted)"><i class="fas fa-spinner fa-spin"></i> Cargando desde gateway…</td></tr>';
-    apiFetch('/api/backend/customers')
-      .then(function(data) {
+    apiFetch('/api/backend/customers?size=100')
+      .then(function(raw) {
+        var customers = unwrapList(raw);
         setGatewayStatus('backend', 'ok');
-        updateStat('stat-customers', data.length);
-        if (!data.length) {
+        updateStat('stat-customers', customerListCount(raw));
+        if (!customers.length) {
           document.getElementById('customers-body').innerHTML = '<tr><td colspan="4" style="text-align:center;padding:1.5rem;color:var(--text-muted)">Sin clientes</td></tr>';
           return;
         }
-        document.getElementById('customers-body').innerHTML = data.map(function(c) {
-          return '<tr><td><strong>' + c.id + '</strong></td><td>' + c.name + '</td><td>' + c.email + '</td><td>' + c.creditScore + '</td></tr>';
+        document.getElementById('customers-body').innerHTML = customers.map(function(c) {
+          return '<tr><td><strong>' + c.id + '</strong></td><td>' + customerDisplayName(c) + '</td><td>' + (c.email || '—') + '</td><td>' + (c.scoreCrediticio != null ? c.scoreCrediticio : '—') + '</td></tr>';
         }).join('');
       })
       .catch(function(e) {
@@ -432,8 +450,8 @@
     var ok = 0, total = 2;
     function done() { if (++ok === total) { showAlert('dashboard-alert', 'success', 'Conectado a ambos gateways'); } }
 
-    apiFetch('/api/backend/customers')
-      .then(function(data) { setGatewayStatus('backend', 'ok'); updateStat('stat-customers', data.length); done(); })
+    apiFetch('/api/backend/customers?size=100')
+      .then(function(raw) { setGatewayStatus('backend', 'ok'); updateStat('stat-customers', customerListCount(raw)); done(); })
       .catch(function(e) { setGatewayStatus('backend', 'err'); showAlert('dashboard-alert', 'error', 'Backend: ' + e.message); });
 
     fetch('/api/mcp/q/health', { headers: apiKey ? { 'X-API-Key': apiKey } : {} })

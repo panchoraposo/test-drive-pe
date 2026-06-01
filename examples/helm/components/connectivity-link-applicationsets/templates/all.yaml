@@ -398,6 +398,82 @@ spec:
                             fi
                           fi
                           ;;
+                        neuralbank-frontend)
+                          # Dashboard expects a customer array; backend returns PageResponse { content: [...] }.
+                          IRESP=$(curl -sS -u "${ADMIN_USER}:${ADMIN_PASS}" \
+                            "${GITEA}/api/v1/repos/${ORG}/${REPO}/contents/index.html?ref=main" 2>/dev/null || true)
+                          if echo "$IRESP" | grep -q '"sha"'; then
+                            ISHA=$(echo "$IRESP" | sed -n 's/.*"sha":"\([^"]*\)".*/\1/p')
+                            IB64=$(echo "$IRESP" | sed -n 's/.*"content":"\([^"]*\)".*/\1/p')
+                            if [ -n "$ISHA" ] && [ -n "$IB64" ]; then
+                              ICONTENT=$(printf '%s' "$IB64" | tr -d '\n' | base64 -d 2>/dev/null || true)
+                              if [ -n "$ICONTENT" ] && ! printf '%s' "$ICONTENT" | grep -q 'function unwrapList'; then
+                                NEW_I=$(printf '%s' "$ICONTENT" | awk '
+                                  BEGIN { helpers=0; in_load=0; in_cust_then=0; inj=0 }
+                                  /function unwrapList/ { helpers=1 }
+                                  /^  function setGatewayStatus\(id, status\) \{/ && !helpers {
+                                    print "  /** Backend GET /api/customers returns a Spring-style page ({ content: [...] }); credits is a plain array. */"
+                                    print "  function unwrapList(data) {"
+                                    print "    if (Array.isArray(data)) return data;"
+                                    print "    if (data && Array.isArray(data.content)) return data.content;"
+                                    print "    return [];"
+                                    print "  }"
+                                    print ""
+                                    print "  function customerListCount(raw) {"
+                                    print "    if (raw && typeof raw.totalElements === \"number\") return raw.totalElements;"
+                                    print "    return unwrapList(raw).length;"
+                                    print "  }"
+                                    print ""
+                                    print "  function customerDisplayName(c) {"
+                                    print "    if (c.nombreCompleto) return c.nombreCompleto;"
+                                    print "    return ((c.nombre || \"\") + \" \" + (c.apellido || \"\")).trim() || \"—\";"
+                                    print "  }"
+                                    print ""
+                                    helpers=1
+                                  }
+                                  /function loadCustomers\(\)/ { in_load=1 }
+                                  in_load && /function loadCredits\(\)/ { in_load=0; in_cust_then=0 }
+                                  {
+                                    gsub(/apiFetch\('"'"'\/api\/backend\/customers'"'"'\)/, "apiFetch('"'"'/api/backend/customers?size=100'"'"')")
+                                    if (in_load && /\.then\(function\(data\)/) {
+                                      sub(/function\(data\)/, "function(raw)")
+                                      in_cust_then=1
+                                    }
+                                    if (in_cust_then && inj == 0 && /setGatewayStatus\('"'"'backend'"'"'/) {
+                                      print
+                                      print "        var customers = unwrapList(raw);"
+                                      inj=1
+                                      next
+                                    }
+                                    if (in_cust_then) {
+                                      sub(/updateStat\('"'"'stat-customers'"'"', data\.length\)/, "updateStat('"'"'stat-customers'"'"', customerListCount(raw))")
+                                      sub(/if \(!data\.length\)/, "if (!customers.length)")
+                                      sub(/data\.map\(function\(c\)/, "customers.map(function(c)")
+                                      sub(/\+ c\.name \+/, "+ customerDisplayName(c) +")
+                                      sub(/\+ c\.creditScore \+/, "+ (c.scoreCrediticio != null ? c.scoreCrediticio : '"'"'—'"'"') +")
+                                      sub(/\+ c\.nombreCompleto \|\| \(\(c\.nombre/, "+ customerDisplayName(c) +")
+                                    }
+                                    if (/testConnection\(\)/) { in_cust_then=0; in_load=0 }
+                                    if (/\.then\(function\(data\) \{ setGatewayStatus\('"'"'backend'"'"'/) {
+                                      sub(/function\(data\)/, "function(raw)")
+                                      sub(/data\.length/, "customerListCount(raw)")
+                                    }
+                                    print
+                                  }
+                                ')
+                                if [ "$ICONTENT" != "$NEW_I" ]; then
+                                  NEW_I_B64=$(printf '%s' "$NEW_I" | base64 | tr -d '\n')
+                                  PUT_CODE=$(curl -sS -o /dev/null -w "%{http_code}" -X PUT \
+                                    "${GITEA}/api/v1/repos/${ORG}/${REPO}/contents/index.html" \
+                                    -u "${ADMIN_USER}:${ADMIN_PASS}" \
+                                    -H "Content-Type: application/json" \
+                                    -d "$(printf '{"message":"Parse paged /api/customers response (content array)","content":"%s","sha":"%s","branch":"main"}' "$NEW_I_B64" "$ISHA")" || true)
+                                  echo "  index.html customer page migration ${ORG}/${REPO}: HTTP ${PUT_CODE}"
+                                fi
+                              fi
+                            fi
+                          fi
+                          ;;
                       esac
 
                       HOOKS=$(curl -sS -u "${ADMIN_USER}:${ADMIN_PASS}" \
