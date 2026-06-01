@@ -84,7 +84,7 @@ TIP: If the graph is empty, it usually means there is **no traffic in the select
 [source,bash]
 ----
 USER_NS="{user_name}-neuralbank"
-DOMAIN="<your-cluster-apps-domain>"   # e.g. from: oc get ingresses.config/cluster -o jsonpath='{.spec.domain}'
+DOMAIN=$(oc get ingresses.config cluster -o jsonpath='{.spec.domain}')
 
 # 1) Frontend Route (should return 200; generates user traffic)
 for i in $(seq 1 20); do

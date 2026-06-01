@@ -66,7 +66,7 @@ TIP: Si el grafo aparece vacío, normalmente significa que **no hay tráfico en 
 [source,bash]
 ----
 USER_NS="{user_name}-neuralbank"
-DOMAIN="<dominio-apps-del-cluster>"
+DOMAIN=$(oc get ingresses.config cluster -o jsonpath='{.spec.domain}')
 
 # 1) Frontend Route (debería devolver 200; genera tráfico de usuario)
 for i in $(seq 1 20); do
