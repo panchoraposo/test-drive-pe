@@ -17,6 +17,42 @@ spec:
   generateBucketName: tempo-traces-
   storageClassName: openshift-storage.noobaa.io
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+  name: tempo-s3-secret-sync
+  namespace: openshift-opentelemetry
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+  name: tempo-s3-secret-sync
+  namespace: openshift-opentelemetry
+rules:
+  - apiGroups: [""]
+    resources: ["secrets", "configmaps"]
+    verbs: ["get", "list", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+  name: tempo-s3-secret-sync
+  namespace: openshift-opentelemetry
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: tempo-s3-secret-sync
+subjects:
+  - kind: ServiceAccount
+    name: tempo-s3-secret-sync
+    namespace: openshift-opentelemetry
+---
 # Map OBC secret + configmap into Tempo Operator S3 secret format.
 apiVersion: batch/v1
 kind: Job
@@ -32,7 +68,7 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      serviceAccountName: default
+      serviceAccountName: tempo-s3-secret-sync
       containers:
         - name: sync
           image: quay.io/curl/curl:latest
@@ -47,7 +83,6 @@ spec:
               KUBE_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
               KUBE_API="https://kubernetes.default.svc"
               CA=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
-              hdr() { echo "-H" "Authorization: Bearer $KUBE_TOKEN" "--cacert" "$CA"; }
 
               echo "Waiting for OBC secret ${OBC}..."
               for i in $(seq 1 90); do
@@ -73,8 +108,9 @@ spec:
               HOST=$(get_data "$CM_JSON" "BUCKET_HOST")
               PORT=$(get_data "$CM_JSON" "BUCKET_PORT")
               [ -z "$HOST" ] && HOST="s3.openshift-storage.svc"
-              [ -z "$PORT" ] && PORT="443"
-              ENDPOINT="https://${HOST}:${PORT}"
+              [ -z "$PORT" ] && PORT="80"
+              # Noobaa in-cluster S3 uses HTTP on port 80 (TLS on 443 is not compatible with Tempo S3 client here).
+              ENDPOINT="http://${HOST}:${PORT}"
 
               AK=$(b64dec "$AK")
               SK=$(b64dec "$SK")
@@ -82,7 +118,7 @@ spec:
 
               echo "Bucket=${BUCKET} endpoint=${ENDPOINT}"
 
-              PAYLOAD=$(printf '{"apiVersion":"v1","kind":"Secret","metadata":{"name":"%s","namespace":"%s"},"type":"Opaque","stringData":{"bucket":"%s","endpoint":"%s","access_key_id":"%s","access_key_secret":"%s","insecure":"false"}}' \
+              PAYLOAD=$(printf '{"apiVersion":"v1","kind":"Secret","metadata":{"name":"%s","namespace":"%s"},"type":"Opaque","stringData":{"bucket":"%s","endpoint":"%s","access_key_id":"%s","access_key_secret":"%s","insecure":"true"}}' \
                 "$TARGET" "$NS" "$BUCKET" "$ENDPOINT" "$AK" "$SK")
 
               EXIST=$(curl -sS -o /dev/null -w "%{http_code}" \
@@ -128,10 +164,12 @@ spec:
       replicas: 1
     queryFrontend:
       replicas: 1
+      jaegerQuery:
+        enabled: true
     compactor:
       replicas: 1
 ---
-# Istio/Kiali still use the jaeger service name; query UI reads traces from Tempo via gRPC.
+# Stable Jaeger service name for Kiali/console; backed by Tempo operator Jaeger Query UI.
 apiVersion: v1
 kind: Service
 metadata:
@@ -145,7 +183,10 @@ spec:
     port: 16686
     targetPort: 16686
   selector:
-    app: jaeger-query
+    app.kubernetes.io/component: query-frontend
+    app.kubernetes.io/instance: connectivity
+    app.kubernetes.io/managed-by: tempo-operator
+    app.kubernetes.io/name: tempo
 ---
 apiVersion: v1
 kind: Service
@@ -164,42 +205,6 @@ spec:
     app.kubernetes.io/instance: connectivity
     app.kubernetes.io/managed-by: tempo-operator
     app.kubernetes.io/name: tempo
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  labels:
-    app: jaeger-query
-  name: jaeger-query
-  namespace: openshift-opentelemetry
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: jaeger-query
-  template:
-    metadata:
-      labels:
-        app: jaeger-query
-        app: jaeger
-    spec:
-      containers:
-      - env:
-        # Jaeger UI; trace data served by Tempo query-frontend (Jaeger-compatible HTTP API).
-        - name: JAEGER_QUERY_URL
-          value: http://tempo-connectivity-query-frontend.openshift-opentelemetry.svc.cluster.local:3200
-        image: quay.io/jaegertracing/jaeger-ui:1.55
-        name: jaeger-ui
-        ports:
-        - containerPort: 16686
-          name: query
-        resources:
-          limits:
-            cpu: 500m
-            memory: 512Mi
-          requests:
-            cpu: 100m
-            memory: 128Mi
 ---
 apiVersion: route.openshift.io/v1
 kind: Route

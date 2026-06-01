@@ -146,7 +146,7 @@ graph LR
 
 In **Kiali → Traces**, the UI queries Jaeger at `http://jaeger.openshift-opentelemetry.svc.cluster.local:16686`. If the tab is empty:
 
-* **No OTLP receiver**: Istio must export spans to Jaeger OTLP (`jaeger.openshift-opentelemetry:4317`). The workshop Helm chart configures this in `connectivity-link-servicemeshoperator3` (older clusters pointed at a non-existent `connectivity-link-collector` and collected zero app spans).
+* **No OTLP receiver**: Istio exports spans to the mesh OpenTelemetry Collector (`mesh-collector.istio-system:4317`), which forwards to Tempo (`tempo-distributor.openshift-opentelemetry:4317`). This is configured in `connectivity-link-opentelemetry` and `connectivity-link-servicemeshoperator3`.
 * **Sampling**: mesh default is `randomSamplingPercentage: 10` — generate at least 20–30 requests or temporarily raise sampling in `istio-system/telemetry` `mesh-default`.
 * **Response headers**: ambient/Istio typically does **not** return `x-b3-traceid` to clients; use Jaeger/Kiali Traces, not `curl -I`.
 * **Verify Jaeger**:
@@ -155,7 +155,7 @@ In **Kiali → Traces**, the UI queries Jaeger at `http://jaeger.openshift-opent
 [source,bash]
 ----
 # Should list workload services after in-mesh traffic (not only jaeger-all-in-one)
-oc -n openshift-opentelemetry exec deploy/jaeger -- \
+oc -n openshift-opentelemetry exec deploy/tempo-connectivity-query-frontend -- \
   wget -qO- http://127.0.0.1:16686/api/services
 ----
 

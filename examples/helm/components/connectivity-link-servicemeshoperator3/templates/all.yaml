@@ -250,8 +250,8 @@ spec:
       - name: otel-tracing
         opentelemetry:
           port: 4317
-          # Tempo distributor (MCG-backed TempoStack) receives Istio ambient mesh OTLP.
-          service: tempo-distributor.openshift-opentelemetry.svc.cluster.local
+          # OSSM 3: ztunnel/waypoint -> OpenTelemetry Collector -> Tempo distributor (MCG-backed TempoStack).
+          service: mesh-collector.istio-system.svc.cluster.local
       trustDomain: cluster.local
     pilot:
       env:

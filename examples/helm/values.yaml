@@ -175,7 +175,7 @@ connectivityLink:
       enabled: true
       path: connectivity-link-opentelemetry
       destinationNamespace: openshift-opentelemetry
-      syncWave: "6"
+      syncWave: "7"
       prune: true
       selfHeal: true
       skipDryRunOnMissingResource: true

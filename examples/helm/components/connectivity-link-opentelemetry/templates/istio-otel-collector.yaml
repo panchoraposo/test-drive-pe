@@ -1,0 +1,32 @@
+# RH OSSM 3: Istio/ztunnel exports OTLP to an OpenTelemetry Collector; the collector forwards to Tempo.
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+  name: mesh
+  namespace: istio-system
+spec:
+  managementState: managed
+  observability:
+    metrics: {}
+  config:
+    exporters:
+      otlp:
+        endpoint: tempo-distributor.openshift-opentelemetry.svc.cluster.local:4317
+        tls:
+          insecure: true
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+    service:
+      pipelines:
+        traces:
+          exporters:
+            - otlp
+          receivers:
+            - otlp
