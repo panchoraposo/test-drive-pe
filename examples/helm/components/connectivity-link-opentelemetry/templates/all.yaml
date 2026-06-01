@@ -5,6 +5,133 @@ metadata:
     argocd.argoproj.io/sync-wave: "1"
   name: openshift-opentelemetry
 ---
+# MCG / Noobaa bucket for Tempo trace blocks (ODF ObjectBucketClaim).
+apiVersion: objectbucket.io/v1alpha1
+kind: ObjectBucketClaim
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+  name: tempo-traces
+  namespace: openshift-opentelemetry
+spec:
+  generateBucketName: tempo-traces-
+  storageClassName: openshift-storage.noobaa.io
+---
+# Map OBC secret + configmap into Tempo Operator S3 secret format.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/sync-wave: "4"
+  name: tempo-s3-secret-from-obc
+  namespace: openshift-opentelemetry
+spec:
+  backoffLimit: 12
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: default
+      containers:
+        - name: sync
+          image: quay.io/curl/curl:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              NS="openshift-opentelemetry"
+              OBC="tempo-traces"
+              TARGET="tempo-s3-storage"
+              KUBE_TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token)
+              KUBE_API="https://kubernetes.default.svc"
+              CA=/var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+              hdr() { echo "-H" "Authorization: Bearer $KUBE_TOKEN" "--cacert" "$CA"; }
+
+              echo "Waiting for OBC secret ${OBC}..."
+              for i in $(seq 1 90); do
+                SC=$(curl -sS -o /dev/null -w "%{http_code}" \
+                  "$KUBE_API/api/v1/namespaces/${NS}/secrets/${OBC}" \
+                  -H "Authorization: Bearer $KUBE_TOKEN" --cacert "$CA" || true)
+                if [ "$SC" = "200" ]; then break; fi
+                sleep 5
+              done
+              [ "$SC" = "200" ] || { echo "OBC secret not ready" >&2; exit 1; }
+
+              SEC_JSON=$(curl -sS "$KUBE_API/api/v1/namespaces/${NS}/secrets/${OBC}" \
+                -H "Authorization: Bearer $KUBE_TOKEN" --cacert "$CA")
+              CM_JSON=$(curl -sS "$KUBE_API/api/v1/namespaces/${NS}/configmaps/${OBC}" \
+                -H "Authorization: Bearer $KUBE_TOKEN" --cacert "$CA" || echo "{}")
+
+              b64dec() { echo "$1" | tr -d '\n' | base64 -d 2>/dev/null; }
+              get_data() { echo "$1" | sed -n "s/.*\"$2\":\"\\([^\"]*\\)\".*/\\1/p" | head -1; }
+
+              AK=$(get_data "$SEC_JSON" "AWS_ACCESS_KEY_ID")
+              SK=$(get_data "$SEC_JSON" "AWS_SECRET_ACCESS_KEY")
+              BUCKET=$(get_data "$SEC_JSON" "BUCKET_NAME")
+              HOST=$(get_data "$CM_JSON" "BUCKET_HOST")
+              PORT=$(get_data "$CM_JSON" "BUCKET_PORT")
+              [ -z "$HOST" ] && HOST="s3.openshift-storage.svc"
+              [ -z "$PORT" ] && PORT="443"
+              ENDPOINT="https://${HOST}:${PORT}"
+
+              AK=$(b64dec "$AK")
+              SK=$(b64dec "$SK")
+              BUCKET=$(b64dec "$BUCKET")
+
+              echo "Bucket=${BUCKET} endpoint=${ENDPOINT}"
+
+              PAYLOAD=$(printf '{"apiVersion":"v1","kind":"Secret","metadata":{"name":"%s","namespace":"%s"},"type":"Opaque","stringData":{"bucket":"%s","endpoint":"%s","access_key_id":"%s","access_key_secret":"%s","insecure":"false"}}' \
+                "$TARGET" "$NS" "$BUCKET" "$ENDPOINT" "$AK" "$SK")
+
+              EXIST=$(curl -sS -o /dev/null -w "%{http_code}" \
+                "$KUBE_API/api/v1/namespaces/${NS}/secrets/${TARGET}" \
+                -H "Authorization: Bearer $KUBE_TOKEN" --cacert "$CA" || true)
+              if [ "$EXIST" = "200" ]; then
+                curl -sS -o /dev/null -X DELETE \
+                  "$KUBE_API/api/v1/namespaces/${NS}/secrets/${TARGET}" \
+                  -H "Authorization: Bearer $KUBE_TOKEN" --cacert "$CA"
+              fi
+              CODE=$(curl -sS -o /tmp/out -w "%{http_code}" -X POST \
+                "$KUBE_API/api/v1/namespaces/${NS}/secrets" \
+                -H "Authorization: Bearer $KUBE_TOKEN" \
+                -H "Content-Type: application/json" \
+                --cacert "$CA" -d "$PAYLOAD")
+              echo "Created ${TARGET}: HTTP ${CODE}"
+              [ "$CODE" = "201" ] || { cat /tmp/out >&2; exit 1; }
+---
+apiVersion: tempo.grafana.com/v1alpha1
+kind: TempoStack
+metadata:
+  annotations:
+    argocd.argoproj.io/sync-wave: "6"
+  name: connectivity
+  namespace: openshift-opentelemetry
+spec:
+  storage:
+    secret:
+      name: tempo-s3-storage
+      type: s3
+  storageSize: 5Gi
+  resources:
+    total:
+      limits:
+        memory: 2Gi
+        cpu: "2"
+  template:
+    distributor:
+      replicas: 1
+    ingester:
+      replicas: 1
+    querier:
+      replicas: 1
+    queryFrontend:
+      replicas: 1
+    compactor:
+      replicas: 1
+---
+# Istio/Kiali still use the jaeger service name; query UI reads traces from Tempo via gRPC.
 apiVersion: v1
 kind: Service
 metadata:
@@ -17,50 +144,55 @@ spec:
   - name: query
     port: 16686
     targetPort: 16686
+  selector:
+    app: jaeger-query
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: tempo
+  name: tempo-distributor
+  namespace: openshift-opentelemetry
+spec:
+  ports:
   - name: otlp-grpc
     port: 4317
     targetPort: 4317
   selector:
-    app: jaeger
+    app.kubernetes.io/component: distributor
+    app.kubernetes.io/instance: connectivity
+    app.kubernetes.io/managed-by: tempo-operator
+    app.kubernetes.io/name: tempo
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   labels:
-    app: jaeger
-  name: jaeger
+    app: jaeger-query
+  name: jaeger-query
   namespace: openshift-opentelemetry
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: jaeger
+      app: jaeger-query
   template:
     metadata:
       labels:
+        app: jaeger-query
         app: jaeger
     spec:
       containers:
       - env:
-        - name: COLLECTOR_OTLP_ENABLED
-          value: "true"
-        image: quay.io/jaegertracing/all-in-one:1.55
-        name: jaeger
+        # Jaeger UI; trace data served by Tempo query-frontend (Jaeger-compatible HTTP API).
+        - name: JAEGER_QUERY_URL
+          value: http://tempo-connectivity-query-frontend.openshift-opentelemetry.svc.cluster.local:3200
+        image: quay.io/jaegertracing/jaeger-ui:1.55
+        name: jaeger-ui
         ports:
-        - containerPort: 5775
-          name: zipkin-compact
-        - containerPort: 6831
-          name: jaeger-compact
-        - containerPort: 6832
-          name: jaeger-binary
-        - containerPort: 5778
-          name: configs
         - containerPort: 16686
           name: query
-        - containerPort: 4317
-          name: otlp-grpc
-        - containerPort: 4318
-          name: otlp-http
         resources:
           limits:
             cpu: 500m

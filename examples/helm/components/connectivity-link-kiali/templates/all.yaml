@@ -19,6 +19,7 @@ spec:
     tracing:
       enabled: true
       external_url: https://jaeger.{{ .Values.clusterDomain }}
+      # Jaeger UI queries Tempo via gRPC storage plugin; UI still on :16686.
       internal_url: http://jaeger.openshift-opentelemetry.svc.cluster.local:16686
       use_grpc: false
 ---
