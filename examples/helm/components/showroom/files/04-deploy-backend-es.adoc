@@ -4,7 +4,7 @@ En este módulo desplegarás **Neuralbank Backend** usando un Software Template.
 
 == Prerrequisitos
 
-* Acceso a Developer Hub con tu usuario (`{user_name}`) y password `Welcome123!`.
+* Acceso a Developer Hub con tu usuario (`{user_name}`) y password `redhat`.
 * Permisos para crear componentes desde templates del catálogo del workshop.
 
 == Paso 1: Abrir “Create” desde un template

@@ -290,6 +290,13 @@ spec:
                 sed -i 's|Grafana / Kiali|Grafana / Service Mesh|g' "$f" || true
               fi
             done
+            # Workshop credentials: ensure docs never show the old default password.
+            # Replace in both EN/ES content trees before Antora renders HTML.
+            for d in /showroom/repo/content /showroom/repo/content-es; do
+              if [ -d "$d" ]; then
+                grep -RIl 'Welcome123' "$d" 2>/dev/null | xargs -I{} sed -i 's/Welcome123!/redhat/g; s/Welcome123/redhat/g' {} || true
+              fi
+            done
             cp /patch/nav.adoc /showroom/repo/content/modules/ROOT/nav.adoc
             cp /patch/nav-es.adoc /showroom/repo/content-es/modules/ROOT/nav.adoc
             cp /patch/index.adoc /showroom/repo/content/modules/ROOT/pages/index.adoc

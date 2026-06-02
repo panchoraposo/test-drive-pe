@@ -85,7 +85,7 @@ TOKEN=$(curl -s -X POST \
   -d "grant_type=password" \
   -d "client_id=neuralbank-frontend" \
   -d "username={user_name}" \
-  -d "password=Welcome123!" \
+  -d "password=redhat" \
   | jq -r '.access_token')
 
 # Debe retornar 200
@@ -154,7 +154,7 @@ curl -s -w "\nHTTP: %\{http_code}\n" \
 | N/A (solo API)
 
 | **Credenciales**
-| `{user_name}` / `Welcome123!`
+| `{user_name}` / `redhat`
 | API Key desde un Secret
 | API Key desde un Secret
 

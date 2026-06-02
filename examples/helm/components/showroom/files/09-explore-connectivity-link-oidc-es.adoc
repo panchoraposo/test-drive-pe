@@ -31,7 +31,7 @@ El frontend pre-desplegado tiene un **login OIDC interactivo completo**:
 | Campo | Valor
 
 | **Usuario** | `{user_name}`
-| **Contraseña** | `Welcome123!`
+| **Contraseña** | `redhat`
 |===
 
 . Luego del login, Keycloak redirige de vuelta al frontend con un JWT guardado en una cookie.
@@ -159,7 +159,7 @@ TOKEN=$(curl -s -X POST \
   -d "grant_type=password" \
   -d "client_id=neuralbank-frontend" \
   -d "username={user_name}" \
-  -d "password=Welcome123!" \
+  -d "password=redhat" \
   | jq -r '.access_token')
 
 echo "Token obtenido (primeros 50 caracteres): ${TOKEN:0:50}..."
@@ -201,7 +201,7 @@ El stack pre-desplegado `neuralbank-stack` demuestra un **flujo OIDC interactivo
 
 * Los usuarios acceden al frontend en `https://neuralbank.{cluster_domain}`
 * El CR `OIDCPolicy` redirige a Keycloak para autenticar
-* Credenciales: `{user_name}` / `Welcome123!`
+* Credenciales: `{user_name}` / `redhat`
 * Luego del login, el JWT queda guardado en una cookie para las siguientes requests
 
 Esto difiere de las apps generadas (que usan autenticación por API Key) porque el stack pre-desplegado incluye un cliente OIDC de Keycloak completamente configurado (`neuralbank-frontend`) en el realm `neuralbank`.
