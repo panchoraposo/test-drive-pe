@@ -611,7 +611,7 @@ spec:
           - repositoryMatch: ".*"
             pathsExist:
               - manifests
-        requeueAfterSeconds: {{ .Values.giteaScmRequeueAfterSeconds | default 180 }}
+        requeueAfterSeconds: {{ $.Values.giteaScmRequeueAfterSeconds | default 180 }}
   template:
     metadata:
       name: '{{ $user }}-{{ "{{ .repository }}" }}'
