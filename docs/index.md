@@ -42,7 +42,7 @@ Neuralbank es una entidad financiera que necesita modernizar su stack tecnológi
 
 ### Acceso al entorno
 
-Tu usuario es `YOUR_USER`. La contraseña es `Welcome123!`.
+Tu usuario es `YOUR_USER`. La contraseña es `redhat`.
 
 Tu namespace de trabajo es **`YOUR_USER-neuralbank`**. Todos los servicios que crees con las Software Templates se desplegarán ahí. Los componentes en el catálogo usan un **nombre único** con prefijo de tu usuario (por ejemplo `YOUR_USER-neuralbank-backend`) para evitar conflictos entre participantes.
 

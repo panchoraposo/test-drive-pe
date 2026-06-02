@@ -42,7 +42,7 @@ Neuralbank is a financial institution modernizing its technology stack. As a dev
 When you registered on the portal, credentials were assigned automatically:
 
 * **Username**: `{user_name}`
-* **Password**: `Welcome123!`
+* **Password**: `redhat`
 
 Your workspace namespace is **`{user_name}-neuralbank`**. All services deploy there.
 

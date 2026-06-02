@@ -99,7 +99,7 @@ spec:
         - name: USER_COUNT
           value: "{{ .Values.userCount | default 200 }}"
         - name: GITEA_PASSWORD
-          value: "Welcome123!"
+          value: "redhat"
         command:
         - /bin/bash
         - -c

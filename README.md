@@ -364,7 +364,7 @@ TOKEN=$(curl -sk "$KEYCLOAK_URL/realms/master/protocol/openid-connect/token" \
   -d "client_id=admin-cli" -d "grant_type=password" \
   -d "username=admin" -d "password=<KEYCLOAK_ADMIN_PASSWORD>" | jq -r .access_token)
 
-# Create platformadmin user with password Welcome123!
+# Create platformadmin user with password redhat
 curl -sk "$KEYCLOAK_URL/admin/realms/backstage/users" \
   -H "Authorization: Bearer $TOKEN" \
   -H "Content-Type: application/json" \

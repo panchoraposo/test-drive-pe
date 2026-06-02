@@ -21,7 +21,7 @@ Plataforma financiera de demostración pre-desplegada en el clúster OpenShift. 
 | **Client ID** | `neuralbank-frontend` |
 | **URL del realm** | `https://rhbk.apps.cluster-94mvp.dynamic.redhatworkshops.io/realms/neuralbank` |
 | **Usuarios** | `user1` … `user200` |
-| **Contraseña** | `Welcome123!` |
+| **Contraseña** | `redhat` |
 
 ### Base de datos PostgreSQL
 
@@ -61,7 +61,7 @@ TOKEN=$(curl -s -X POST \
   -d "grant_type=password" \
   -d "client_id=neuralbank-frontend" \
   -d "username=user1" \
-  -d "password=Welcome123!" | python3 -c "import json,sys; print(json.load(sys.stdin)['access_token'])")
+  -d "password=redhat" | python3 -c "import json,sys; print(json.load(sys.stdin)['access_token'])")
 
 # Listar clientes
 curl -s -H "Authorization: Bearer $TOKEN" \

@@ -2380,7 +2380,7 @@ spec:
     - credentials:
       - temporary: false
         type: password
-        value: Welcome123!
+        value: redhat
       disableableCredentialTypes: []
       email: user{{ $n }}@developer-hub.local
       emailVerified: true
@@ -2398,7 +2398,7 @@ spec:
     - credentials:
       - temporary: false
         type: password
-        value: Welcome123!
+        value: redhat
       disableableCredentialTypes: []
       email: platformadmin@developer-hub.local
       emailVerified: true
@@ -2785,7 +2785,7 @@ spec:
     - credentials:
       - temporary: false
         type: password
-        value: Welcome123!
+        value: redhat
       disableableCredentialTypes: []
       email: user{{ $n }}@developer-hub.local
       emailVerified: true

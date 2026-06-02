@@ -1,5 +1,5 @@
 {{- $userCount := .Values.userCount | default 200 | int }}
-{{- $hash := "{SHA}Y8G9w3Gr8Xk7wCpfl3mOr8KCbr4=" }}
+{{- $hash := "{SHA}PHZ8Qa+xKtoUAZDtgts/2TDi76M=" }}
 apiVersion: v1
 kind: Secret
 metadata:

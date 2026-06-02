@@ -18,7 +18,7 @@ TOKEN=$(curl -s -X POST \
   -d "grant_type=password" \
   -d "client_id=neuralbank-frontend" \
   -d "username=user1" \
-  -d "password=Welcome123!" | python3 -c "import json,sys; print(json.load(sys.stdin)['access_token'])")
+  -d "password=redhat" | python3 -c "import json,sys; print(json.load(sys.stdin)['access_token'])")
 ```
 
 Ver [Autenticación OIDC](oidc-auth.md) para más detalles.

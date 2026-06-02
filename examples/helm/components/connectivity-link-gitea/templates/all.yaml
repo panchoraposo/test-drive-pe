@@ -67,9 +67,14 @@ spec:
                 U="user${i}"
                 ORG="ws-${U}"
 
-                U_JSON=$(printf '{"username":"%s","password":"Welcome123!","email":"%s@developer-hub.local","must_change_password":false,"send_notify":false}' "$U" "$U")
+                U_JSON=$(printf '{"username":"%s","password":"redhat","email":"%s@developer-hub.local","must_change_password":false,"send_notify":false}' "$U" "$U")
                 C=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$BASE/api/v1/admin/users" \
                   -u "$AUTH" -H "Content-Type: application/json" -d "$U_JSON" || true)
+                if [ "$C" != "201" ]; then
+                  P_JSON=$(printf '{"login_name":"%s","source_id":0,"password":"redhat","must_change_password":false}' "$U")
+                  curl -sS -o /dev/null -w "patch-%{http_code}" -X PATCH "$BASE/api/v1/admin/users/${U}" \
+                    -u "$AUTH" -H "Content-Type: application/json" -d "$P_JSON" || true
+                fi
 
                 O_JSON=$(printf '{"username":"%s","visibility":"public","description":"Workshop repos for %s"}' "$ORG" "$U")
                 O=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$BASE/api/v1/orgs" \

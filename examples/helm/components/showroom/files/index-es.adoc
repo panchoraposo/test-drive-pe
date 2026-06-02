@@ -42,7 +42,7 @@ Neuralbank es una institución financiera modernizando su stack tecnológico. Co
 Al registrarte en el portal, se asignaron credenciales automáticamente:
 
 * **Usuario**: `{user_name}`
-* **Password**: `Welcome123!`
+* **Password**: `redhat`
 
 Tu namespace de trabajo es **`{user_name}-neuralbank`**. Todos los servicios se despliegan ahí.
 

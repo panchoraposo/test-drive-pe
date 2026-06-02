@@ -19,7 +19,7 @@ En este módulo explorarás cómo **Red Hat Connectivity Link** protege la API d
 
 El frontend pre-desplegado tiene login interactivo:
 - **URL**: `https://neuralbank.YOUR_CLUSTER_DOMAIN`
-- **Credenciales**: `YOUR_USER` / `Welcome123!`
+- **Credenciales**: `YOUR_USER` / `redhat`
 - Tras el login, Keycloak redirige de vuelta con un JWT en cookie.
 
 ## Arquitectura del patrón OIDC

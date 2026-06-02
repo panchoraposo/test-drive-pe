@@ -86,14 +86,14 @@ curl -s -H "X-API-Key: $API_KEY" \
 
 El stack pre-desplegado usa `OIDCPolicy` con **flujo interactivo de Keycloak**. Referencia completa: [Connectivity Link: OIDC](10-explore-connectivity-link-oidc.html).
 
-**Frontend con OIDC**: Abre `https://neuralbank.YOUR_CLUSTER_DOMAIN` — serás redirigido al login de Keycloak (`YOUR_USER` / `Welcome123!`).
+**Frontend con OIDC**: Abre `https://neuralbank.YOUR_CLUSTER_DOMAIN` — serás redirigido al login de Keycloak (`YOUR_USER` / `redhat`).
 
 ```bash
 # Test programático con Bearer token
 TOKEN=$(curl -s -X POST \
   "https://rhbk.YOUR_CLUSTER_DOMAIN/realms/neuralbank/protocol/openid-connect/token" \
   -d "client_id=neuralbank-frontend" -d "username=YOUR_USER" \
-  -d "password=Welcome123!" -d "grant_type=password" \
+  -d "password=redhat" -d "grant_type=password" \
   | python3 -c "import json,sys; print(json.load(sys.stdin)['access_token'])")
 
 curl -s "https://neuralbank.YOUR_CLUSTER_DOMAIN/api/v1/customers" \
@@ -134,4 +134,4 @@ El frontend scaffoldeado usa **API Key** (sin login OIDC):
 | **Tipo de AuthPolicy** | `OIDCPolicy` CR | `AuthPolicy` (API Key + JWT) | `AuthPolicy` (API Key) |
 | **Login interactivo** | ✅ Redirect a Keycloak | ❌ API Key manual | ❌ API Key manual |
 | **URL Frontend** | `neuralbank.YOUR_CLUSTER_DOMAIN` | `YOUR_USER-neuralbank-frontend.YOUR_CLUSTER_DOMAIN` | N/A |
-| **Credenciales** | `YOUR_USER` / `Welcome123!` | API Key de Secret | API Key de Secret |
+| **Credenciales** | `YOUR_USER` / `redhat` | API Key de Secret | API Key de Secret |

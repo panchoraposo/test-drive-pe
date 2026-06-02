@@ -162,7 +162,7 @@ spec:
         Incluye RateLimitPolicy de 10 req/min por usuario.
 
         **Autenticación:** Bearer token JWT (Keycloak realm neuralbank)
-        **Usuarios:** user1…user200 / Welcome123!
+        **Usuarios:** user1…user200 / redhat
       version: "1.0.0"
       contact:
         name: Platform Engineering
