@@ -178,6 +178,18 @@ data:
 {{ .Files.Get "files/13-observability-es.adoc" | indent 4 }}
   06-deploy-frontend-gateway-es.adoc: |
 {{ .Files.Get "files/06-deploy-frontend-gateway-es.adoc" | indent 4 }}
+  04-deploy-backend-es.adoc: |
+{{ .Files.Get "files/04-deploy-backend-es.adoc" | indent 4 }}
+  07-explore-argocd-apis-es.adoc: |
+{{ .Files.Get "files/07-explore-argocd-apis-es.adoc" | indent 4 }}
+  09-explore-connectivity-link-oidc-es.adoc: |
+{{ .Files.Get "files/09-explore-connectivity-link-oidc-es.adoc" | indent 4 }}
+  10-explore-connectivity-link-apikey-es.adoc: |
+{{ .Files.Get "files/10-explore-connectivity-link-apikey-es.adoc" | indent 4 }}
+  11-developer-lightspeed-es.adoc: |
+{{ .Files.Get "files/11-developer-lightspeed-es.adoc" | indent 4 }}
+  14-full-stack-verification-es.adoc: |
+{{ .Files.Get "files/14-full-stack-verification-es.adoc" | indent 4 }}
 ---
 # Showroom User Data ConfigMap
 apiVersion: v1
@@ -283,6 +295,12 @@ spec:
             cp /patch/13-observability.adoc /showroom/repo/content/modules/ROOT/pages/13-observability.adoc
             cp /patch/13-observability-es.adoc /showroom/repo/content-es/modules/ROOT/pages/13-observability.adoc
             cp /patch/06-deploy-frontend-gateway-es.adoc /showroom/repo/content-es/modules/ROOT/pages/06-deploy-frontend-gateway.adoc
+            cp /patch/04-deploy-backend-es.adoc /showroom/repo/content-es/modules/ROOT/pages/04-deploy-backend.adoc
+            cp /patch/07-explore-argocd-apis-es.adoc /showroom/repo/content-es/modules/ROOT/pages/07-explore-argocd-apis.adoc
+            cp /patch/09-explore-connectivity-link-oidc-es.adoc /showroom/repo/content-es/modules/ROOT/pages/09-explore-connectivity-link-oidc.adoc
+            cp /patch/10-explore-connectivity-link-apikey-es.adoc /showroom/repo/content-es/modules/ROOT/pages/10-explore-connectivity-link-apikey.adoc
+            cp /patch/11-developer-lightspeed-es.adoc /showroom/repo/content-es/modules/ROOT/pages/11-developer-lightspeed.adoc
+            cp /patch/14-full-stack-verification-es.adoc /showroom/repo/content-es/modules/ROOT/pages/14-full-stack-verification.adoc
         volumeMounts:
         - mountPath: /showroom/repo
           name: showroom-files

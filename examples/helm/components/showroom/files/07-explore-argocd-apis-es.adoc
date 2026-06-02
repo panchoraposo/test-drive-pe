@@ -1,0 +1,102 @@
+= Explorar ArgoCD y APIs
+
+Este módulo conecta la vista de **GitOps** en ArgoCD con el **Software Catalog** de Developer Hub y las **políticas** aplicadas en el cluster.
+
+== Ver GitOps desde Developer Hub (pestaña CD)
+
+La forma recomendada de monitorear tus Applications de ArgoCD es a través de la pestaña **CD** en Developer Hub:
+
+. Abre **Developer Hub**: `https://backstage-developer-hub-developer-hub.{cluster_domain}`
+. Ve a **Catalog** y busca tu componente (por ejemplo, `{user_name}-neuralbank-backend`).
+. Haz clic en el componente y selecciona la pestaña **CD**.
+. Verás el estado de sync, health y el árbol de recursos de ArgoCD directamente dentro de Developer Hub.
+
+TIP: La pestaña **CD** entrega la misma información que la consola de ArgoCD, pero sin requerir un login separado. Es la forma más simple para validar despliegues en el workshop.
+
+== Alternativa: abrir la UI de ArgoCD directamente
+
+Si prefieres acceder a ArgoCD directamente:
+
+. Abre ArgoCD: `https://openshift-gitops-server-openshift-gitops.{cluster_domain}`
+. Inicia sesión con **Log in via OpenShift**.
+. En **Applications**, filtra por tu namespace `{user_name}-neuralbank`.
+
+NOTE: Los usuarios del workshop tienen acceso de solo lectura a sus propias applications (`{user_name}-*`). Si no ves applications luego de iniciar sesión, usa la pestaña **CD** en Developer Hub — entrega la misma visibilidad con autenticación integrada.
+
+== ApplicationSet de ArgoCD
+
+Las applications se generan automáticamente mediante un **ApplicationSet** que observa Gitea en busca de nuevos repositorios:
+
+[source,yaml,subs="attributes+"]
+----
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: workshop-neuralbank-backend
+  namespace: openshift-gitops
+spec:
+  generators:
+    - git:
+        repoURL: https://gitea-gitea.{cluster_domain}
+        revision: HEAD
+        directories:
+          - path: "*/neuralbank-backend"
+  template:
+    metadata:
+      name: "\{\{path[0]}}-neuralbank-backend"
+    spec:
+      project: default
+      source:
+        repoURL: "https://gitea-gitea.{cluster_domain}/\{\{path[0]}}/neuralbank-backend.git"
+        targetRevision: HEAD
+        path: manifests
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "\{\{path[0]}}-neuralbank"
+----
+
+== Explorar el árbol de recursos
+
+Desde la pestaña **CD** en Developer Hub (o ArgoCD directamente):
+
+. Observa Deployments, Services, Routes y ConfigMaps.
+. Para backend y MCP, revisa también recursos de Gateway API (Gateway, HTTPRoute) y políticas de Kuadrant (AuthPolicy, RateLimitPolicy).
+
+Revisa **Sync Status**:
+* *Synced* — el cluster coincide con el manifiesto en Git
+* *OutOfSync* — cambios pendientes o drift
+
+Revisa **Health**:
+* *Healthy*, *Progressing*, *Degraded*
+
+== Entidad API y OpenAPI
+
+Muchos templates registran una entidad **API** junto con el Component:
+
+. En el catálogo, abre la entidad **API** asociada al backend.
+. Revisa la definición **OpenAPI** embebida.
+
+La definición OpenAPI documenta paths, schemas y ejemplos — referencia para consumidores del servicio y para el frontend.
+
+== Políticas de Kuadrant en OpenShift
+
+Para servicios expuestos con el patrón connectivity link, revisa:
+
+* **AuthPolicy** — autenticación por API Key (primaria), con validación OIDC JWT opcional
+* **RateLimitPolicy** — rate limits aplicados al tráfico que coincide con la HTTPRoute
+
+[.console-input]
+[source,bash,subs="attributes+"]
+----
+oc get authpolicy -n {user_name}-neuralbank -o yaml
+----
+
+[.console-input]
+[source,bash,subs="attributes+"]
+----
+oc get ratelimitpolicy -n {user_name}-neuralbank -o yaml
+----
+
+== Resumen
+
+Exploraste el estado GitOps desde la pestaña **CD** en Developer Hub (y opcionalmente ArgoCD), ubicando la API y su definición OpenAPI, y revisando políticas de autenticación y rate limit en el contexto de Kuadrant.

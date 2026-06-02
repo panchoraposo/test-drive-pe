@@ -1,0 +1,142 @@
+= 9. Developer Lightspeed
+
+**Developer Lightspeed** es un asistente de chat con IA integrado en Red Hat Developer Hub. Ayuda a responder preguntas sobre la plataforma, templates y buenas prácticas sin salir del portal.
+
+== Acceder a Lightspeed
+
+. Inicia sesión en **Developer Hub** en `https://backstage-developer-hub-developer-hub.{cluster_domain}`
+. En la barra lateral izquierda, haz clic en el ícono **Lightspeed**.
+
+Se abre la interfaz de chat, lista para responder preguntas sobre Developer Hub, Backstage, Kubernetes, OpenShift, CI/CD y GitOps.
+
+== Prueba estos prompts
+
+El workshop preconfigura prompts sugeridos:
+
+[cols="1,2"]
+|===
+| Prompt | Qué aprendes
+
+| "Getting Started with Developer Hub"
+| Primeros pasos para nuevos desarrolladores en la plataforma
+
+| "Software Templates"
+| Cómo crear y usar templates en Developer Hub
+
+| "Neuralbank Platform"
+| Componentes de la plataforma financiera Neuralbank y sus interacciones
+
+| "CI/CD with Tekton"
+| Cómo están configurados los pipelines Tekton en esta instancia
+|===
+
+[.console-input]
+----
+Prueba preguntando: "¿Cómo construyo un servicio backend para este workshop usando Software Templates, y cómo se compila con Tekton y se despliega con Argo CD?"
+----
+
+== Arquitectura
+
+Developer Lightspeed usa un **proxy LiteLLM** para enrutar requests al modelo y un **Llama Stack** con RAG (Retrieval Augmented Generation) para documentación específica de RHDH:
+
+[mermaid]
+....
+graph LR
+    DEV[Developer] -->|Chat| LS[Lightspeed Plugin]
+    LS -->|API| LSTACK[Llama Stack + RAG]
+    LSTACK -->|Embeddings| VDB[Vector DB - RHDH Docs]
+    LSTACK -->|Inference| LLM[LiteLLM Proxy]
+    LLM -->|Model| VLLM[vLLM / LLM Provider]
+....
+
+== Configuración del plugin
+
+El plugin de Lightspeed se configura como dynamic plugin en Developer Hub:
+
+[source,yaml]
+----
+plugins:
+  - package: red-hat-developer-hub-backstage-plugin-lightspeed
+    disabled: false
+    pluginConfig:
+      dynamicPlugins:
+        frontend:
+          red-hat-developer-hub.backstage-plugin-lightspeed:
+            appIcons:
+              - name: LightspeedIcon
+                module: LightspeedPlugin
+                importName: LightspeedIcon
+            dynamicRoutes:
+              - importName: LightspeedPage
+                menuItem:
+                  icon: LightspeedIcon
+                  text: Lightspeed
+                path: /lightspeed
+----
+
+== Configuración del backend de Lightspeed
+
+El backend se conecta al servidor Llama Stack que corre como sidecar:
+
+[source,yaml]
+----
+lightspeed:
+  servers:
+    - id: "llama-stack"
+      url: "http://localhost:8321"
+      token: "${LIGHTSPEED_TOKEN}"
+  prompts:
+    - title: "Getting Started with Developer Hub"
+      message: "Can you guide me through the first steps?"
+    - title: "Software Templates"
+      message: "How do I create and use Software Templates?"
+    - title: "Neuralbank Platform"
+      message: "What components make up the Neuralbank platform?"
+    - title: "CI/CD with Tekton"
+      message: "How are Tekton pipelines configured here?"
+----
+
+== RAG: respuestas con contexto de documentación
+
+La instancia de Lightspeed se potencia con **RAG** (Retrieval Augmented Generation) usando documentación del producto RHDH:
+
+[source,yaml]
+----
+vector_dbs:
+  - embedding_dimension: 768
+    embedding_model: sentence-transformers/all-mpnet-base-v2
+    provider_id: rhdh-docs
+    vector_db_id: rhdh-product-docs-1_8
+
+tool_groups:
+  - provider_id: rag-runtime
+    toolgroup_id: builtin::rag
+    description: >
+      Only use for questions specifically about Red Hat Developer Hub (RHDH).
+      Searches technical documentation for RHDH installation, configuration,
+      release, and extending with plugins.
+----
+
+Esto significa que cuando preguntas por features de RHDH, el asistente recupera chunks relevantes de documentación antes de generar la respuesta, produciendo respuestas más precisas y “grounded”.
+
+== Validación de preguntas
+
+Lightspeed incluye un shield de validación que asegura que las preguntas sean relevantes para la plataforma:
+
+* Temas válidos: Backstage, RHDH, Kubernetes, OpenShift, CI/CD, GitOps, Pipelines, Kuadrant
+* Preguntas off-topic reciben una redirección amable
+
+== Permisos RBAC
+
+Todos los usuarios autenticados tienen permisos de Lightspeed configurados vía RBAC de Developer Hub:
+
+[source,csv]
+----
+p, role:default/authenticated, lightspeed.chat.read, read, allow
+p, role:default/authenticated, lightspeed.chat.create, create, allow
+p, role:default/authenticated, lightspeed.chat.delete, delete, allow
+----
+
+== Resumen
+
+Developer Lightspeed trae asistencia de IA directo al portal del desarrollador, ayudándote a descubrir templates, entender la plataforma y resolver problemas — sin salir de Developer Hub. La integración RAG asegura que las respuestas estén basadas en documentación real de RHDH.

@@ -1,0 +1,230 @@
+= 12. Verificación full stack
+
+Este módulo final es una lista de verificación concisa para confirmar que todos los componentes del workshop funcionan correctamente.
+
+== Checklist de despliegue
+
+[cols="1,2,1"]
+|===
+| Verificación | Comando / Acción | Resultado esperado
+
+| **Pods backend**
+| `oc get pods -n {user_name}-neuralbank -l app=neuralbank-backend`
+| Running, sin restarts
+
+| **Pods frontend**
+| `oc get pods -n {user_name}-neuralbank -l app=neuralbank-frontend`
+| Running
+
+| **Pods MCP**
+| `oc get pods -n {user_name}-neuralbank -l app=customer-service-mcp`
+| Running
+
+| **Apps ArgoCD**
+| UI de ArgoCD → filtrar por `{user_name}`
+| 3 apps Synced y Healthy
+
+| **Pipelines**
+| `oc get pipelinerun -n {user_name}-neuralbank`
+| Todas Succeeded
+|===
+
+== Checklist de gateway y seguridad
+
+[.console-input]
+[source,bash,subs="attributes+"]
+----
+# Gateways programados
+oc get gateway -n {user_name}-neuralbank -o wide
+
+# HTTPRoutes aceptadas
+oc get httproute -n {user_name}-neuralbank -o wide
+
+# AuthPolicies aplicadas
+oc get authpolicy -n {user_name}-neuralbank -o wide
+
+# RateLimitPolicies aplicadas
+oc get ratelimitpolicy -n {user_name}-neuralbank -o wide
+----
+
+Todo debería mostrar `ACCEPTED: True` y `ENFORCED: True`.
+
+== Checklist de pruebas de API
+
+=== Backend API (API Key)
+
+[.console-input]
+[source,bash,subs="attributes+"]
+----
+export APP_NAME="${APP_NAME:-neuralbank-backend}"
+export NS="{user_name}-neuralbank"
+export APIKEY_NAME="{user_name}-${APP_NAME}"
+
+SECRET_NAME=$(oc get apikey -n "$NS" "$APIKEY_NAME" -o jsonpath='{.status.secretRef.name}')
+API_KEY=$(oc get secret -n "$NS" "$SECRET_NAME" -o jsonpath='{.data.api_key}' | tr -d '\n' | base64 -d)
+
+# Debe retornar 200 con datos de clientes
+curl -s -w "\nHTTP: %\{http_code}\n" \
+  -H "X-API-Key: $API_KEY" \
+  "https://neuralbank-backend-{user_name}-neuralbank.{cluster_domain}/api/customers" \
+  | tail -1
+
+# Debe retornar 401 sin API key
+curl -s -o /dev/null -w "HTTP: %\{http_code}\n" \
+  "https://neuralbank-backend-{user_name}-neuralbank.{cluster_domain}/api/customers"
+----
+
+=== Stack pre-desplegado (OIDC)
+
+[.console-input]
+[source,bash,subs="attributes+"]
+----
+TOKEN=$(curl -s -X POST \
+  "https://rhbk.{cluster_domain}/realms/neuralbank/protocol/openid-connect/token" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  -d "grant_type=password" \
+  -d "client_id=neuralbank-frontend" \
+  -d "username={user_name}" \
+  -d "password=Welcome123!" \
+  | jq -r '.access_token')
+
+# Debe retornar 200
+curl -s -w "\nHTTP: %\{http_code}\n" \
+  -H "Authorization: Bearer $TOKEN" \
+  "https://neuralbank.{cluster_domain}/api/v1/customers" \
+  | tail -1
+----
+
+=== NFL Wallet (API Key)
+
+[.console-input]
+[source,bash,subs="attributes+"]
+----
+NFL_KEY=$(oc get secret nfl-wallet-apikey-admin -n nfl-wallet-prod \
+  -o jsonpath='{.data.api_key}' | tr -d '\n' | base64 -d)
+
+# Debe retornar 200
+curl -s -w "\nHTTP: %\{http_code}\n" \
+  -H "X-API-Key: $NFL_KEY" \
+  "https://nfl-wallet.{cluster_domain}/api/v1/customers" \
+  | tail -1
+----
+
+== Checklist de Developer Hub
+
+[cols="1,2"]
+|===
+| Verificación | Resultado esperado
+
+| **Componentes en el catálogo**
+| 3 componentes visibles para tu usuario
+
+| **Entidades API**
+| Specs OpenAPI visibles para backend y MCP
+
+| **Chat de Lightspeed**
+| El asistente de IA responde preguntas
+
+| **Plugin Kuadrant**
+| API Products y Keys visibles en la barra lateral
+
+| **Enlaces en la home**
+| Tarjetas Workshop Platform, Observability y Documentation visibles
+|===
+
+== Comparación de modelos de autenticación
+
+[cols="1,1,1,1",options="header"]
+|===
+| | OIDC (neuralbank-stack) | API Key (apps generadas) | API Key (NFL Wallet)
+
+| **Tipo de política**
+| CR `OIDCPolicy` (extensión Kuadrant)
+| `AuthPolicy` con API Key + OIDC JWT
+| `AuthPolicy` solo con API Key
+
+| **¿Login interactivo?**
+| Sí — redirect a Keycloak
+| No — API Key manual
+| No — API Key manual
+
+| **URL del frontend**
+| `neuralbank.{cluster_domain}`
+| `neuralbank-frontend-{user_name}-neuralbank.{cluster_domain}`
+| N/A (solo API)
+
+| **Credenciales**
+| `{user_name}` / `Welcome123!`
+| API Key desde un Secret
+| API Key desde un Secret
+
+| **Ideal para**
+| Apps web con login de usuario
+| Desarrollo / testing
+| Integraciones M2M
+|===
+
+== Resumen de arquitectura de la plataforma
+
+[mermaid]
+....
+graph TB
+    subgraph Developer Experience
+        DH[Developer Hub]
+        LS[Lightspeed AI]
+        DS[Dev Spaces]
+    end
+
+    subgraph Source & GitOps
+        GIT[Gitea]
+        ARGO[ArgoCD]
+    end
+
+    subgraph CI/CD
+        TEK[Tekton Pipelines]
+        WH[Webhooks]
+    end
+
+    subgraph Runtime
+        OCP[OpenShift]
+        GW[Gateway API]
+        KQ[Kuadrant Policies]
+    end
+
+    subgraph Observability
+        GF[Grafana]
+        SM[Service Mesh Graph/Traces]
+    end
+
+    subgraph AI Platform
+        OLS[OpenShift Lightspeed]
+        MCP[MCP Gateway]
+        VLLM[vLLM Model Server]
+    end
+
+    DH -->|Templates| GIT
+    GIT -->|Webhook| WH
+    WH -->|Trigger| TEK
+    TEK -->|Deploy| OCP
+    GIT -->|GitOps| ARGO
+    ARGO -->|Sync| OCP
+    OCP --> GW
+    GW --> KQ
+    DH --> LS
+    OLS --> MCP
+    OLS --> VLLM
+    OCP --> GF
+    OCP --> SM
+....
+
+== ¡Felicitaciones!
+
+Completaste el workshop **From Zero To Hero con Red Hat Developer Hub**. Ahora entiendes cómo:
+
+* Construir aplicaciones usando **Software Templates** y **golden paths**
+* Automatizar despliegues con **ArgoCD** y **Tekton**
+* Asegurar APIs con **Kuadrant** (OIDC + API Key + Rate Limiting)
+* Usar **asistencia de IA** con Developer Lightspeed y OpenShift Lightspeed + MCP Gateway
+* Monitorear la plataforma con **Grafana** y las pestañas **Graph** y **Traces** de **Service Mesh** en la consola OpenShift
+
+Todo impulsado por **Red Hat Developer Hub** como capa unificada de experiencia de desarrollador.

@@ -119,7 +119,7 @@ link:https://neuralbank-frontend-{user_name}-neuralbank.{cluster_domain}[https:/
 . La SPA muestra estado de conectividad del gateway, datos de clientes y health del MCP.
 . Puedes ver clientes, actualizar créditos y revisar tools del MCP — todo ruteado por gateways de Kuadrant.
 
-NOTE: Si el indicador **MCP** queda rojo o el **Health Check** muestra error DNS/proxy, la app `customer-service-mcp` aún no está desplegada (o sigue en build). Vuelve al Paso 2 y confirma en ArgoCD una Application `{{user_name}}-customer-service-mcp` en `{user_name}-neuralbank` y que esté **Synced/Healthy**.
+NOTE: Si el indicador **MCP** queda rojo o el **Health Check** muestra error DNS/proxy, la app `customer-service-mcp` aún no está desplegada (o sigue en build). Vuelve al Paso 2 y confirma en ArgoCD una Application `{user_name}-customer-service-mcp` en `{user_name}-neuralbank` y que esté **Synced/Healthy**.
 
 [.console-input]
 [source,bash,subs="attributes+"]

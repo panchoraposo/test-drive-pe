@@ -1,0 +1,166 @@
+= Desplegar el backend con Software Templates
+
+En este módulo desplegarás **Neuralbank Backend** usando un Software Template. Al finalizar tendrás un repositorio en Gitea, una Application en ArgoCD, una ejecución de pipeline en Tekton y la API accesible en OpenShift.
+
+== Prerrequisitos
+
+* Acceso a Developer Hub con tu usuario (`{user_name}`) y password `Welcome123!`.
+* Permisos para crear componentes desde templates del catálogo del workshop.
+
+== Paso 1: Abrir “Create” desde un template
+
+. Inicia sesión en Developer Hub en `https://backstage-developer-hub-developer-hub.{cluster_domain}`
+. En el menú principal, selecciona **Create**.
+. Busca el template **Neuralbank: Backend API**.
+
+== Paso 2: Completar el formulario
+
+Completa los campos:
+
+[cols="1,2"]
+|===
+| Campo | Valor
+
+| **Name**
+| `neuralbank-backend`
+
+| **Owner (usuario de OpenShift)**
+| `{user_name}`
+|===
+
+Esto crea el namespace `{user_name}-neuralbank` donde se despliegan todos los servicios.
+
+WARNING: No uses espacios en el nombre del repositorio. El owner debe coincidir con tu usuario de OpenShift para que los permisos del namespace queden correctos.
+
+== Paso 3: Crear y esperar el scaffolding
+
+. Haz clic en **Create** (o **Review** y luego **Create** si existe ese paso).
+. Quédate en la pantalla de progreso hasta que terminen todos los pasos del scaffolder.
+
+NOTE: Si un paso falla, revisa permisos en Gitea o cuota/recursos del namespace `{user_name}-neuralbank`.
+
+== Paso 4: Verificar el repositorio en Gitea
+
+. Abre Gitea: `https://gitea-gitea.{cluster_domain}`
+. Ubica el repositorio `{user_name}/neuralbank-backend`.
+. Confirma que existan código fuente, manifiestos, Tekton y `catalog-info.yaml`.
+
+[.console-input]
+[source,bash]
+----
+# Estructura esperada del repositorio
+src/                     # Código fuente Java/Quarkus
+manifests/
+  deployment.yaml
+  service.yaml
+  gateway.yaml           # Gateway API resource
+  httproute.yaml         # HTTPRoute para la API
+  authpolicy.yaml        # AuthPolicy Kuadrant (API Key + OIDC JWT)
+  ratelimitpolicy.yaml   # RateLimitPolicy Kuadrant
+  trigger-binding.yaml   # TriggerBinding Tekton
+  trigger-template.yaml  # TriggerTemplate Tekton
+  event-listener.yaml    # EventListener Tekton
+tekton/
+  pipeline.yaml          # Definición del pipeline CI/CD
+devfile.yaml             # Configuración Dev Spaces
+catalog-info.yaml        # Registro en catálogo Backstage
+Dockerfile
+----
+
+== Paso 5: Verificar la Application en ArgoCD
+
+. Abre ArgoCD: `https://openshift-gitops-server-openshift-gitops.{cluster_domain}`
+. Busca una **Application** llamada `{user_name}-neuralbank-backend`.
+. Revisa **Sync Status** y **Health**; si está *OutOfSync*, ejecuta **Sync**.
+
+== Paso 6: Validar el deployment en OpenShift
+
+. Abre la **Consola de OpenShift**.
+. Cambia al proyecto **`{user_name}-neuralbank`**.
+. En **Workloads -> Pods**, verifica que los pods del backend estén **Running**.
+
+== Entendiendo el modelo de autenticación
+
+El backend generado usa una **AuthPolicy** que soporta **dos métodos de autenticación**:
+
+[source,yaml,subs="attributes+"]
+----
+apiVersion: kuadrant.io/v1
+kind: AuthPolicy
+spec:
+  defaults:
+    rules:
+      authentication:
+        api-key-auth:          # Priority 0 — checked first
+          apiKey:
+            selector:
+              matchLabels:
+                app: neuralbank-backend
+                kuadrant.io/apikey: "true"
+          credentials:
+            customHeader:
+              name: X-API-Key
+          priority: 0
+        oidc:                  # Priority 1 — fallback
+          jwt:
+            issuerUrl: https://rhbk.{cluster_domain}/realms/neuralbank
+          credentials:
+            authorizationHeader:
+              prefix: Bearer
+          priority: 1
+      response:
+        unauthenticated:
+          code: 401
+          body:
+            value: '{"error":"Authentication required."}'
+----
+
+[cols="1,2"]
+|===
+| Método | Cómo funciona
+
+| **API Key** (primary)
+| Envía el header `X-API-Key` con una key desde un Secret de Kubernetes con label. Este es el método usado por el frontend generado por template.
+
+| **OIDC JWT** (secundario)
+| Envía `Authorization: Bearer <token>` con un JWT válido del realm `neuralbank` en Keycloak. Es útil para acceso programático si ya tienes un token.
+|===
+
+IMPORTANTE: Las aplicaciones generadas usan **API Key como método primario de autenticación**. La opción OIDC JWT sirve para validar Bearer tokens, pero no incluye un flujo interactivo de login. Para una experiencia OIDC interactiva completa (redirect del browser a Keycloak), revisa el stack pre-desplegado `neuralbank-stack` en xref:09-explore-connectivity-link-oidc.adoc[Módulo 9].
+
+== Paso 7: Probar los endpoints de la API
+
+El backend expone endpoints REST a través del gateway de Kuadrant. Usa una API Key para autenticar:
+
+[.console-input]
+[source,bash,subs="attributes+"]
+----
+export APP_NAME="${APP_NAME:-neuralbank-backend}"
+export NS="{user_name}-neuralbank"
+export APIKEY_NAME="{user_name}-${APP_NAME}"
+
+SECRET_NAME=$(oc get apikey -n "$NS" "$APIKEY_NAME" -o jsonpath='{.status.secretRef.name}')
+API_KEY=$(oc get secret -n "$NS" "$SECRET_NAME" -o jsonpath='{.data.api_key}' | tr -d '\n' | base64 -d)
+
+echo "API Key: $API_KEY"
+
+# List customers
+curl -s -H "X-API-Key: $API_KEY" \
+  "https://${APP_NAME}-{user_name}-neuralbank.{cluster_domain}/api/customers" \
+  | jq .
+
+# List credits
+curl -s -H "X-API-Key: $API_KEY" \
+  "https://${APP_NAME}-{user_name}-neuralbank.{cluster_domain}/api/credits" \
+  | jq .
+----
+
+== Paso 8: Confirmar registro en el Catalog
+
+. Vuelve a **Developer Hub**.
+. Busca el componente **neuralbank-backend** en el **Catalog**.
+. Abre la tarjeta de la entidad y revisa los links al repositorio, documentación y relaciones (entidad **API**).
+
+== Resumen
+
+Desplegaste el backend siguiendo el flujo completo **Hub -> Template -> Gitea -> ArgoCD -> Tekton -> OpenShift**. La API queda protegida por Kuadrant con **autenticación por API Key** (primaria) y validación opcional OIDC JWT. Todos los servicios quedan en el namespace `{user_name}-neuralbank`.
