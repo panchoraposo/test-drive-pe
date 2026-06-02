@@ -23,10 +23,8 @@ connectivityLink:
   mcpToken: "IpIbd50gbMb1p2+iCigrhkm21pZwbn0g"
   argocdMcpToken: ""
   mcpGateway:
-    # Optional: install the MCP Gateway Operator (OLM) from redhat-operators.
-    # Keep disabled by default to avoid OLM conflicts on clusters where Kuadrant /
-    # Authorino are already installed and managing AuthConfig resources.
-    operatorInstallEnabled: false
+    # Install Red Hat Connectivity Link MCP gateway operator (OLM preview channel).
+    operatorInstallEnabled: true
   operators:
     channel: stable-4.20
     version: 4.20.4

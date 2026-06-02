@@ -4,7 +4,7 @@ title: "Lightspeed, MCP Gateway y Notificaciones"
 nav_order: 9
 ---
 
-Este módulo cubre tres capacidades integradas que potencian la experiencia del desarrollador: **Developer Hub Lightspeed** como asistente IA, **MCP Gateway** como extensión comunitaria de Kuadrant para exponer servidores MCP, y el sistema de **Notificaciones**.
+Este módulo cubre tres capacidades integradas que potencian la experiencia del desarrollador: **Developer Hub Lightspeed** como asistente IA, el **[MCP gateway de Red Hat Connectivity Link](https://docs.redhat.com/en/documentation/red_hat_connectivity_link/1.3/html/installing_the_mcp_gateway/mcp-gateway-install)** (Technology Preview) para exponer servidores MCP, y el sistema de **Notificaciones**.
 
 ## Developer Hub Lightspeed
 
@@ -62,9 +62,9 @@ Los componentes se ejecutan como sidecars junto al backend de Developer Hub:
 | "How are Tekton pipelines configured for CI/CD?" | Configuración de pipelines y triggers |
 | "What is the OIDCPolicy pattern in Connectivity Link?" | Patrón de autenticación con Keycloak |
 
-## MCP Gateway (Extensión Comunitaria de Kuadrant)
+## Red Hat Connectivity Link MCP gateway (Technology Preview)
 
-**MCP Gateway** es una extensión comunitaria del operador **Kuadrant** que permite registrar, exponer y gestionar servidores MCP (Model Context Protocol) a través del API Gateway de forma declarativa.
+El **[MCP gateway de Red Hat Connectivity Link](https://docs.redhat.com/en/documentation/red_hat_connectivity_link/1.3/html/installing_the_mcp_gateway/mcp-gateway-install)** (Technology Preview) se instala desde el catálogo `redhat-operators` (canal `preview`). Permite registrar, exponer y gestionar servidores MCP (Model Context Protocol) a través del API Gateway de forma declarativa.
 
 ### Flujo interactivo 3D — MCP Gateway
 

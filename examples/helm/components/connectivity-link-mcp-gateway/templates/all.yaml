@@ -679,6 +679,8 @@ metadata:
     argocd.argoproj.io/sync-wave: "3"
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
+  # RHCL 1.3 TP (0.6.0): workshop manages HTTPRoutes for OLS backends manually.
+  httpRouteManagement: Disabled
   targetRef:
     group: gateway.networking.k8s.io
     kind: Gateway

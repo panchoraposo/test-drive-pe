@@ -66,7 +66,7 @@ En entornos empresariales, el acceso al portal y a acciones sensibles (crear pla
 
 ## Red Hat Developer Lightspeed, MCP Gateway y Notificaciones
 
-Developer Hub incorpora **Red Hat Developer Lightspeed** como asistente de IA, **MCP Gateway** (extensión comunitaria de Kuadrant) para exponer servidores MCP, y **Notificaciones** en tiempo real. Estos temas se cubren en detalle en el módulo [Lightspeed, MCP Gateway y Notificaciones](09-lightspeed-notifications.html).
+Developer Hub incorpora **Red Hat Developer Lightspeed** como asistente de IA, el **MCP gateway de Red Hat Connectivity Link** (Technology Preview) para exponer servidores MCP, y **Notificaciones** en tiempo real. Estos temas se cubren en detalle en el módulo [Lightspeed, MCP Gateway y Notificaciones](09-lightspeed-notifications.html).
 
 ## Reducción de carga cognitiva y tiempo hasta producción
 

@@ -218,9 +218,9 @@ Cada usuario recibe su propio namespace. Los componentes usan un **nombre único
 | Aplicación ArgoCD | `owner-name` | `user1-neuralbank-backend` |
 | Kubernetes ID | `owner-name` | `user1-neuralbank-backend` |
 
-## MCP Gateway (Extensión Comunitaria de Kuadrant)
+## Red Hat Connectivity Link MCP gateway (Technology Preview)
 
-El workshop integra **MCP Gateway**, una extensión comunitaria del operador Kuadrant que permite exponer y gestionar servidores MCP (Model Context Protocol) a través del API Gateway:
+El workshop integra el **[MCP gateway de Red Hat Connectivity Link](https://docs.redhat.com/en/documentation/red_hat_connectivity_link/1.3/html/installing_the_mcp_gateway/mcp-gateway-install)** (Technology Preview). El operador se instala por OLM desde `redhat-operators` (canal `preview`, versión 0.6.0 TP) y permite exponer y gestionar servidores MCP (Model Context Protocol) a través del API Gateway:
 
 ```mermaid
 graph TB
@@ -337,7 +337,7 @@ graph TB
 | Tekton | Pipelines CI/CD como recursos de Kubernetes. Visible en pestaña **CI** del Hub. |
 | Keycloak | Identidad y SSO; alimenta OIDCPolicy y acceso al Hub. |
 | Dev Spaces | IDEs en el navegador conectados al mismo repo que GitOps y Tekton. |
-| MCP Gateway (Kuadrant) | Extensión comunitaria que expone MCP servers via Gateway API para consumo por LLMs. |
+| MCP gateway (RHCL TP) | Operador OLM `mcp-gateway` (`redhat-operators`, canal `preview`) que expone MCP servers vía Gateway API para consumo por LLMs. |
 | Connectivity Link | Gateway API + Istio + Kuadrant: entrada norte-sur, enrutamiento y políticas sobre APIs. |
 | Lightspeed | Asistente IA en Developer Hub con RAG y conexión a LLM via LiteLLM. |
 | OpenShift Lightspeed | Asistente IA en la consola OpenShift, conectado a MCP servers via MCP Gateway. |

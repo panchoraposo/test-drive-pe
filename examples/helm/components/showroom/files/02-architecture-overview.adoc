@@ -66,9 +66,9 @@ spec:
           priority: 1
 ----
 
-== MCP Gateway (Kuadrant Community Extension)
+== Red Hat Connectivity Link MCP gateway (Technology Preview)
 
-The **MCP Gateway** extends Kuadrant with support for the **Model Context Protocol**, allowing AI assistants (OpenShift Lightspeed) to call cluster tools securely:
+The link:https://docs.redhat.com/en/documentation/red_hat_connectivity_link/1.3/html/installing_the_mcp_gateway/mcp-gateway-install[Red Hat Connectivity Link MCP gateway] (Technology Preview) aggregates **Model Context Protocol** (MCP) servers behind a Gateway API endpoint. The operator is installed from the `redhat-operators` catalog (`preview` channel). OpenShift Lightspeed and other AI assistants use it to call cluster tools securely:
 
 [mermaid]
 ....

@@ -27,7 +27,7 @@ En este workshop aprenderás a utilizar **Red Hat Developer Hub** como portal de
   - **OIDCPolicy** (Neuralbank) — autenticación interactiva con Keycloak
   - **AuthPolicy con API Key** (NFL Wallet) — autenticación M2M programática
 - Utilizar **Red Hat Developer Lightspeed** como asistente de IA con RAG
-- Explorar **MCP Gateway** (extensión comunitaria de Kuadrant) para exponer MCP servers al LLM
+- Explorar el **MCP gateway de Red Hat Connectivity Link** (Technology Preview) para exponer MCP servers al LLM
 - Interactuar con **OpenShift Lightspeed** + MCP servers para operaciones sobre el clúster
 - Actualizar código fuente usando **Red Hat OpenShift Dev Spaces** con CI/CD automatizado
 - Recibir **notificaciones** en tiempo real y por email sobre el estado de tus componentes
