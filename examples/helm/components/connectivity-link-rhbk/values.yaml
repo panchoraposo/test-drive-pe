@@ -2,3 +2,4 @@
 enabled: true
 clusterDomain: ""
 userCount: 200
+workshopPassword: redhat

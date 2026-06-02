@@ -2380,7 +2380,7 @@ spec:
     - credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       disableableCredentialTypes: []
       email: user{{ $n }}@developer-hub.local
       emailVerified: true
@@ -2398,7 +2398,7 @@ spec:
     - credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       disableableCredentialTypes: []
       email: platformadmin@developer-hub.local
       emailVerified: true
@@ -2500,7 +2500,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Anderson
       realmRoles:
       - personal-client
@@ -2513,7 +2513,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Martinez
       realmRoles:
       - personal-client
@@ -2526,7 +2526,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Lee
       realmRoles:
       - personal-client
@@ -2539,7 +2539,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Garcia
       realmRoles:
       - personal-client
@@ -2552,7 +2552,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Solutions Inc
       realmRoles:
       - corporate-client
@@ -2565,7 +2565,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Gómez Morales
       realmRoles:
       - personal-client
@@ -2578,7 +2578,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Martínez Pérez
       realmRoles:
       - personal-client
@@ -2591,7 +2591,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Sánchez Muñoz
       realmRoles:
       - personal-client
@@ -2604,7 +2604,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Silva Santos
       realmRoles:
       - personal-client
@@ -2617,7 +2617,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Ferreira Lima
       realmRoles:
       - personal-client
@@ -2630,7 +2630,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Martínez Suárez
       realmRoles:
       - personal-client
@@ -2643,7 +2643,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Fernández Gómez
       realmRoles:
       - personal-client
@@ -2656,7 +2656,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Pérez González
       realmRoles:
       - personal-client
@@ -2669,7 +2669,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Silva Rojas
       realmRoles:
       - personal-client
@@ -2682,7 +2682,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Global SA de CV
       realmRoles:
       - corporate-client
@@ -2695,7 +2695,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: del Sur SRL
       realmRoles:
       - corporate-client
@@ -2708,7 +2708,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: García López
       realmRoles:
       - personal-client
@@ -2721,7 +2721,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Martín Sánchez
       realmRoles:
       - personal-client
@@ -2734,7 +2734,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Rodríguez Torres
       realmRoles:
       - personal-client
@@ -2747,7 +2747,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Johnson
       realmRoles:
       - personal-client
@@ -2760,7 +2760,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Thompson
       realmRoles:
       - personal-client
@@ -2773,7 +2773,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       lastName: Madrid SA
       realmRoles:
       - corporate-client
@@ -2785,7 +2785,7 @@ spec:
     - credentials:
       - temporary: false
         type: password
-        value: redhat
+        value: {{ $.Values.workshopPassword | default "redhat" | quote }}
       disableableCredentialTypes: []
       email: user{{ $n }}@developer-hub.local
       emailVerified: true
@@ -2800,3 +2800,120 @@ spec:
       totp: false
       username: user{{ $n }}
     {{- end }}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rhbk-password-sync
+  namespace: rhbk-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: rhbk-password-sync
+  namespace: rhbk-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/exec", "secrets"]
+  verbs: ["get", "list", "create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: rhbk-password-sync
+  namespace: rhbk-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: rhbk-password-sync
+subjects:
+- kind: ServiceAccount
+  name: rhbk-password-sync
+  namespace: rhbk-operator
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: rhbk-workshop-password-sync
+  namespace: rhbk-operator
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+    argocd.argoproj.io/hook: PostSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 5
+  template:
+    spec:
+      restartPolicy: OnFailure
+      serviceAccountName: rhbk-password-sync
+      containers:
+      - name: sync
+        image: registry.redhat.io/openshift4/ose-cli:latest
+        env:
+        - name: WORKSHOP_PASSWORD
+          value: {{ $.Values.workshopPassword | default "redhat" | quote }}
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -euo pipefail
+
+          echo "Waiting for Keycloak pod..."
+          for attempt in $(seq 1 60); do
+            KC_POD=$(oc get pod -n rhbk-operator -l app=keycloak -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+            if [ -n "$KC_POD" ]; then
+              READY=$(oc get pod -n rhbk-operator "$KC_POD" -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || true)
+              if [ "$READY" = "True" ]; then
+                break
+              fi
+            fi
+            echo "  attempt $attempt/60 ..."
+            sleep 5
+          done
+          [ -n "${KC_POD:-}" ] || { echo "Keycloak pod not found" >&2; exit 1; }
+
+          KC_ADMIN=$(oc get secret keycloak-initial-admin -n rhbk-operator -o jsonpath='{.data.username}' | base64 -d)
+          KC_PASS=$(oc get secret keycloak-initial-admin -n rhbk-operator -o jsonpath='{.data.password}' | base64 -d)
+
+          echo "Syncing workshop passwords in Keycloak pod ${KC_POD}..."
+          oc exec -n rhbk-operator "$KC_POD" -- env \
+            HOME=/tmp \
+            KC_ADMIN="$KC_ADMIN" \
+            KC_PASS="$KC_PASS" \
+            WORKSHOP_PASSWORD="$WORKSHOP_PASSWORD" \
+            bash -ce '
+          set -euo pipefail
+          /opt/keycloak/bin/kcadm.sh config credentials \
+            --server http://localhost:8080 \
+            --realm master \
+            --user "$KC_ADMIN" \
+            --password "$KC_PASS"
+
+          sync_realm() {
+            local realm="$1"
+            echo "Realm: ${realm}"
+            for username in $(/opt/keycloak/bin/kcadm.sh get users -r "$realm" --fields username --format csv --noquotes | tail -n +2); do
+              [ -z "$username" ] && continue
+              case "$username" in
+                service-account-*) continue ;;
+              esac
+              /opt/keycloak/bin/kcadm.sh set-password \
+                -r "$realm" \
+                --username "$username" \
+                --new-password "$WORKSHOP_PASSWORD"
+              echo "  ${username}: updated"
+            done
+          }
+
+          sync_realm backstage
+          sync_realm neuralbank
+          echo "Workshop password sync complete"
+          '
+
+          echo "Keycloak workshop password sync finished successfully"
