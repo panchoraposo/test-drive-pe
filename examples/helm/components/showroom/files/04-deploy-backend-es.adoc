@@ -63,19 +63,48 @@ catalog-info.yaml        # Registro en catálogo Backstage
 Dockerfile
 ----
 
-== Paso 5: Verificar la Application en ArgoCD
+== Paso 5: Confirmar registro en el Catalog
+
+. Vuelve a **Developer Hub**.
+. Busca el componente **neuralbank-backend** en el **Catalog**.
+. Abre la tarjeta de la entidad y revisa los links al repositorio, documentación y relaciones (entidad **API**).
+
+== Paso 6: Verificar la Application en ArgoCD
 
 . Abre ArgoCD: `https://openshift-gitops-server-openshift-gitops.{cluster_domain}`
 . Busca una **Application** llamada `{user_name}-neuralbank-backend`.
 . Revisa **Sync Status** y **Health**; si está *OutOfSync*, ejecuta **Sync**.
 
-== Paso 6: Validar el deployment en OpenShift
+== Paso 7: Verificar el pipeline
 
-. Abre la **Consola de OpenShift**.
-. Cambia al proyecto **`{user_name}-neuralbank`**.
+El template dispara un pipeline de Tekton para construir y desplegar el backend.
+
+. En la **Consola de OpenShift**, selecciona el proyecto **`{user_name}-neuralbank`**.
+. Ve a **Pipelines** (o **CI/CD -> Pipelines**) y abre **PipelineRuns**.
+. Confirma que existe una corrida para `neuralbank-backend` y que termina en **Succeeded**.
+
+Si prefieres validarlo por terminal:
+
+[.console-input]
+[source,bash,subs="attributes+"]
+----
+oc get pipelinerun -n {user_name}-neuralbank
+----
+
+== Paso 8: Verificar nuevamente la Application en ArgoCD (después del pipeline)
+
+Cuando el **PipelineRun** termine, vuelve a ArgoCD y confirma:
+
+- **Sync Status**: *Synced*
+- **Health**: *Healthy*
+
+== Paso 9: Verificar el deployment en OpenShift
+
+. En la **Consola de OpenShift**, asegúrate de estar en el proyecto **`{user_name}-neuralbank`**.
 . En **Workloads -> Pods**, verifica que los pods del backend estén **Running**.
+. En **Topology**, ubica el nodo `neuralbank-backend` y revisa su estado y eventos.
 
-== Paso 7: Probar los endpoints de la API
+== Paso 10: Probar los endpoints de la API
 
 El backend expone endpoints REST a través del gateway de Kuadrant. Usa una API Key para autenticar:
 
@@ -101,12 +130,6 @@ curl -s -H "X-API-Key: $API_KEY" \
   "https://${APP_NAME}-{user_name}-neuralbank.{cluster_domain}/api/credits" \
   | jq .
 ----
-
-== Paso 8: Confirmar registro en el Catalog
-
-. Vuelve a **Developer Hub**.
-. Busca el componente **neuralbank-backend** en el **Catalog**.
-. Abre la tarjeta de la entidad y revisa los links al repositorio, documentación y relaciones (entidad **API**).
 
 == Entendiendo el modelo de autenticación
 
