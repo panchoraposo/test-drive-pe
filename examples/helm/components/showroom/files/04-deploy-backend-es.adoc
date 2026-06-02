@@ -83,7 +83,7 @@ El template dispara un pipeline de Tekton para construir y desplegar el backend.
 Este paso se hace desde el **componente** en Developer Hub.
 
 . En la página del componente `{user_name}-neuralbank-backend`, abre la pestaña **CI**.
-. Confirma que existe una corrida reciente y que termina en **Succeeded**.
+. Confirma que existe una ejecución reciente y que termina en **Succeeded**.
 
 Si prefieres validarlo por terminal (opcional):
 
