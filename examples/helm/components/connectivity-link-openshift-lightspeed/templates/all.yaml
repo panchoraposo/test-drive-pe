@@ -490,6 +490,7 @@ data:
     import json
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
     import re
+    import sys
     from typing import Any, Dict, List
 
     MODEL_ID = "qwen25-7b-instruct"
@@ -739,23 +740,63 @@ data:
       return (has_build_backend and has_pipeline_deploy) or (("backend" in key) and has_templates and has_pipeline_deploy)
 
 
+    # Kubernetes-style name (labels/namespaces); hyphenated segments allowed.
+    _NS_TOKEN = r"(?:[a-z0-9]+(?:-[a-z0-9]+)*)"
+    _NS_STOP = frozenset({
+      "a", "an", "in", "en", "el", "la", "de", "the", "my", "mi",
+      "namespace", "proyecto", "project", "deployment", "deploy",
+    })
+
+
     def _extract_namespace(text: str) -> str | None:
-      # English + Spanish-ish patterns
+      # English + Spanish-ish patterns. Order matters: prefer explicit forms like
+      # "in the user1-neuralbank namespace" before the generic "<word> namespace"
+      # fallback (which would wrongly capture "in" from trailing "in namespace").
       t = (text or "").lower()
-      m = re.search(r"\b(?:in|en)\s+(?:the\s+)?(?:namespace|proyecto|project)\s+([a-z0-9-]+)\b", t)
-      if m:
-        ns = m.group(1)
-        # Handle prompts like "in my namespace" (no concrete namespace provided).
-        if ns in ("my", "mi"):
-          return None
-        return ns
-      m = re.search(r"\b([a-z0-9-]+)\s+namespace\b", t)
-      if m:
-        ns = m.group(1)
-        if ns in ("my", "mi"):
-          return None
-        return ns
+
+      def _accept(ns: str) -> bool:
+        return bool(ns) and ns not in _NS_STOP
+
+      ordered = [
+        # in (the|el|la) NAME namespace — workshop phrasing
+        rf"\b(?:in|en)\s+(?:the|el|la)\s+({_NS_TOKEN})\s+namespace\b",
+        # in NAME namespace (no article)
+        rf"\b(?:in|en)\s+({_NS_TOKEN})\s+namespace\b",
+        # in (the|el|la) namespace NAME
+        rf"\b(?:in|en)\s+(?:the|el|la)\s+(?:namespace|proyecto|project)\s+({_NS_TOKEN})\b",
+        # in namespace NAME
+        rf"\b(?:in|en)\s+(?:namespace|proyecto|project)\s+({_NS_TOKEN})\b",
+        # namespace NAME
+        rf"\b(?:namespace|proyecto|project)\s+({_NS_TOKEN})\b",
+      ]
+      for pat in ordered:
+        m = re.search(pat, t)
+        if m and _accept(m.group(1)):
+          return m.group(1)
+
+      m = re.search(rf"\b({_NS_TOKEN})\s+namespace\b", t)
+      if m and _accept(m.group(1)):
+        return m.group(1)
       return None
+
+
+    def _self_check_namespace_extraction() -> None:
+      cases = [
+        ("Scale the frontend deployment to 2 replicas in the user1-neuralbank namespace", "user1-neuralbank"),
+        ("Create a HorizontalPodAutoscaler for deployment neuralbank-backend in the user1-neuralbank namespace with min 1 max 3 cpu 70", "user1-neuralbank"),
+        ("Deploy a Redis database in the user1-neuralbank namespace", "user1-neuralbank"),
+        ("Install Redis using Helm in the user1-neuralbank namespace", "user1-neuralbank"),
+        ("in user1-neuralbank namespace", "user1-neuralbank"),
+        ("namespace user1-neuralbank", "user1-neuralbank"),
+        ("in namespace user1-neuralbank", "user1-neuralbank"),
+        ("List all pods in the neuralbank-stack namespace", "neuralbank-stack"),
+        ("Deploy a Redis database in namespace", None),
+        ("deploy redis in namespace", None),
+      ]
+      for prompt, want in cases:
+        got = _extract_namespace(prompt)
+        if got != want:
+          raise AssertionError(f"prompt={prompt!r} got={got!r} want={want!r}")
 
 
     def _completion(req: Dict[str, Any]) -> Dict[str, Any]:
@@ -1270,6 +1311,10 @@ data:
 
 
     def main():
+      if len(sys.argv) > 1 and sys.argv[1] == "--self-check":
+        _self_check_namespace_extraction()
+        print("namespace extraction self-check: ok")
+        return
       server = ThreadingHTTPServer(("0.0.0.0", 8080), Handler)
       server.serve_forever()
 
