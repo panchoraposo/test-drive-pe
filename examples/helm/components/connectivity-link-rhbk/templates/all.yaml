@@ -2500,7 +2500,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Anderson
       realmRoles:
       - personal-client
@@ -2513,7 +2513,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Martinez
       realmRoles:
       - personal-client
@@ -2526,7 +2526,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Lee
       realmRoles:
       - personal-client
@@ -2539,7 +2539,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Garcia
       realmRoles:
       - personal-client
@@ -2552,7 +2552,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Solutions Inc
       realmRoles:
       - corporate-client
@@ -2565,7 +2565,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Gómez Morales
       realmRoles:
       - personal-client
@@ -2578,7 +2578,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Martínez Pérez
       realmRoles:
       - personal-client
@@ -2591,7 +2591,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Sánchez Muñoz
       realmRoles:
       - personal-client
@@ -2604,7 +2604,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Silva Santos
       realmRoles:
       - personal-client
@@ -2617,7 +2617,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Ferreira Lima
       realmRoles:
       - personal-client
@@ -2630,7 +2630,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Martínez Suárez
       realmRoles:
       - personal-client
@@ -2643,7 +2643,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Fernández Gómez
       realmRoles:
       - personal-client
@@ -2656,7 +2656,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Pérez González
       realmRoles:
       - personal-client
@@ -2669,7 +2669,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Silva Rojas
       realmRoles:
       - personal-client
@@ -2682,7 +2682,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Global SA de CV
       realmRoles:
       - corporate-client
@@ -2695,7 +2695,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: del Sur SRL
       realmRoles:
       - corporate-client
@@ -2708,7 +2708,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: García López
       realmRoles:
       - personal-client
@@ -2721,7 +2721,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Martín Sánchez
       realmRoles:
       - personal-client
@@ -2734,7 +2734,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Rodríguez Torres
       realmRoles:
       - personal-client
@@ -2747,7 +2747,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Johnson
       realmRoles:
       - personal-client
@@ -2760,7 +2760,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Thompson
       realmRoles:
       - personal-client
@@ -2773,7 +2773,7 @@ spec:
       credentials:
       - temporary: false
         type: password
-        value: Welcome123
+        value: redhat
       lastName: Madrid SA
       realmRoles:
       - corporate-client

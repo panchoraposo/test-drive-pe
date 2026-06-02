@@ -70,7 +70,7 @@ Resultado: **302 Redirect** a la página de login de Keycloak. Sin token, la OID
 KC_HOST="https://rhbk.YOUR_CLUSTER_DOMAIN"
 TOKEN=$(curl -sk "$KC_HOST/realms/neuralbank/protocol/openid-connect/token" \
   -d "client_id=neuralbank" -d "username=robert.anderson@email.com" \
-  -d "password=Welcome123" -d "grant_type=password" | python3 -c "import json,sys; print(json.load(sys.stdin)['access_token'])")
+  -d "password=redhat" -d "grant_type=password" | python3 -c "import json,sys; print(json.load(sys.stdin)['access_token'])")
 
 curl -sk "https://$NEURALBANK_HOST/api/v1/customers" \
   -H "Authorization: Bearer $TOKEN" | python3 -m json.tool | head -20
