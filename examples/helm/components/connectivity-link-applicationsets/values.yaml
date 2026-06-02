@@ -1,2 +1,4 @@
 clusterDomain: ""
 userCount: 200
+# SCM provider polls all ws-userN orgs; lower frequency reduces Gitea load during scaffolds.
+giteaScmRequeueAfterSeconds: 180

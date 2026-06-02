@@ -399,8 +399,9 @@ data:
           apiBaseUrl: https://gitea-gitea.{{ .Values.clusterDomain }}/api/v1
           username: gitea_admin
           password: "openshift"
-        # Templates use repoUrl host "gitea-gitea"; internal HTTP avoids ingress/TLS and
-        # speeds publish:gitea availability polling (checks baseUrl/src/branch up to 20s).
+        # Templates use repoUrl host "gitea-gitea" (not the apps.* host above). API + git push
+        # + publish:gitea availability polling (baseUrl/src/branch, up to 20s) use this entry.
+        # catalog:register and output links in templates still use the external HTTPS URLs.
         - host: gitea-gitea
           baseUrl: http://gitea-http.gitea.svc.cluster.local:3000
           apiBaseUrl: http://gitea-http.gitea.svc.cluster.local:3000/api/v1

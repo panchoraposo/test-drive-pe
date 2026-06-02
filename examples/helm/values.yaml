@@ -282,10 +282,27 @@ connectivityLink:
           enabled: false
         postgresql:
           enabled: true
+          primary:
+            resources:
+              requests:
+                cpu: 250m
+                memory: 256Mi
+              limits:
+                cpu: "1"
+                memory: 512Mi
         redis-cluster:
           enabled: false
         redis:
           enabled: true
+        # Workshop: 200 Argo CD ApplicationSet SCM polls hammer the API; without CPU
+        # requests Gitea throttles and publish:gitea repo create takes 6-10s+.
+        resources:
+          requests:
+            cpu: 500m
+            memory: 768Mi
+          limits:
+            cpu: "2"
+            memory: 1536Mi
         persistence:
           enabled: true
           size: 10Gi

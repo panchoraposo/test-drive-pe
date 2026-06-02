@@ -115,6 +115,31 @@ En líneas generales, al ejecutar una plantilla Neuralbank obtendrás:
 
 Además, el **`catalog-info.yaml`** permite que Developer Hub muestre el componente con **owner**, **system** y relaciones hacia APIs y dependencias, usando el nombre único con prefijo de usuario.
 
+## Rendimiento del paso «Publish to Gitea»
+
+El paso `publish:gitea` hace, en este orden: comprobar la organización Gitea, **crear el repositorio** (API), **push del skeleton** (git interno en el backend) y **esperar** hasta 20 s a que la URL `…/src/branch/main` responda 200. El registro en catálogo (`catalog:register`) es un paso **posterior** y no forma parte de «Publish to Gitea».
+
+En el clúster de taller, las integraciones usan `host: gitea-gitea` con `apiBaseUrl` y `baseUrl` apuntando a `http://gitea-http.gitea.svc.cluster.local:3000` (tráfico in-cluster). Los enlaces visibles para el usuario siguen siendo `https://gitea-gitea.<dominio>/…` en las plantillas.
+
+Si el paso tarda decenas de segundos, suele deberse a **Gitea saturado** (p. ej. ~200 ApplicationSets con `scmProvider` sondeando orgs cada minuto) o a **falta de CPU** en el pod Gitea (sin `resources`, las creaciones de repo pueden tardar 6–10 s). Tras fijar requests/limits en el chart y espaciar el requeue del SCM provider, las creaciones suelen bajar a **&lt;1 s** y el paso completo a unos **pocos segundos**.
+
+Verificación rápida desde el pod de Developer Hub:
+
+```bash
+scripts/gitea-publish-benchmark.sh
+```
+
+O medir solo la API de creación:
+
+```bash
+oc exec -n developer-hub deploy/backstage-developer-hub -c backstage-backend -- \
+  curl -sS -o /dev/null -w '%{time_total}s\n' -u gitea_admin:openshift \
+  -X POST 'http://gitea-http.gitea.svc.cluster.local:3000/api/v1/orgs/ws-user1/repos' \
+  -H 'Content-Type: application/json' -d '{"name":"perf-test","auto_init":false}'
+```
+
+Valores orientativos: **&lt;1 s** en creación = saludable; **&gt;3 s** = revisar carga de Gitea y recursos del deployment.
+
 ## Buenas prácticas al usar plantillas
 
 - Revisa los **valores por defecto** y la **descripción** de cada parámetro antes de crear el componente.
