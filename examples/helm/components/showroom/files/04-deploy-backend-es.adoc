@@ -24,20 +24,16 @@ Completa los campos:
 | **Name**
 | `neuralbank-backend`
 
-| **Owner (usuario de OpenShift)**
-| `{user_name}`
+| **Description**
+| `Neuralbank REST API backend for credit management`
 |===
 
-Esto crea el namespace `{user_name}-neuralbank` donde se despliegan todos los servicios.
-
-WARNING: No uses espacios en el nombre del repositorio. El owner debe coincidir con tu usuario de OpenShift para que los permisos del namespace queden correctos.
+La aplicación se creará automáticamente en el namespace **`{user_name}-neuralbank`** (por ejemplo, `user23-neuralbank`). El template define este namespace; no necesitas configurarlo en el formulario.
 
 == Paso 3: Crear y esperar el scaffolding
 
 . Haz clic en **Create** (o **Review** y luego **Create** si existe ese paso).
 . Quédate en la pantalla de progreso hasta que terminen todos los pasos del scaffolder.
-
-NOTE: Si un paso falla, revisa permisos en Gitea o cuota/recursos del namespace `{user_name}-neuralbank`.
 
 == Paso 4: Verificar el repositorio en Gitea
 
@@ -78,6 +74,39 @@ Dockerfile
 . Abre la **Consola de OpenShift**.
 . Cambia al proyecto **`{user_name}-neuralbank`**.
 . En **Workloads -> Pods**, verifica que los pods del backend estén **Running**.
+
+== Paso 7: Probar los endpoints de la API
+
+El backend expone endpoints REST a través del gateway de Kuadrant. Usa una API Key para autenticar:
+
+[.console-input]
+[source,bash,subs="attributes+"]
+----
+export APP_NAME="${APP_NAME:-neuralbank-backend}"
+export NS="{user_name}-neuralbank"
+export APIKEY_NAME="{user_name}-${APP_NAME}"
+
+SECRET_NAME=$(oc get apikey -n "$NS" "$APIKEY_NAME" -o jsonpath='{.status.secretRef.name}')
+API_KEY=$(oc get secret -n "$NS" "$SECRET_NAME" -o jsonpath='{.data.api_key}' | tr -d '\n' | base64 -d)
+
+echo "API Key: $API_KEY"
+
+# List customers
+curl -s -H "X-API-Key: $API_KEY" \
+  "https://${APP_NAME}-{user_name}-neuralbank.{cluster_domain}/api/customers" \
+  | jq .
+
+# List credits
+curl -s -H "X-API-Key: $API_KEY" \
+  "https://${APP_NAME}-{user_name}-neuralbank.{cluster_domain}/api/credits" \
+  | jq .
+----
+
+== Paso 8: Confirmar registro en el Catalog
+
+. Vuelve a **Developer Hub**.
+. Busca el componente **neuralbank-backend** en el **Catalog**.
+. Abre la tarjeta de la entidad y revisa los links al repositorio, documentación y relaciones (entidad **API**).
 
 == Entendiendo el modelo de autenticación
 
@@ -127,39 +156,6 @@ spec:
 |===
 
 IMPORTANTE: Las aplicaciones generadas usan **API Key como método primario de autenticación**. La opción OIDC JWT sirve para validar Bearer tokens, pero no incluye un flujo interactivo de login. Para una experiencia OIDC interactiva completa (redirect del browser a Keycloak), revisa el stack pre-desplegado `neuralbank-stack` en xref:09-explore-connectivity-link-oidc.adoc[Módulo 9].
-
-== Paso 7: Probar los endpoints de la API
-
-El backend expone endpoints REST a través del gateway de Kuadrant. Usa una API Key para autenticar:
-
-[.console-input]
-[source,bash,subs="attributes+"]
-----
-export APP_NAME="${APP_NAME:-neuralbank-backend}"
-export NS="{user_name}-neuralbank"
-export APIKEY_NAME="{user_name}-${APP_NAME}"
-
-SECRET_NAME=$(oc get apikey -n "$NS" "$APIKEY_NAME" -o jsonpath='{.status.secretRef.name}')
-API_KEY=$(oc get secret -n "$NS" "$SECRET_NAME" -o jsonpath='{.data.api_key}' | tr -d '\n' | base64 -d)
-
-echo "API Key: $API_KEY"
-
-# List customers
-curl -s -H "X-API-Key: $API_KEY" \
-  "https://${APP_NAME}-{user_name}-neuralbank.{cluster_domain}/api/customers" \
-  | jq .
-
-# List credits
-curl -s -H "X-API-Key: $API_KEY" \
-  "https://${APP_NAME}-{user_name}-neuralbank.{cluster_domain}/api/credits" \
-  | jq .
-----
-
-== Paso 8: Confirmar registro en el Catalog
-
-. Vuelve a **Developer Hub**.
-. Busca el componente **neuralbank-backend** en el **Catalog**.
-. Abre la tarjeta de la entidad y revisa los links al repositorio, documentación y relaciones (entidad **API**).
 
 == Resumen
 
