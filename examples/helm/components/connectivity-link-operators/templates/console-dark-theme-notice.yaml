@@ -8,8 +8,8 @@ metadata:
     argocd.argoproj.io/sync-wave: "5"
 spec:
   text: >-
-    🇨🇱 Tip del workshop: para usar el estilo oscuro en OpenShift Console, abre el menú del usuario (arriba a la derecha) → Appearance/Apariencia → Dark.
+    Red Hat Tech Day Santiago 🇨🇱
   location: BannerTop
-  color: "#FFFFFF"
-  backgroundColor: "#EE0000"
+  color: "#000000"
+  backgroundColor: "#FDE3E4"
 {{- end }}
