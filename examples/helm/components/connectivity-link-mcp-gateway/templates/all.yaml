@@ -669,7 +669,7 @@ spec:
 ##
 ## 7. MCPGatewayExtension (controller creates broker, HTTPRoute, and service)
 ##
-{{- if .Capabilities.APIVersions.Has "mcp.kuadrant.io/v1alpha1" }}
+{{- if (.Values.operatorInstallEnabled | default false) }}
 apiVersion: mcp.kuadrant.io/v1alpha1
 kind: MCPGatewayExtension
 metadata:
@@ -795,7 +795,7 @@ spec:
             type: PathPrefix
             value: /k8s-mcp-server/mcp
 ---
-{{- if .Capabilities.APIVersions.Has "mcp.kuadrant.io/v1alpha1" }}
+{{- if (.Values.operatorInstallEnabled | default false) }}
 apiVersion: mcp.kuadrant.io/v1alpha1
 kind: MCPServerRegistration
 metadata:
