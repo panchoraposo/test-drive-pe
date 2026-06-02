@@ -71,19 +71,21 @@ Dockerfile
 
 == Paso 6: Verificar la Application en ArgoCD
 
-. Abre ArgoCD: `https://openshift-gitops-server-openshift-gitops.{cluster_domain}`
-. Busca una **Application** llamada `{user_name}-neuralbank-backend`.
-. Revisa **Sync Status** y **Health**; si está *OutOfSync*, ejecuta **Sync**.
+Este paso se hace desde el **componente** en Developer Hub.
+
+. En la página del componente `{user_name}-neuralbank-backend`, abre la pestaña **CD** (o revisa el panel **Deployment Summary** en *Overview*).
+. Confirma que aparece la **ArgoCD App** del backend y que su **Sync status** esté en *Synced* (si aún está cargando, espera unos segundos y refresca).
 
 == Paso 7: Verificar el pipeline
 
 El template dispara un pipeline de Tekton para construir y desplegar el backend.
 
-. En la **Consola de OpenShift**, selecciona el proyecto **`{user_name}-neuralbank`**.
-. Ve a **Pipelines** (o **CI/CD -> Pipelines**) y abre **PipelineRuns**.
-. Confirma que existe una corrida para `neuralbank-backend` y que termina en **Succeeded**.
+Este paso se hace desde el **componente** en Developer Hub.
 
-Si prefieres validarlo por terminal:
+. En la página del componente `{user_name}-neuralbank-backend`, abre la pestaña **CI**.
+. Confirma que existe una corrida reciente y que termina en **Succeeded**.
+
+Si prefieres validarlo por terminal (opcional):
 
 [.console-input]
 [source,bash,subs="attributes+"]
@@ -93,16 +95,17 @@ oc get pipelinerun -n {user_name}-neuralbank
 
 == Paso 8: Verificar nuevamente la Application en ArgoCD (después del pipeline)
 
-Cuando el **PipelineRun** termine, vuelve a ArgoCD y confirma:
+Cuando el **PipelineRun** termine, vuelve a la pestaña **CD** del componente y confirma:
 
 - **Sync Status**: *Synced*
 - **Health**: *Healthy*
 
 == Paso 9: Verificar el deployment en OpenShift
 
-. En la **Consola de OpenShift**, asegúrate de estar en el proyecto **`{user_name}-neuralbank`**.
-. En **Workloads -> Pods**, verifica que los pods del backend estén **Running**.
-. En **Topology**, ubica el nodo `neuralbank-backend` y revisa su estado y eventos.
+Este paso se hace desde el **componente** en Developer Hub.
+
+. Abre la pestaña **Topology** y verifica que el workload aparece en estado saludable.
+. Abre la pestaña **Kubernetes** y confirma que los pods del backend estén **Running** en el namespace `{user_name}-neuralbank`.
 
 == Paso 10: Probar los endpoints de la API
 
