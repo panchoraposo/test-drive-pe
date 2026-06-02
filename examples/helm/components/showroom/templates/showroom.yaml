@@ -188,6 +188,10 @@ data:
 {{ .Files.Get "files/10-explore-connectivity-link-apikey-es.adoc" | indent 4 }}
   11-developer-lightspeed-es.adoc: |
 {{ .Files.Get "files/11-developer-lightspeed-es.adoc" | indent 4 }}
+  12-openshift-lightspeed-mcp.adoc: |
+{{ .Files.Get "files/12-openshift-lightspeed-mcp.adoc" | indent 4 }}
+  12-openshift-lightspeed-mcp-es.adoc: |
+{{ .Files.Get "files/12-openshift-lightspeed-mcp-es.adoc" | indent 4 }}
   14-full-stack-verification-es.adoc: |
 {{ .Files.Get "files/14-full-stack-verification-es.adoc" | indent 4 }}
 ---
@@ -300,6 +304,8 @@ spec:
             cp /patch/09-explore-connectivity-link-oidc-es.adoc /showroom/repo/content-es/modules/ROOT/pages/09-explore-connectivity-link-oidc.adoc
             cp /patch/10-explore-connectivity-link-apikey-es.adoc /showroom/repo/content-es/modules/ROOT/pages/10-explore-connectivity-link-apikey.adoc
             cp /patch/11-developer-lightspeed-es.adoc /showroom/repo/content-es/modules/ROOT/pages/11-developer-lightspeed.adoc
+            cp /patch/12-openshift-lightspeed-mcp.adoc /showroom/repo/content/modules/ROOT/pages/12-openshift-lightspeed-mcp.adoc
+            cp /patch/12-openshift-lightspeed-mcp-es.adoc /showroom/repo/content-es/modules/ROOT/pages/12-openshift-lightspeed-mcp.adoc
             cp /patch/14-full-stack-verification-es.adoc /showroom/repo/content-es/modules/ROOT/pages/14-full-stack-verification.adoc
         volumeMounts:
         - mountPath: /showroom/repo

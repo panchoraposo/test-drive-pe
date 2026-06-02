@@ -92,11 +92,47 @@ spec:
       jsonPointers:
         - /metadata/annotations
         - /status
-    - group: mcp.openshift.io
+    - group: mcp.kuadrant.io
       kind: "*"
       jsonPointers:
         - /metadata/annotations
         - /status
+      jqPathExpressions:
+        - .spec.backendPingIntervalSeconds
+        - .spec.trustedHeadersKey.generate
+        - .spec.targetRef.group
+        - .spec.targetRef.kind
+    - group: tempo.grafana.com
+      kind: TempoStack
+      jsonPointers:
+        - /status
+        - /metadata/annotations
+        - /metadata/labels
+        - /metadata/finalizers
+        - /spec/hashRing
+        - /spec/images
+        - /spec/limits
+        - /spec/managementState
+        - /spec/networkPolicy
+        - /spec/observability
+        - /spec/replicationFactor
+        - /spec/retention
+        - /spec/search
+        - /spec/serviceAccount
+        - /spec/timeout
+        - /spec/storage/tls
+        - /spec/template/compactor/podSecurityContext
+        - /spec/template/distributor/tls
+        - /spec/template/distributor/component/podSecurityContext
+        - /spec/template/gateway
+        - /spec/template/ingester/podSecurityContext
+        - /spec/template/querier/podSecurityContext
+        - /spec/template/queryFrontend/component/podSecurityContext
+        - /spec/template/queryFrontend/jaegerQuery/ingress
+        - /spec/template/queryFrontend/jaegerQuery/monitorTab
+        - /spec/template/queryFrontend/jaegerQuery/servicesQueryDuration
+        - /spec/template/queryFrontend/jaegerQuery/tempoQuery
+        - /spec/template/queryFrontend/mcpServer
     - kind: ConfigMap
       jsonPointers:
         - /metadata/annotations

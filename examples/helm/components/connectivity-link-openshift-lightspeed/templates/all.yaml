@@ -488,6 +488,7 @@ data:
     from __future__ import annotations
 
     import json
+    import os
     from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
     import re
     import sys
@@ -740,12 +741,22 @@ data:
       return (has_build_backend and has_pipeline_deploy) or (("backend" in key) and has_templates and has_pipeline_deploy)
 
 
-    # Kubernetes-style name (labels/namespaces); hyphenated segments allowed.
-    _NS_TOKEN = r"(?:[a-z0-9]+(?:-[a-z0-9]+)*)"
+    # Kubernetes-style names plus showroom placeholders like {user_name}-neuralbank.
+    _NS_TOKEN = r"(?:\{[a-z_]+\}(?:-[a-z0-9]+(?:-[a-z0-9]+)*)?|[a-z0-9]+(?:-[a-z0-9]+)*)"
     _NS_STOP = frozenset({
       "a", "an", "in", "en", "el", "la", "de", "the", "my", "mi",
       "namespace", "proyecto", "project", "deployment", "deploy",
     })
+
+
+    def _resolve_namespace_placeholders(ns: str) -> str:
+      """Replace {user_name} when USER_NAME (or WORKSHOP_USER_NAME) is set on the pod."""
+      if not ns or "{user_name}" not in ns:
+        return ns
+      user = (os.environ.get("USER_NAME") or os.environ.get("WORKSHOP_USER_NAME") or "").strip()
+      if user:
+        return ns.replace("{user_name}", user)
+      return ns
 
 
     def _extract_namespace(text: str) -> str | None:
@@ -772,11 +783,11 @@ data:
       for pat in ordered:
         m = re.search(pat, t)
         if m and _accept(m.group(1)):
-          return m.group(1)
+          return _resolve_namespace_placeholders(m.group(1))
 
       m = re.search(rf"\b({_NS_TOKEN})\s+namespace\b", t)
       if m and _accept(m.group(1)):
-        return m.group(1)
+        return _resolve_namespace_placeholders(m.group(1))
       return None
 
 
@@ -790,13 +801,18 @@ data:
         ("namespace user1-neuralbank", "user1-neuralbank"),
         ("in namespace user1-neuralbank", "user1-neuralbank"),
         ("List all pods in the neuralbank-stack namespace", "neuralbank-stack"),
+        ("Scale the frontend deployment to 2 replicas in the {user_name}-neuralbank namespace", "{user_name}-neuralbank"),
         ("Deploy a Redis database in namespace", None),
         ("deploy redis in namespace", None),
       ]
+      user = (os.environ.get("USER_NAME") or os.environ.get("WORKSHOP_USER_NAME") or "").strip()
       for prompt, want in cases:
+        expected = want
+        if expected and "{user_name}" in expected and user:
+          expected = expected.replace("{user_name}", user)
         got = _extract_namespace(prompt)
-        if got != want:
-          raise AssertionError(f"prompt={prompt!r} got={got!r} want={want!r}")
+        if got != expected:
+          raise AssertionError(f"prompt={prompt!r} got={got!r} want={expected!r}")
 
 
     def _completion(req: Dict[str, Any]) -> Dict[str, Any]:

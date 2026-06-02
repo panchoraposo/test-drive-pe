@@ -693,7 +693,10 @@ spec:
   # hostname mismatch across HTTPRoutes.
   privateHost: mcp-gateway-istio.mcp-system.svc.cluster.local:8080
   trustedHeadersKey:
+    generate: Disabled
     secretName: trusted-headers-public-key
+  # Operator default; include in GitOps to avoid ArgoCD OutOfSync drift.
+  backendPingIntervalSeconds: 60
 {{- end }}
 ---
 ##
@@ -806,6 +809,8 @@ metadata:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
     name: openshift-mcp-server-route
   toolPrefix: ocp
   # Path prefix as exposed through the gateway (matches HTTPRoute).
@@ -821,6 +826,8 @@ metadata:
     argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   targetRef:
+    group: gateway.networking.k8s.io
+    kind: HTTPRoute
     name: k8s-mcp-server-route
   toolPrefix: k8s
   # Path prefix as exposed through the gateway (matches HTTPRoute).

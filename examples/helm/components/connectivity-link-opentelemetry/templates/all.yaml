@@ -59,7 +59,7 @@ kind: Job
 metadata:
   annotations:
     argocd.argoproj.io/hook: Sync
-    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+    argocd.argoproj.io/hook-delete-policy: HookSucceeded,BeforeHookCreation
     argocd.argoproj.io/sync-wave: "4"
   name: tempo-s3-secret-from-obc
   namespace: openshift-opentelemetry
@@ -93,9 +93,9 @@ spec:
                 TJSON=$(curl -sS "$KUBE_API/api/v1/namespaces/${NS}/secrets/${TARGET}" \
                   -H "Authorization: Bearer $KUBE_TOKEN" --cacert "$CA" || echo "{}")
                 # Base64-encoded data fields (Kubernetes Secret JSON).
-                TB=$(echo "$TJSON" | sed -n 's/.*"bucket":"\([^"]*\)".*/\1/p' | head -1)
-                TAK=$(echo "$TJSON" | sed -n 's/.*"access_key_id":"\([^"]*\)".*/\1/p' | head -1)
-                TSK=$(echo "$TJSON" | sed -n 's/.*"access_key_secret":"\([^"]*\)".*/\1/p' | head -1)
+                TB=$(echo "$TJSON" | tr -d ' \n\t' | sed -n 's/.*"bucket":"\([^"]*\)".*/\1/p' | head -1)
+                TAK=$(echo "$TJSON" | tr -d ' \n\t' | sed -n 's/.*"access_key_id":"\([^"]*\)".*/\1/p' | head -1)
+                TSK=$(echo "$TJSON" | tr -d ' \n\t' | sed -n 's/.*"access_key_secret":"\([^"]*\)".*/\1/p' | head -1)
                 if [ -n "$TB" ] && [ -n "$TAK" ] && [ -n "$TSK" ]; then
                   echo "${TARGET} already exists and is complete; skipping sync"
                   exit 0
@@ -118,18 +118,17 @@ spec:
                 -H "Authorization: Bearer $KUBE_TOKEN" --cacert "$CA")
               CM_JSON=$(curl -sS "$KUBE_API/api/v1/namespaces/${NS}/configmaps/${OBC}" \
                 -H "Authorization: Bearer $KUBE_TOKEN" --cacert "$CA" || echo "{}")
-              # OBC resource has the bucket name (not in the OBC secret).
-              OBC_JSON=$(curl -sS "$KUBE_API/apis/objectbucket.io/v1alpha1/namespaces/${NS}/objectbucketclaims/${OBC}" \
-                -H "Authorization: Bearer $KUBE_TOKEN" --cacert "$CA" || echo "{}")
 
               b64dec() { echo "$1" | tr -d '\n' | base64 -d 2>/dev/null; }
-              get_data() { echo "$1" | sed -n "s/.*\"$2\":\"\\([^\"]*\\)\".*/\\1/p" | head -1; }
+              # Strip whitespace so sed works with Kubernetes' pretty-printed JSON (BusyBox-safe).
+              json_field() { echo "$1" | tr -d ' \n\t' | sed -n "s/.*\"$2\":\"\\([^\"]*\\)\".*/\\1/p" | head -1; }
 
-              AK=$(get_data "$SEC_JSON" "AWS_ACCESS_KEY_ID")
-              SK=$(get_data "$SEC_JSON" "AWS_SECRET_ACCESS_KEY")
-              BUCKET=$(echo "$OBC_JSON" | sed -n 's/.*"bucketName":"\([^"]*\)".*/\1/p' | head -1)
-              HOST=$(get_data "$CM_JSON" "BUCKET_HOST")
-              PORT=$(get_data "$CM_JSON" "BUCKET_PORT")
+              AK=$(json_field "$SEC_JSON" "AWS_ACCESS_KEY_ID")
+              SK=$(json_field "$SEC_JSON" "AWS_SECRET_ACCESS_KEY")
+              # Bucket name is on the OBC ConfigMap (SA only has secrets/configmaps RBAC).
+              BUCKET=$(json_field "$CM_JSON" "BUCKET_NAME")
+              HOST=$(json_field "$CM_JSON" "BUCKET_HOST")
+              PORT=$(json_field "$CM_JSON" "BUCKET_PORT")
               [ -z "$HOST" ] && HOST="s3.openshift-storage.svc"
               [ -z "$PORT" ] && PORT="80"
               # Noobaa in-cluster S3 uses HTTP on port 80 (TLS on 443 is not compatible with Tempo S3 client here).

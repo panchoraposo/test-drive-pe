@@ -1,0 +1,15 @@
+{{- if .Values.clusterDomain }}
+---
+apiVersion: console.openshift.io/v1
+kind: ConsoleNotification
+metadata:
+  name: workshop-dark-theme-hint
+  annotations:
+    argocd.argoproj.io/sync-wave: "5"
+spec:
+  text: >-
+    Tip del workshop: para usar el estilo oscuro en OpenShift Console, abre el menú del usuario (arriba a la derecha) → Appearance/Apariencia → Dark.
+  location: BannerTop
+  color: "#FFFFFF"
+  backgroundColor: "#EE0000"
+{{- end }}

@@ -1,0 +1,39 @@
+= 10. OpenShift Lightspeed y MCP Gateway
+
+**OpenShift Lightspeed (OLS)** es un asistente de IA integrado en la consola web de OpenShift. Combinado con el **MCP gateway de Red Hat Connectivity Link** (Technology Preview), puede ejecutar operaciones del cluster mediante herramientas invocables por IA.
++
+El operador del MCP gateway se instala desde el catálogo `redhat-operators` (canal `preview`). Para más detalles, revisa la documentación oficial: `https://docs.redhat.com/en/documentation/red_hat_connectivity_link/1.3/html/installing_the_mcp_gateway/mcp-gateway-install`.
+
+== Acceder a OpenShift Lightspeed
+
+. Inicia sesión en la **Consola de OpenShift** en `\https://console-openshift-console.{cluster_domain}`
+. Haz clic en el ícono **Lightspeed** en el header de la consola (burbuja de chat).
+. Haz preguntas sobre tu cluster, workloads o conceptos de Kubernetes.
+
+== Antes de ejecutar prompts
+
+Dos tips para que se vea mejor y sea más entendible:
+
+- **Tool output vs chat**: cuando una tool se ejecuta, el resultado detallado aparece en **Tool output**. El mensaje del asistente puede ser corto a propósito.
+- **Modelo 3D**: usa el ícono Tech Day (abajo a la derecha) para abrir la vista 3D e identificar servidores/tools del grafo MCP.
+
+== Walkthrough de prompts del workshop (usando tools MCP)
+
+Ejecuta los siguientes prompts en el chat de Lightspeed. Cuando Lightspeed pida ejecutar una herramienta/acción, apruébala.
+
+. Listar pods del stack pre-desplegado:
+* `List all pods in the neuralbank-stack namespace`
+. Listar Applications de Argo CD:
+* `List all ArgoCD applications`
+. Escalar el frontend en tu namespace generado:
+* `Scale the frontend deployment to 2 replicas in the {user_name}-neuralbank namespace`
+. Crear un HPA para el backend (parámetros explícitos ayudan a la tool):
+* `Create a HorizontalPodAutoscaler for deployment neuralbank-backend in the {user_name}-neuralbank namespace with min 1 max 3 cpu 70`
+. Desplegar Redis en tu namespace generado (elige uno):
+* `Deploy a Redis database in the {user_name}-neuralbank namespace`
+* `Install Redis using Helm in the {user_name}-neuralbank namespace`
+
+. Integración con Developer Hub (tools directas):
+* `List all Software Templates available in Developer Hub`
+* `Show me all registered components`
+* `Register a new entity from https://gitea-gitea.{cluster_domain}/ws-{user_name}/ols-import-demo/raw/branch/main/template.yaml`
