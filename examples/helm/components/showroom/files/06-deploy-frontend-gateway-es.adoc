@@ -1,0 +1,168 @@
+= Desplegar frontend y gateway
+
+En este módulo desplegarás el **frontend** de Neuralbank y el **Customer Service MCP** usando Software Templates, y verás cómo el frontend se conecta al backend y al MCP a través de gateways gestionados por Kuadrant usando **autenticación por API Key**.
+
+== Contexto
+
+Deberías tener **neuralbank-backend** corriendo en el namespace `{user_name}-neuralbank`. Ahora vas a agregar:
+
+* **neuralbank-frontend** — SPA web que consume APIs del backend y del MCP vía reverse proxy
+* **customer-service-mcp** — servidor MCP con Gateway API, HTTPRoute y políticas de Kuadrant
+
+== Paso 1: Desplegar Neuralbank Frontend
+
+. En **Developer Hub**, ve a **Create** y elige **Neuralbank: Frontend**.
+. Completa el formulario:
+
+[cols="1,2"]
+|===
+| Campo | Valor
+
+| **Name** | `neuralbank-frontend`
+| **Owner** | `{user_name}`
+|===
+
+. Haz clic en **Create** y espera a que terminen los pasos del scaffolder.
+
+== Paso 2: Desplegar Customer Service MCP
+
+. Repite **Create** con el template **Neuralbank: Customer Service MCP**.
+
+[cols="1,2"]
+|===
+| Campo | Valor
+
+| **Name** | `customer-service-mcp`
+| **Owner** | `{user_name}`
+|===
+
+Este template genera el patrón de connectivity link con Gateway, HTTPRoute, AuthPolicy y RateLimitPolicy — usando el mismo modelo de doble autenticación (API Key primaria + OIDC JWT como fallback).
+
+== Paso 3: Verificar repositorios en Gitea
+
+En Gitea (`https://gitea-gitea.{cluster_domain}`), confirma dos repositorios nuevos bajo tu usuario:
+
+* `{user_name}/neuralbank-frontend` — Dockerfile, `index.html`, `proxy.conf`, manifests
+* `{user_name}/customer-service-mcp` — Java sources, manifests, and gateway/policy resources
+
+== Paso 4: Revisar Applications en ArgoCD
+
+. Abre ArgoCD: `https://openshift-gitops-server-openshift-gitops.{cluster_domain}`
+. Ubica las Applications de frontend y MCP en el namespace `{user_name}-neuralbank`.
+. Verifica **sync** y **health**.
+
+== Paso 5: Cómo se conecta el frontend
+
+El frontend es una **SPA estática** servida por Apache HTTPD con un reverse proxy que enruta las llamadas a la API a través de los gateways de Kuadrant:
+
+[source,apacheconf]
+----
+ProxyPreserveHost Off
+
+# Route /api/backend/* to the backend's Kuadrant Gateway
+ProxyPass "/api/backend/" "http://neuralbank-backend-gateway-istio:8080/api/"
+ProxyPassReverse "/api/backend/" "http://neuralbank-backend-gateway-istio:8080/api/"
+
+# Route /api/mcp/* to the MCP's Kuadrant Gateway
+ProxyPass "/api/mcp/" "http://customer-service-mcp-gateway-istio:8080/"
+ProxyPassReverse "/api/mcp/" "http://customer-service-mcp-gateway-istio:8080/"
+----
+
+El frontend usa **autenticación por API Key** para todas las llamadas a la API:
+
+[source,javascript]
+----
+function apiFetch(url) {
+    return fetch(url, {
+        headers: { 'X-API-Key': apiKeyInput.value }
+    });
+}
+----
+
+[mermaid]
+....
+graph LR
+    Browser -->|HTML/JS| FE[Frontend HTTPD]
+    FE -->|X-API-Key| BGW[Backend Gateway<br>Kuadrant AuthPolicy]
+    FE -->|X-API-Key| MGW[MCP Gateway<br>Kuadrant AuthPolicy]
+    BGW --> BE[Backend Service]
+    MGW --> MCP[MCP Service]
+....
+
+IMPORTANT: El frontend generado **no** implementa login OIDC (no redirige a Keycloak). Usa API Keys directamente vía el header `X-API-Key`. Para un flujo OIDC interactivo con Keycloak, revisa el `neuralbank-stack` pre-desplegado (ver módulo OIDC en el workshop).
+
+== Paso 6: Inspeccionar Gateway y AuthPolicy
+
+[.console-input]
+[source,bash,subs="attributes+"]
+----
+# Revisar recursos Gateway
+oc get gateway -n {user_name}-neuralbank
+
+# Revisar HTTPRoutes
+oc get httproute -n {user_name}-neuralbank
+
+# Revisar AuthPolicies (API Key + OIDC JWT)
+oc get authpolicy -n {user_name}-neuralbank -o wide
+
+# Revisar RateLimitPolicies
+oc get ratelimitpolicy -n {user_name}-neuralbank -o wide
+----
+
+== Paso 7: Probar el frontend
+
+Abre la Route del frontend en el navegador:
+
+link:https://neuralbank-frontend-{user_name}-neuralbank.{cluster_domain}[https://neuralbank-frontend-{user_name}-neuralbank.{cluster_domain}]
+
+. Ingresa una **API Key** en el campo (obténla desde el Secret de API Key del backend).
+. La SPA muestra estado de conectividad del gateway, datos de clientes y health del MCP.
+. Puedes ver clientes, actualizar créditos y revisar tools del MCP — todo ruteado por gateways de Kuadrant.
+
+NOTE: Si el indicador **MCP** queda rojo o el **Health Check** muestra error DNS/proxy, la app `customer-service-mcp` aún no está desplegada (o sigue en build). Vuelve al Paso 2 y confirma en ArgoCD una Application `{{user_name}}-customer-service-mcp` en `{user_name}-neuralbank` y que esté **Synced/Healthy**.
+
+[.console-input]
+[source,bash,subs="attributes+"]
+----
+# Obtener la API Key para el frontend
+export APP_NAME="${APP_NAME:-neuralbank-backend}"
+export NS="{user_name}-neuralbank"
+export APIKEY_NAME="{user_name}-${APP_NAME}"
+
+SECRET_NAME=$(oc get apikey -n "$NS" "$APIKEY_NAME" -o jsonpath='{.status.secretRef.name}')
+API_KEY=$(oc get secret -n "$NS" "$SECRET_NAME" -o jsonpath='{.data.api_key}' | tr -d '\n' | base64 -d)
+echo "$API_KEY"
+----
+
+== Comparación de autenticación: scaffolded vs pre-desplegado
+
+[cols="1,1,1",options="header"]
+|===
+| | Apps scaffolded (tu `{user_name}-neuralbank`) | `neuralbank-stack` pre-desplegado
+
+| **Autenticación en frontend**
+| Campo de API Key en la SPA
+| Redirección OIDC al login de Keycloak
+
+| **AuthPolicy**
+| API Key (prioridad 0) + JWT OIDC (prioridad 1)
+| CR OIDCPolicy + AuthPolicy API Key
+
+| **Integración con Keycloak**
+| Solo validación JWT (sin login interactivo)
+| Flujo OIDC completo (endpoint de auth, callback, cookie)
+
+| **URL del frontend**
+| `https://neuralbank-frontend-{user_name}-neuralbank.{cluster_domain}`
+| `https://neuralbank.{cluster_domain}`
+
+| **Credenciales**
+| API Key desde Secret de Kubernetes
+| `{user_name}` / `redhat` vía Keycloak
+|===
+
+NOTE: Para añadir un flujo OIDC interactivo completo a las apps scaffolded, necesitarías crear un cliente OIDC en el realm `neuralbank` de Keycloak, configurar la URI de redirección e implementar PKCE/Authorization Code en el frontend. El `neuralbank-stack` pre-desplegado demuestra este patrón.
+
+== Resumen
+
+Has añadido **frontend** y **MCP** con plantillas, verificado GitOps y el catálogo, y entendido cómo el reverse proxy enruta todo el tráfico por gateways de Kuadrant con **autenticación por API Key**. El `neuralbank-stack` pre-desplegado muestra la alternativa OIDC.

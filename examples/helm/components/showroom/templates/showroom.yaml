@@ -176,6 +176,8 @@ data:
 {{ .Files.Get "files/13-observability.adoc" | indent 4 }}
   13-observability-es.adoc: |
 {{ .Files.Get "files/13-observability-es.adoc" | indent 4 }}
+  06-deploy-frontend-gateway-es.adoc: |
+{{ .Files.Get "files/06-deploy-frontend-gateway-es.adoc" | indent 4 }}
 ---
 # Showroom User Data ConfigMap
 apiVersion: v1
@@ -280,6 +282,7 @@ spec:
             cp /patch/02-architecture-overview-es.adoc /showroom/repo/content-es/modules/ROOT/pages/02-architecture-overview.adoc
             cp /patch/13-observability.adoc /showroom/repo/content/modules/ROOT/pages/13-observability.adoc
             cp /patch/13-observability-es.adoc /showroom/repo/content-es/modules/ROOT/pages/13-observability.adoc
+            cp /patch/06-deploy-frontend-gateway-es.adoc /showroom/repo/content-es/modules/ROOT/pages/06-deploy-frontend-gateway.adoc
         volumeMounts:
         - mountPath: /showroom/repo
           name: showroom-files
