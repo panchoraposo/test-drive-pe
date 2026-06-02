@@ -1,0 +1,189 @@
+= Deploy the Backend with Software Templates
+
+In this module you will deploy **Neuralbank Backend** using a Software Template. When you finish you will have a repository in Gitea, an application in ArgoCD, a Tekton pipeline run, and the API reachable on OpenShift.
+
+== Prerequisites
+
+* Access to Developer Hub with your user (`{user_name}`) and password `redhat`.
+* Permission to create components from templates in the workshop catalog.
+
+== Step 1: Open Create from Template
+
+. Log in to Developer Hub at `https://backstage-developer-hub-developer-hub.{cluster_domain}`
+. In the main menu, select **Create**.
+. Find the template **Neuralbank: Backend API**.
+
+== Step 2: Complete the Form
+
+Fill in the fields:
+
+[cols="1,2"]
+|===
+| Field | Value
+
+| **Name**
+| `neuralbank-backend`
+
+| **Description**
+| `Neuralbank REST API backend for credit management`
+|===
+
+The application will be created automatically in namespace **`{user_name}-neuralbank`** (for example, `user23-neuralbank`). The template defines this namespace; you don’t need to set it in the form.
+
+== Step 3: Create and Wait for Scaffolding
+
+. Click **Create** (or **Review** then **Create** if there is a review step).
+. Stay on the progress screen until all scaffolder steps finish.
+
+== Step 4: Verify the Repository in Gitea
+
+. Open Gitea: `https://gitea-gitea.{cluster_domain}`
+. Locate the repository `{user_name}/neuralbank-backend`.
+. Confirm that source code, manifests, tekton, and `catalog-info.yaml` exist.
+
+[.console-input]
+[source,bash]
+----
+# Expected repository structure
+src/                     # Java/Quarkus source code
+manifests/
+  deployment.yaml
+  service.yaml
+  gateway.yaml           # Gateway API resource
+  httproute.yaml         # HTTPRoute for the API
+  authpolicy.yaml        # Kuadrant AuthPolicy (API Key + OIDC JWT)
+  ratelimitpolicy.yaml   # Kuadrant RateLimitPolicy
+  trigger-binding.yaml   # Tekton TriggerBinding
+  trigger-template.yaml  # Tekton TriggerTemplate
+  event-listener.yaml    # Tekton EventListener
+tekton/
+  pipeline.yaml          # CI/CD pipeline definition
+devfile.yaml             # Dev Spaces configuration
+catalog-info.yaml        # Backstage catalog registration
+Dockerfile
+----
+
+== Step 5: Confirm Catalog Registration
+
+. Go back to **Developer Hub**.
+. Find **neuralbank-backend** in the **Catalog**.
+. Open the entity card and review links to the repository, documentation, and relationships (the **API** entity).
+
+== Step 6: Verify the ArgoCD Application (from the Component)
+
+This step is done from the **component page** in Developer Hub.
+
+. On the `{user_name}-neuralbank-backend` component page, open the **CD** tab (or check **Deployment Summary** in *Overview*).
+. Confirm the backend **ArgoCD App** is shown and the **Sync status** is *Synced* (if it’s still loading, wait a few seconds and refresh).
+
+== Step 7: Verify the Pipeline (from the Component)
+
+The template triggers a Tekton pipeline to build and deploy the backend.
+
+This step is done from the **component page** in Developer Hub.
+
+. On the `{user_name}-neuralbank-backend` component page, open the **CI** tab.
+. Confirm there is a recent run and it finishes in **Succeeded**.
+
+Optional terminal check:
+
+[.console-input]
+[source,bash,subs="attributes+"]
+----
+oc get pipelinerun -n {user_name}-neuralbank
+----
+
+== Step 8: Re-check the ArgoCD Application (after the Pipeline)
+
+After the **PipelineRun** completes, go back to the component **CD** tab and confirm:
+
+- **Sync status**: *Synced*
+- **Health**: *Healthy*
+
+== Step 9: Verify the Deployment (from the Component)
+
+This step is done from the **component page** in Developer Hub.
+
+. Open the **Topology** tab and verify the workload shows a healthy status.
+. Open the **Kubernetes** tab and confirm backend pods are **Running** in namespace `{user_name}-neuralbank`.
+
+== Step 10: Test the API Endpoints
+
+The backend exposes REST endpoints through the Kuadrant gateway. Use an API Key to authenticate:
+
+[.console-input]
+[source,bash,subs="attributes+"]
+----
+export APP_NAME="${APP_NAME:-neuralbank-backend}"
+export NS="{user_name}-neuralbank"
+export APIKEY_NAME="{user_name}-${APP_NAME}"
+
+SECRET_NAME=$(oc get apikey -n "$NS" "$APIKEY_NAME" -o jsonpath='{.status.secretRef.name}')
+API_KEY=$(oc get secret -n "$NS" "$SECRET_NAME" -o jsonpath='{.data.api_key}' | tr -d '\n' | base64 -d)
+
+echo "API Key: $API_KEY"
+
+# List customers
+curl -s -H "X-API-Key: $API_KEY" \
+  "https://${APP_NAME}-{user_name}-neuralbank.{cluster_domain}/api/customers" \
+  | jq .
+
+# List credits
+curl -s -H "X-API-Key: $API_KEY" \
+  "https://${APP_NAME}-{user_name}-neuralbank.{cluster_domain}/api/credits" \
+  | jq .
+----
+
+== Understanding the Authentication Model
+
+The scaffolded backend uses an **AuthPolicy** that supports **two authentication methods**:
+
+[source,yaml,subs="attributes+"]
+----
+apiVersion: kuadrant.io/v1
+kind: AuthPolicy
+spec:
+  defaults:
+    rules:
+      authentication:
+        api-key-auth:          # Priority 0 — checked first
+          apiKey:
+            selector:
+              matchLabels:
+                app: neuralbank-backend
+                kuadrant.io/apikey: "true"
+          credentials:
+            customHeader:
+              name: X-API-Key
+          priority: 0
+        oidc:                  # Priority 1 — fallback
+          jwt:
+            issuerUrl: https://rhbk.{cluster_domain}/realms/neuralbank
+          credentials:
+            authorizationHeader:
+              prefix: Bearer
+          priority: 1
+      response:
+        unauthenticated:
+          code: 401
+          body:
+            value: '{"error":"Authentication required."}'
+----
+
+[cols="1,2"]
+|===
+| Method | How It Works
+
+| **API Key** (primary)
+| Send header `X-API-Key` with a key from a labeled Kubernetes Secret. This is what the scaffolded frontend uses.
+
+| **OIDC JWT** (secondary)
+| Send `Authorization: Bearer <token>` with a valid JWT from Keycloak realm `neuralbank`. Useful for programmatic access if you already have a token.
+|===
+
+IMPORTANT: Scaffolded apps use **API Key as the primary auth method**. The OIDC JWT option only validates existing Bearer tokens; it does not provide an interactive browser login. For a full interactive OIDC flow (browser redirect to Keycloak), see the pre-deployed `neuralbank-stack` in xref:09-explore-connectivity-link-oidc.adoc[Module 9].
+
+== Summary
+
+You deployed the backend through the full flow **Hub -> Template -> Gitea -> ArgoCD -> Tekton -> OpenShift**. The API is protected by Kuadrant with **API Key auth** (primary) and optional OIDC JWT validation. Everything runs in namespace `{user_name}-neuralbank`.
+

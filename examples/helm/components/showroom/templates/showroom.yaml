@@ -172,12 +172,16 @@ data:
 {{ .Files.Get "files/02-architecture-overview.adoc" | indent 4 }}
   02-architecture-overview-es.adoc: |
 {{ .Files.Get "files/02-architecture-overview-es.adoc" | indent 4 }}
+  04-deploy-backend.adoc: |
+{{ .Files.Get "files/04-deploy-backend.adoc" | indent 4 }}
   13-observability.adoc: |
 {{ .Files.Get "files/13-observability.adoc" | indent 4 }}
   13-observability-es.adoc: |
 {{ .Files.Get "files/13-observability-es.adoc" | indent 4 }}
   06-deploy-frontend-gateway-es.adoc: |
 {{ .Files.Get "files/06-deploy-frontend-gateway-es.adoc" | indent 4 }}
+  06-deploy-frontend-gateway.adoc: |
+{{ .Files.Get "files/06-deploy-frontend-gateway.adoc" | indent 4 }}
   04-deploy-backend-es.adoc: |
 {{ .Files.Get "files/04-deploy-backend-es.adoc" | indent 4 }}
   07-explore-argocd-apis-es.adoc: |
@@ -303,9 +307,11 @@ spec:
             cp /patch/index-es.adoc /showroom/repo/content-es/modules/ROOT/pages/index.adoc
             cp /patch/02-architecture-overview.adoc /showroom/repo/content/modules/ROOT/pages/02-architecture-overview.adoc
             cp /patch/02-architecture-overview-es.adoc /showroom/repo/content-es/modules/ROOT/pages/02-architecture-overview.adoc
+            cp /patch/04-deploy-backend.adoc /showroom/repo/content/modules/ROOT/pages/04-deploy-backend.adoc
             cp /patch/13-observability.adoc /showroom/repo/content/modules/ROOT/pages/13-observability.adoc
             cp /patch/13-observability-es.adoc /showroom/repo/content-es/modules/ROOT/pages/13-observability.adoc
             cp /patch/06-deploy-frontend-gateway-es.adoc /showroom/repo/content-es/modules/ROOT/pages/06-deploy-frontend-gateway.adoc
+            cp /patch/06-deploy-frontend-gateway.adoc /showroom/repo/content/modules/ROOT/pages/06-deploy-frontend-gateway.adoc
             cp /patch/04-deploy-backend-es.adoc /showroom/repo/content-es/modules/ROOT/pages/04-deploy-backend.adoc
             cp /patch/07-explore-argocd-apis-es.adoc /showroom/repo/content-es/modules/ROOT/pages/07-explore-argocd-apis.adoc
             cp /patch/09-explore-connectivity-link-oidc-es.adoc /showroom/repo/content-es/modules/ROOT/pages/09-explore-connectivity-link-oidc.adoc

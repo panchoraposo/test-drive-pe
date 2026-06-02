@@ -1,0 +1,123 @@
+= Deploy Frontend and Gateway
+
+In this module you will deploy the Neuralbank **frontend** and the **Customer Service MCP** using Software Templates, and see how the frontend connects to the backend and MCP through Kuadrant gateways using **API Key authentication**.
+
+== Context
+
+You should already have **neuralbank-backend** running in namespace `{user_name}-neuralbank`. You will now add:
+
+* **neuralbank-frontend** — Web SPA that consumes backend and MCP APIs through a reverse proxy
+* **customer-service-mcp** — MCP server with Gateway API, HTTPRoute, and Kuadrant policies
+
+== Step 1: Deploy Neuralbank Frontend
+
+. In **Developer Hub**, go to **Create** and choose **Neuralbank: Frontend**.
+. Complete the form:
+
+[cols="1,2"]
+|===
+| Field | Value
+
+| **Name** | `neuralbank-frontend`
+| **Description** | `Neuralbank credit visualization frontend`
+|===
+
+The application will be created automatically in namespace **`{user_name}-neuralbank`** (for example, `user23-neuralbank`). The template defines this namespace; you don’t need to set it in the form.
+
+. Click **Create** and wait for scaffolder steps to finish.
+
+== Step 2: Deploy Customer Service MCP
+
+. Repeat **Create** with template **Neuralbank: Customer Service MCP**.
+
+[cols="1,2"]
+|===
+| Field | Value
+
+| **Name** | `customer-service-mcp`
+| **Description** | `MCP customer service server for Neuralbank`
+|===
+
+This template generates the connectivity link pattern with Gateway, HTTPRoute, AuthPolicy, and RateLimitPolicy — all using the same dual-auth model (API Key primary + OIDC JWT fallback).
+
+== Step 3: Verify Repositories in Gitea
+
+In Gitea (`https://gitea-gitea.{cluster_domain}`), confirm two new repositories under your user:
+
+* `{user_name}/neuralbank-frontend` — Dockerfile, `index.html`, `proxy.conf`, manifests
+* `{user_name}/customer-service-mcp` — Java sources, manifests, and gateway/policy resources
+
+== Step 4: Check Applications in ArgoCD
+
+. Open ArgoCD: `https://openshift-gitops-server-openshift-gitops.{cluster_domain}`
+. Locate Applications for frontend and MCP in namespace `{user_name}-neuralbank`.
+. Verify **sync** and **health**.
+
+== Step 5: How the Frontend Connects
+
+The frontend is a **static SPA** served by Apache HTTPD with a reverse proxy that routes API calls through the Kuadrant gateways:
+
+[source,apacheconf]
+----
+ProxyPreserveHost Off
+
+# Route /api/backend/* to the backend's Kuadrant Gateway
+ProxyPass "/api/backend/" "http://neuralbank-backend-gateway-istio:8080/api/"
+ProxyPassReverse "/api/backend/" "http://neuralbank-backend-gateway-istio:8080/api/"
+
+# Route /api/mcp/* to the MCP's Kuadrant Gateway
+ProxyPass "/api/mcp/" "http://customer-service-mcp-gateway-istio:8080/"
+ProxyPassReverse "/api/mcp/" "http://customer-service-mcp-gateway-istio:8080/"
+----
+
+The frontend uses **API Key authentication** for all API calls:
+
+[source,javascript]
+----
+function apiFetch(url) {
+    return fetch(url, {
+        headers: { 'X-API-Key': apiKeyInput.value }
+    });
+}
+----
+
+[mermaid]
+....
+graph LR
+    Browser -->|HTML/JS| FE[Frontend HTTPD]
+    FE -->|X-API-Key| BGW[Backend Gateway<br>Kuadrant AuthPolicy]
+    FE -->|X-API-Key| MGW[MCP Gateway<br>Kuadrant AuthPolicy]
+    BGW --> BE[Backend Service]
+    MGW --> MCP[MCP Service]
+....
+
+IMPORTANT: The scaffolded frontend does **not** implement OIDC login (no redirect to Keycloak). It uses API Keys directly via the `X-API-Key` header. For an interactive OIDC flow with Keycloak, see the pre-deployed `neuralbank-stack` in xref:09-explore-connectivity-link-oidc.adoc[Module 9].
+
+== Step 6: Inspect Gateway and AuthPolicy
+
+[.console-input]
+[source,bash,subs="attributes+"]
+----
+# Check Gateway resources
+oc get gateway -n {user_name}-neuralbank
+
+# Check HTTPRoutes
+oc get httproute -n {user_name}-neuralbank
+
+# Check AuthPolicies (API Key + OIDC JWT)
+oc get authpolicy -n {user_name}-neuralbank -o wide
+
+# Check RateLimitPolicies
+oc get ratelimitpolicy -n {user_name}-neuralbank -o wide
+----
+
+== Step 7: Try the Frontend
+
+Open the frontend Route in the browser:
+
+link:https://neuralbank-frontend-{user_name}-neuralbank.{cluster_domain}[https://neuralbank-frontend-{user_name}-neuralbank.{cluster_domain}]
+
+. Enter an **API Key** in the input field (retrieve it from the backend's API Key Secret).
+. The SPA shows gateway connectivity status, customer data, and MCP server health.
+. You can view customers, update credits, and check MCP tools — all routed through the Kuadrant gateways.
+
