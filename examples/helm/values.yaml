@@ -274,6 +274,10 @@ connectivityLink:
             username: gitea_admin
             password: openshift
             email: admin@gitea.local
+          config:
+            security:
+              MIN_PASSWORD_LENGTH: 6
+              PASSWORD_COMPLEXITY: "off"
         postgresql-ha:
           enabled: false
         postgresql:

@@ -16,6 +16,42 @@ spec:
     weight: 100
   wildcardPolicy: None
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gitea-setup
+  namespace: gitea
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: gitea-setup
+  namespace: gitea
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+rules:
+- apiGroups: [""]
+  resources: ["pods", "pods/exec"]
+  verbs: ["get", "list", "create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: gitea-setup
+  namespace: gitea
+  annotations:
+    argocd.argoproj.io/sync-wave: "4"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: gitea-setup
+subjects:
+- kind: ServiceAccount
+  name: gitea-setup
+  namespace: gitea
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -28,10 +64,10 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      serviceAccountName: default
+      serviceAccountName: gitea-setup
       containers:
         - name: setup
-          image: curlimages/curl:latest
+          image: registry.redhat.io/openshift4/ose-cli:latest
           env:
             - name: ADMIN_USER
               value: {{ .Values.adminUser | quote }}
@@ -39,8 +75,10 @@ spec:
               value: {{ .Values.adminPassword | quote }}
             - name: ADMIN_EMAIL
               value: {{ .Values.adminEmail | quote }}
+            - name: WORKSHOP_PASSWORD
+              value: {{ .Values.workshopPassword | default "redhat" | quote }}
           command:
-            - /bin/sh
+            - /bin/bash
             - -c
             - |
               set -e
@@ -55,6 +93,11 @@ spec:
               curl -sf "$BASE/api/v1/version" || { echo "Gitea not available" >&2; exit 1; }
               echo "Gitea API ready."
 
+              GITEA_POD=$(oc get pod -n gitea -l app.kubernetes.io/name=gitea -o jsonpath='{.items[0].metadata.name}')
+              echo "Using Gitea pod: ${GITEA_POD}"
+              oc exec -n gitea "${GITEA_POD}" -c gitea -- \
+                gitea admin user change-password --username "${ADMIN_USER}" --password "${ADMIN_PASS}" --must-change-password=false
+
               echo "Creating developer-hub org..."
               ORG_JSON='{"username":"developer-hub","full_name":"Developer Hub","visibility":"public"}'
               CODE=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$BASE/api/v1/orgs" \
@@ -67,14 +110,13 @@ spec:
                 U="user${i}"
                 ORG="ws-${U}"
 
-                U_JSON=$(printf '{"username":"%s","password":"redhat","email":"%s@developer-hub.local","must_change_password":false,"send_notify":false}' "$U" "$U")
+                U_JSON=$(printf '{"username":"%s","password":"%s","email":"%s@developer-hub.local","must_change_password":false,"send_notify":false}' "$U" "$WORKSHOP_PASSWORD" "$U")
                 C=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$BASE/api/v1/admin/users" \
                   -u "$AUTH" -H "Content-Type: application/json" -d "$U_JSON" || true)
-                if [ "$C" != "201" ]; then
-                  P_JSON=$(printf '{"login_name":"%s","source_id":0,"password":"redhat","must_change_password":false}' "$U")
-                  curl -sS -o /dev/null -w "patch-%{http_code}" -X PATCH "$BASE/api/v1/admin/users/${U}" \
-                    -u "$AUTH" -H "Content-Type: application/json" -d "$P_JSON" || true
-                fi
+
+                oc exec -n gitea "${GITEA_POD}" -c gitea -- \
+                  gitea admin user change-password --username "${U}" --password "${WORKSHOP_PASSWORD}" --must-change-password=false \
+                  >/dev/null 2>&1 || true
 
                 O_JSON=$(printf '{"username":"%s","visibility":"public","description":"Workshop repos for %s"}' "$ORG" "$U")
                 O=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$BASE/api/v1/orgs" \
