@@ -162,7 +162,9 @@ metadata:
   name: gitea-webhook-sync
   namespace: openshift-gitops
 spec:
-  schedule: "*/2 * * * *"
+  {{- $uc := (.Values.userCount | default 200 | int) }}
+  {{- $defaultHookSchedule := (ternary "*/2 * * * *" (ternary "*/5 * * * *" "*/10 * * * *" (le $uc 100)) (le $uc 50)) }}
+  schedule: {{ .Values.giteaWebhookSyncSchedule | default $defaultHookSchedule | quote }}
   concurrencyPolicy: Forbid
   successfulJobsHistoryLimit: 1
   failedJobsHistoryLimit: 2
@@ -611,7 +613,8 @@ spec:
           - repositoryMatch: ".*"
             pathsExist:
               - manifests
-        requeueAfterSeconds: {{ $.Values.giteaScmRequeueAfterSeconds | default 180 }}
+        {{- $defaultRequeue := (ternary 30 (ternary 60 180 (le $uc 100)) (le $uc 50)) }}
+        requeueAfterSeconds: {{ $.Values.giteaScmRequeueAfterSeconds | default $defaultRequeue }}
   template:
     metadata:
       name: '{{ $user }}-{{ "{{ .repository }}" }}'

@@ -1,4 +1,24 @@
 clusterDomain: ""
 userCount: 200
-# SCM provider polls all ws-userN orgs; lower frequency reduces Gitea load during scaffolds.
-giteaScmRequeueAfterSeconds: 180
+# ApplicationSet discovery:
+# - The SCM generator polls Gitea for repos that contain `manifests/`.
+# - Faster polling makes new apps appear sooner in ArgoCD and starts the first PipelineRun earlier,
+#   but increases Gitea/ArgoCD load.
+#
+# Defaults are computed from userCount in the chart templates:
+# - userCount <= 50  → 30s
+# - userCount <= 100 → 60s
+# - userCount >  100 → 180s
+#
+# Override if needed (seconds):
+# giteaScmRequeueAfterSeconds: 60
+
+# Webhook sync CronJob schedule:
+# Keeps repo migrations and Tekton webhooks aligned for all ws-userN org repos.
+# Defaults are computed from userCount:
+# - userCount <= 50  → every 2 minutes
+# - userCount <= 100 → every 5 minutes
+# - userCount >  100 → every 10 minutes
+#
+# Override if needed (cron schedule):
+# giteaWebhookSyncSchedule: "*/5 * * * *"
