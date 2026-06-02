@@ -85,7 +85,7 @@ spec:
   output:
     links:
       - title: Repository
-        url: ${{ steps['publish'].output.remoteUrl }}
+        url: "https://gitea-gitea.${{ steps['get-cluster-domain'].output.body.spec.domain }}/ws-${{ user.entity.metadata.name }}/${{ parameters.name }}"
       - title: View in Catalog
         icon: catalog
         entityRef: ${{ steps['register'].output.entityRef }}

@@ -399,9 +399,11 @@ data:
           apiBaseUrl: https://gitea-gitea.{{ .Values.clusterDomain }}/api/v1
           username: gitea_admin
           password: "openshift"
+        # Templates use repoUrl host "gitea-gitea"; internal HTTP avoids ingress/TLS and
+        # speeds publish:gitea availability polling (checks baseUrl/src/branch up to 20s).
         - host: gitea-gitea
-          baseUrl: https://gitea-gitea.{{ .Values.clusterDomain }}
-          apiBaseUrl: https://gitea-gitea.{{ .Values.clusterDomain }}/api/v1
+          baseUrl: http://gitea-http.gitea.svc.cluster.local:3000
+          apiBaseUrl: http://gitea-http.gitea.svc.cluster.local:3000/api/v1
           username: gitea_admin
           password: "openshift"
     auth:
