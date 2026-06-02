@@ -265,6 +265,8 @@ connectivityLink:
       destinationNamespace: gitea
       syncWave: "3"
       values:
+        strategy:
+          type: Recreate
         global:
           compatibility:
             openshift:
