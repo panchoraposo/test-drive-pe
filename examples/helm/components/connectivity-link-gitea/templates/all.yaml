@@ -93,8 +93,43 @@ spec:
               curl -sf "$BASE/api/v1/version" || { echo "Gitea not available" >&2; exit 1; }
               echo "Gitea API ready."
 
-              GITEA_POD=$(oc get pod -n gitea -l app.kubernetes.io/name=gitea -o jsonpath='{.items[0].metadata.name}')
+              gitea_pod() {
+                oc get pod -n gitea -l app.kubernetes.io/name=gitea -o jsonpath='{.items[0].metadata.name}'
+              }
+
+              ensure_gitea_password_policy() {
+                local pod="$1"
+                echo "Ensuring Gitea allows short workshop passwords..."
+                oc exec -n gitea "${pod}" -c gitea -- sh -c '
+                  INI=/data/gitea/conf/app.ini
+                  if grep -q "^MIN_PASSWORD_LENGTH" "$INI"; then
+                    sed -i "s/^MIN_PASSWORD_LENGTH = .*/MIN_PASSWORD_LENGTH = 6/" "$INI"
+                  else
+                    sed -i "/^\[security\]/a MIN_PASSWORD_LENGTH = 6" "$INI"
+                  fi
+                  if grep -q "^PASSWORD_COMPLEXITY" "$INI"; then
+                    sed -i "s/^PASSWORD_COMPLEXITY = .*/PASSWORD_COMPLEXITY = off/" "$INI"
+                  else
+                    sed -i "/^MIN_PASSWORD_LENGTH = 6/a PASSWORD_COMPLEXITY = off" "$INI"
+                  fi
+                '
+                echo "Restarting Gitea to apply password policy..."
+                oc rollout restart deployment/gitea -n gitea
+                oc rollout status deployment/gitea -n gitea --timeout=300s
+                echo "Waiting for Gitea API after restart..."
+                for attempt in $(seq 1 60); do
+                  if curl -sf "$BASE/api/v1/version" >/dev/null 2>&1; then break; fi
+                  echo "  attempt $attempt/60 ..."
+                  sleep 5
+                done
+                curl -sf "$BASE/api/v1/version" || { echo "Gitea not available after restart" >&2; exit 1; }
+              }
+
+              GITEA_POD=$(gitea_pod)
               echo "Using Gitea pod: ${GITEA_POD}"
+              ensure_gitea_password_policy "${GITEA_POD}"
+              GITEA_POD=$(gitea_pod)
+              echo "Using Gitea pod after restart: ${GITEA_POD}"
               oc exec -n gitea "${GITEA_POD}" -c gitea -- \
                 gitea admin user change-password --username "${ADMIN_USER}" --password "${ADMIN_PASS}" --must-change-password=false
 
@@ -106,6 +141,7 @@ spec:
 
               USER_COUNT={{ .Values.userCount | default 200 }}
               echo "Creating $USER_COUNT users and orgs..."
+              GITEA_POD=$(gitea_pod)
               for i in $(seq 1 $USER_COUNT); do
                 U="user${i}"
                 ORG="ws-${U}"
@@ -114,9 +150,10 @@ spec:
                 C=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$BASE/api/v1/admin/users" \
                   -u "$AUTH" -H "Content-Type: application/json" -d "$U_JSON" || true)
 
-                oc exec -n gitea "${GITEA_POD}" -c gitea -- \
-                  gitea admin user change-password --username "${U}" --password "${WORKSHOP_PASSWORD}" --must-change-password=false \
-                  >/dev/null 2>&1 || true
+                if ! oc exec -n gitea "${GITEA_POD}" -c gitea -- \
+                  gitea admin user change-password --username "${U}" --password "${WORKSHOP_PASSWORD}" --must-change-password=false; then
+                  echo "  WARNING: failed to set password for ${U}" >&2
+                fi
 
                 O_JSON=$(printf '{"username":"%s","visibility":"public","description":"Workshop repos for %s"}' "$ORG" "$U")
                 O=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$BASE/api/v1/orgs" \
