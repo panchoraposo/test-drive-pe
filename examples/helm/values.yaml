@@ -278,6 +278,14 @@ connectivityLink:
             security:
               MIN_PASSWORD_LENGTH: 6
               PASSWORD_COMPLEXITY: "off"
+            # Workshop: avoid external Redis/Valkey dependencies. A broken cluster cache makes
+            # `/contents/<path>` fail, which breaks Argo CD ApplicationSet SCM generators.
+            session:
+              PROVIDER: memory
+            cache:
+              ADAPTER: memory
+            queue:
+              TYPE: level
         postgresql-ha:
           enabled: false
         postgresql:
@@ -293,7 +301,7 @@ connectivityLink:
         redis-cluster:
           enabled: false
         redis:
-          enabled: true
+          enabled: false
         # Workshop: 200 Argo CD ApplicationSet SCM polls hammer the API; without CPU
         # requests Gitea throttles and publish:gitea repo create takes 6-10s+.
         resources:
