@@ -93,5 +93,7 @@ graph LR
     D -->|Gateway API| F[Kuadrant Policies]
     F -->|OIDC / API Key| G[Secured APIs]
     D -->|Lightspeed| H[AI Assistant]
-    H -->|MCP Gateway| I[Cluster Tools]
+    H --> M[MCP Gateway]
+    M -->|Tools| I[Cluster Tools]
+    M -->|Policies| F
 ....
