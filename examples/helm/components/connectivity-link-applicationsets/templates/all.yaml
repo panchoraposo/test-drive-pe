@@ -304,6 +304,17 @@ spec:
                           if [ -n "$DEVFILE_CONTENT" ]; then
                             NEW_DEVFILE="$DEVFILE_CONTENT"
 
+                            # Some older/buggy scaffolds left unresolved template placeholders in devfile.yaml,
+                            # which breaks project clone and (transitively) editor extension installation.
+                            # Normalize these values using information we already have in this loop.
+                            OWNER_USER="${ORG#ws-}"
+                            NEW_DEVFILE=$(printf '%s\n' "$NEW_DEVFILE" | awk -v domain="$DOMAIN" -v owner="$OWNER_USER" -v desc="$REPO" '
+                              { gsub(/\$\{\{values\.clusterDomain\}\}/, domain) }
+                              { gsub(/\$\{\{values\.owner\}\}/, owner) }
+                              { gsub(/\$\{\{values\.description\}\}/, desc) }
+                              { print }
+                            ')
+
                             # Inject `projects:` so workspaces created from a raw devfile URL clone the repo.
                             if ! printf '%s\n' "$NEW_DEVFILE" | grep -qE '^projects:'; then
                               ORIGIN_URL="https://gitea-gitea.${DOMAIN}/${ORG}/${REPO}.git"

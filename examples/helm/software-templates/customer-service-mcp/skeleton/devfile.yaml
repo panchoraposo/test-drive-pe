@@ -6,6 +6,13 @@ metadata:
   description: ${{values.description}}
   language: Java
   projectType: Quarkus
+attributes:
+  .vscode/extensions.json: |
+    {
+      "recommendations": [
+        "redhat.fabric8-analytics"
+      ]
+    }
 projects:
   - name: ${{values.name}}
     git:
@@ -21,6 +28,11 @@ components:
         # Ensure Code - OSS opens with a folder (avoids \"No folder opened\" after cloning).
         - name: VSCODE_DEFAULT_WORKSPACE
           value: /projects
+        # Pre-install Red Hat Dependency Analytics (RHDA) from VSIX downloaded on postStart.
+        - name: DEFAULT_EXTENSIONS
+          value: "/projects/${{values.name}}/.extensions/redhat.fabric8-analytics.vsix"
+        - name: VSCODE_TRUSTED_EXTENSIONS
+          value: "redhat.fabric8-analytics"
       memoryRequest: 1Gi
       memoryLimit: 4Gi
       cpuRequest: "500m"
@@ -33,6 +45,23 @@ components:
     volume:
       size: 2Gi
 commands:
+  - id: 00-install-rhda-extension
+    exec:
+      component: tools
+      commandLine: |
+        set -euo pipefail
+        mkdir -p "/projects/${{values.name}}/.extensions"
+        if [ -f "/projects/${{values.name}}/.extensions/redhat.fabric8-analytics.vsix" ]; then
+          echo "RHDA VSIX already present."
+          exit 0
+        fi
+        echo "Downloading RHDA extension VSIX..."
+        curl -sSL "https://open-vsx.org/api/redhat/fabric8-analytics/0.10.2/file/redhat.fabric8-analytics-0.10.2.vsix" \
+          -o "/projects/${{values.name}}/.extensions/redhat.fabric8-analytics.vsix"
+      workingDir: ${PROJECT_SOURCE}
+      group:
+        kind: build
+        isDefault: false
   - id: 01-build
     exec:
       component: tools
@@ -70,4 +99,7 @@ commands:
       group:
         kind: run
         isDefault: true
+events:
+  postStart:
+    - 00-install-rhda-extension
 
