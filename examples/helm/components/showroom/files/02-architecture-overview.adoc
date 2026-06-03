@@ -128,7 +128,7 @@ These same links appear as quick access cards on the Developer Hub home page.
 |Dev Spaces |Cloud IDE based on `devfile`, connected to the same repo
 |Gateway API / Kuadrant |Traffic ingress, routing, and auth/rate-limit policies
 |OpenShift Lightspeed |AI assistant with MCP Gateway for cluster operations
-|LiteLLM |LLM proxy for Developer Lightspeed
+|LiteLLM |LLM proxy for OpenShift Lightspeed
 |Grafana |Monitoring dashboards and alerting
 |OpenShift Service Mesh |Traffic graph and distributed traces in the web console
 |Mailpit |Email testing for notifications

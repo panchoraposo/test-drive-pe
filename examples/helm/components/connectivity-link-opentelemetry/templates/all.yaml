@@ -96,7 +96,10 @@ spec:
                 TB=$(echo "$TJSON" | tr -d ' \n\t' | sed -n 's/.*"bucket":"\([^"]*\)".*/\1/p' | head -1)
                 TAK=$(echo "$TJSON" | tr -d ' \n\t' | sed -n 's/.*"access_key_id":"\([^"]*\)".*/\1/p' | head -1)
                 TSK=$(echo "$TJSON" | tr -d ' \n\t' | sed -n 's/.*"access_key_secret":"\([^"]*\)".*/\1/p' | head -1)
-                if [ -n "$TB" ] && [ -n "$TAK" ] && [ -n "$TSK" ]; then
+                TE=$(echo "$TJSON" | tr -d ' \n\t' | sed -n 's/.*"endpoint":"\([^"]*\)".*/\1/p' | head -1)
+                TE_DEC=$(echo "$TE" | tr -d '\n' | base64 -d 2>/dev/null || echo "$TE")
+                # OBC advertises :443 but in-cluster Noobaa S3 for Tempo must use plain HTTP on :80.
+                if [ -n "$TB" ] && [ -n "$TAK" ] && [ -n "$TSK" ] && echo "$TE_DEC" | grep -q ':80'; then
                   echo "${TARGET} already exists and is complete; skipping sync"
                   exit 0
                 fi
@@ -130,8 +133,15 @@ spec:
               HOST=$(json_field "$CM_JSON" "BUCKET_HOST")
               PORT=$(json_field "$CM_JSON" "BUCKET_PORT")
               [ -z "$HOST" ] && HOST="s3.openshift-storage.svc"
-              [ -z "$PORT" ] && PORT="80"
-              # Noobaa in-cluster S3 uses HTTP on port 80 (TLS on 443 is not compatible with Tempo S3 client here).
+              # Noobaa in-cluster S3 uses HTTP on port 80 (OBC may advertise 443; Tempo S3 client cannot use TLS here).
+              case "$HOST" in
+                s3.openshift-storage.svc|*.openshift-storage.svc)
+                  PORT="80"
+                  ;;
+                *)
+                  [ -z "$PORT" ] && PORT="80"
+                  ;;
+              esac
               ENDPOINT="http://${HOST}:${PORT}"
 
               AK=$(b64dec "$AK")

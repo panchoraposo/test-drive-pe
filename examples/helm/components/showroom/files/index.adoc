@@ -15,7 +15,6 @@ In this workshop you will use **Red Hat Developer Hub** as a self-service develo
 * Use **Software Templates** to scaffold backend, frontend, and MCP services
 * Observe automated **Tekton pipelines**, **ArgoCD GitOps**, and **Topology** views
 * Secure APIs with **Connectivity Link** policies (OIDC and API Key via Kuadrant)
-* Interact with **Developer Lightspeed** for AI-assisted development
 * Use **OpenShift Lightspeed** with **MCP Gateway** for cluster operations
 * Monitor the platform with **Grafana** and the OpenShift console **Service Mesh** graph and traces
 

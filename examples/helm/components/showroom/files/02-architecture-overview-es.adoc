@@ -128,7 +128,7 @@ Estos mismos enlaces aparecen como tarjetas de acceso rápido en la home de Deve
 |Dev Spaces |IDE en la nube basado en `devfile.yaml`, conectado al mismo repo
 |Gateway API / Kuadrant |Ingreso de tráfico, ruteo y políticas de auth/rate-limit
 |OpenShift Lightspeed |Asistente de IA con MCP Gateway para operaciones del cluster
-|LiteLLM |Proxy de LLM para Developer Lightspeed
+|LiteLLM |Proxy de LLM para OpenShift Lightspeed
 |Grafana |Dashboards de monitoreo y alertas
 |Service Mesh (consola OpenShift) |Grafo de tráfico y trazas distribuidas en la consola web
 |Mailpit |Testing de emails para notificaciones
