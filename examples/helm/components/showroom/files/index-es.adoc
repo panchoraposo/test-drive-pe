@@ -92,6 +92,6 @@ graph LR
     E -->|Sync| D
     D -->|Gateway API| F[Kuadrant Policies]
     F -->|OIDC / API Key| G[Secured APIs]
-    A -->|Lightspeed| H[AI Assistant]
+    D -->|Lightspeed| H[AI Assistant]
     H -->|MCP Gateway| I[Cluster Tools]
 ....
