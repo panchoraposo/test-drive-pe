@@ -22,6 +22,10 @@ spec:
       # Jaeger UI queries Tempo via gRPC storage plugin; UI still on :16686.
       internal_url: http://jaeger.openshift-opentelemetry.svc.cluster.local:16686
       use_grpc: false
+      # TempoStack search + trace hydration often exceeds Kiali default (5s); OSSM console shows "Could not fetch traces".
+      query_timeout: 60
+      # Ambient mesh: waypoint proxy emits traces under waypoint.<namespace> service names.
+      use_waypoint_name: true
 ---
 apiVersion: kiali.io/v1alpha1
 kind: OSSMConsole

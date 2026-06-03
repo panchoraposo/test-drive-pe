@@ -195,6 +195,13 @@ spec:
       replicas: 1
     querier:
       replicas: 1
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+        limits:
+          cpu: 500m
+          memory: 1Gi
     queryFrontend:
       component:
         replicas: 1
