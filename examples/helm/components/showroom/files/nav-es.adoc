@@ -16,5 +16,5 @@
 .Operaciones de plataforma (SRE)
 * xref:12-openshift-lightspeed-mcp.adoc[8. OpenShift Lightspeed y MCP Gateway]
 
-.Operaciones
+.Observabilidad
 * xref:13-observability.adoc[9. Stack de observabilidad]

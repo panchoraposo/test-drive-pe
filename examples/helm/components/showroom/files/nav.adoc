@@ -16,5 +16,5 @@
 .Platform Engineering (SRE)
 * xref:12-openshift-lightspeed-mcp.adoc[8. OpenShift Lightspeed & MCP Gateway]
 
-.Operations
+.Observability
 * xref:13-observability.adoc[9. Observability Stack]
