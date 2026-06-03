@@ -13,7 +13,7 @@
 * xref:07-explore-argocd-apis.adoc[6. Explore ArgoCD and APIs]
 * xref:08-devspaces-update.adoc[7. Update Code with DevSpaces]
 
-.AI-Assisted Development
+.Platform Engineering (SRE)
 * xref:12-openshift-lightspeed-mcp.adoc[8. OpenShift Lightspeed & MCP Gateway]
 
 .Operations
