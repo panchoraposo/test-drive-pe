@@ -28,7 +28,7 @@ Fill in the fields:
 | `Neuralbank REST API backend for credit management`
 |===
 
-The application will be created automatically in namespace **`{user_name}-neuralbank`** (for example, `user23-neuralbank`). The template defines this namespace; you don’t need to set it in the form.
+The application will be created automatically in namespace **`{user_name}-neuralbank`**. The template defines this namespace; you don’t need to set it in the form.
 
 == Step 3: Create and Wait for Scaffolding
 

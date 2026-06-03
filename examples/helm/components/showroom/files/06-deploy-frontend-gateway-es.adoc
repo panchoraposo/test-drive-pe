@@ -22,7 +22,7 @@ Deberías tener **neuralbank-backend** corriendo en el namespace `{user_name}-ne
 | **Description** | `Neuralbank credit visualization frontend`
 |===
 
-La aplicación se creará automáticamente en el namespace **`{user_name}-neuralbank`** (por ejemplo, `user23-neuralbank`). El template define este namespace; no necesitas configurarlo en el formulario.
+La aplicación se creará automáticamente en el namespace **`{user_name}-neuralbank`**. El template define este namespace; no necesitas configurarlo en el formulario.
 
 . Haz clic en **Create** y espera a que terminen los pasos del scaffolder.
 
