@@ -144,6 +144,36 @@ spec:
                 -u "$AUTH" -H "Content-Type: application/json" -d "$ORG_JSON" || true)
               echo "  developer-hub org: HTTP $CODE"
 
+              ensure_repo_initialized() {
+                local org="$1"
+                local repo="$2"
+                local desc="$3"
+
+                # If the repo doesn't exist, create it with an initial commit so branch APIs work reliably.
+                local info
+                info=$(curl -sS -u "$AUTH" "$BASE/api/v1/repos/${org}/${repo}" 2>/dev/null || echo "{}")
+                local empty
+                empty=$(echo "$info" | tr -d ' \n\t' | sed -n 's/.*"empty":\([^,}]*\).*/\1/p' | head -1)
+
+                if echo "$info" | grep -q '"message":"Not Found"' || echo "$info" | grep -q '"not found"'; then
+                  local rjson
+                  rjson=$(printf '{"name":"%s","private":false,"auto_init":true,"default_branch":"main","description":"%s"}' "$repo" "$desc")
+                  curl -sS -o /dev/null -w "%{http_code}" -X POST "$BASE/api/v1/org/${org}/repos" \
+                    -u "$AUTH" -H "Content-Type: application/json" -d "$rjson" || true
+                  return 0
+                fi
+
+                # If it exists but is empty, add a README to create the main branch and prevent branch API panics.
+                if [ "$empty" = "true" ]; then
+                  local content b64 payload
+                  content=$(printf "# %s\n\nInitialized for workshop automation.\n" "$repo")
+                  b64=$(printf "%s" "$content" | base64 | tr -d '\n')
+                  payload=$(printf '{"message":"Initialize repository","content":"%s","branch":"main"}' "$b64")
+                  curl -sS -o /dev/null -w "%{http_code}" -X POST "$BASE/api/v1/repos/${org}/${repo}/contents/README.md" \
+                    -u "$AUTH" -H "Content-Type: application/json" -d "$payload" || true
+                fi
+              }
+
               USER_COUNT={{ .Values.userCount | default 200 }}
               echo "Creating $USER_COUNT users and orgs..."
               GITEA_POD=$(gitea_pod)
@@ -186,6 +216,11 @@ spec:
                 T_JSON=$(printf '{"message":"Add demo template for %s","content":"%s","branch":"main"}' "$U" "$TB64")
                 FC=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$BASE/api/v1/repos/${ORG}/${REPO}/contents/template.yaml" \
                   -u "$AUTH" -H "Content-Type: application/json" -d "$T_JSON" || true)
+
+                # Ensure the workshop app repos exist and are not empty (ApplicationSet SCM generator calls branch APIs).
+                ensure_repo_initialized "${ORG}" "neuralbank-backend" "Workshop repo for ${U} (Neuralbank backend)"
+                ensure_repo_initialized "${ORG}" "neuralbank-frontend" "Workshop repo for ${U} (Neuralbank frontend)"
+                ensure_repo_initialized "${ORG}" "customer-service-mcp" "Workshop repo for ${U} (Customer Service MCP)"
 
                 echo "${U}: user=${C} org=${O} repo=${RC} catalog=${FC}"
               done
