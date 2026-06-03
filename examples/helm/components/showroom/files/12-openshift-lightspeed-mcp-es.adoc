@@ -1,4 +1,4 @@
-= 10. OpenShift Lightspeed y MCP Gateway
+= 8. OpenShift Lightspeed y MCP Gateway
 
 **OpenShift Lightspeed (OLS)** es un asistente de IA integrado en la consola web de OpenShift. Combinado con el **MCP gateway de Red Hat Connectivity Link** (Technology Preview), puede ejecutar operaciones del cluster mediante herramientas invocables por IA.
 +

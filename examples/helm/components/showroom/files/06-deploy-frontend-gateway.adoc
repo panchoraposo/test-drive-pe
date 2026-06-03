@@ -91,7 +91,7 @@ graph LR
     MGW --> MCP[MCP Service]
 ....
 
-IMPORTANT: The scaffolded frontend does **not** implement OIDC login (no redirect to Keycloak). It uses API Keys directly via the `X-API-Key` header. For an interactive OIDC flow with Keycloak, see the pre-deployed `neuralbank-stack` in xref:09-explore-connectivity-link-oidc.adoc[Module 9].
+IMPORTANT: The scaffolded frontend does **not** implement OIDC login (no redirect to Keycloak). It uses API Keys directly via the `X-API-Key` header. For an interactive OIDC flow with Keycloak, see the pre-deployed `neuralbank-stack` in xref:09-explore-connectivity-link-oidc.adoc[the OIDC module].
 
 == Step 6: Inspect Gateway and AuthPolicy
 

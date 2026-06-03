@@ -1,4 +1,4 @@
-= 11. Stack de observabilidad
+= 9. Stack de observabilidad
 
 La plataforma del workshop incluye un stack de observabilidad completo para monitorear, trazar y visualizar la salud de tus aplicaciones y del service mesh.
 

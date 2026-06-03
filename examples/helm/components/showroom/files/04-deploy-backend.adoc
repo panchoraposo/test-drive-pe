@@ -181,7 +181,7 @@ spec:
 | Send `Authorization: Bearer <token>` with a valid JWT from Keycloak realm `neuralbank`. Useful for programmatic access if you already have a token.
 |===
 
-IMPORTANT: Scaffolded apps use **API Key as the primary auth method**. The OIDC JWT option only validates existing Bearer tokens; it does not provide an interactive browser login. For a full interactive OIDC flow (browser redirect to Keycloak), see the pre-deployed `neuralbank-stack` in xref:09-explore-connectivity-link-oidc.adoc[Module 9].
+IMPORTANT: Scaffolded apps use **API Key as the primary auth method**. The OIDC JWT option only validates existing Bearer tokens; it does not provide an interactive browser login. For a full interactive OIDC flow (browser redirect to Keycloak), see the pre-deployed `neuralbank-stack` in xref:09-explore-connectivity-link-oidc.adoc[the OIDC module].
 
 == Summary
 

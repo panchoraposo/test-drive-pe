@@ -181,7 +181,7 @@ spec:
 | Envía `Authorization: Bearer <token>` con un JWT válido del realm `neuralbank` en Keycloak. Es útil para acceso programático si ya tienes un token.
 |===
 
-IMPORTANTE: Las aplicaciones generadas usan **API Key como método primario de autenticación**. La opción OIDC JWT sirve para validar Bearer tokens, pero no incluye un flujo interactivo de login. Para una experiencia OIDC interactiva completa (redirect del browser a Keycloak), revisa el stack pre-desplegado `neuralbank-stack` en xref:09-explore-connectivity-link-oidc.adoc[Módulo 9].
+IMPORTANTE: Las aplicaciones generadas usan **API Key como método primario de autenticación**. La opción OIDC JWT sirve para validar Bearer tokens, pero no incluye un flujo interactivo de login. Para una experiencia OIDC interactiva completa (redirect del browser a Keycloak), revisa el stack pre-desplegado `neuralbank-stack` en xref:09-explore-connectivity-link-oidc.adoc[el módulo OIDC].
 
 == Resumen
 
