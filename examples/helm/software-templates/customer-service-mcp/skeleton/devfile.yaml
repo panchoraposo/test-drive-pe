@@ -17,6 +17,10 @@ components:
   - name: tools
     container:
       image: registry.redhat.io/devspaces/udi-rhel9:latest
+      env:
+        # Ensure Code - OSS opens with a folder (avoids \"No folder opened\" after cloning).
+        - name: VSCODE_DEFAULT_WORKSPACE
+          value: /projects
       memoryRequest: 1Gi
       memoryLimit: 4Gi
       cpuRequest: "500m"

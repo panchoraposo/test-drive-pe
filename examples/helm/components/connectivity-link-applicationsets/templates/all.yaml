@@ -297,6 +297,23 @@ spec:
                             NEW_DEVFILE=$(printf '%s\n' "$NEW_DEVFILE" | sed \
                               -e 's|mvn -ntp package -DskipTests|mvn -ntp -DskipTests compile|g')
 
+                            # Code - OSS: ensure a folder is opened on startup (otherwise users may see "No folder opened").
+                            # This is safe for all workshop devfiles; it just opens the /projects directory where repos are cloned.
+                            if ! printf '%s\n' "$NEW_DEVFILE" | grep -q 'VSCODE_DEFAULT_WORKSPACE'; then
+                              NEW_DEVFILE=$(printf '%s\n' "$NEW_DEVFILE" | awk '
+                                BEGIN { done=0 }
+                                (!done && $0 ~ /^[[:space:]]*image:[[:space:]]*registry\.redhat\.io\/devspaces\/udi-rhel9:latest[[:space:]]*$/) {
+                                  print
+                                  print "      env:"
+                                  print "        - name: VSCODE_DEFAULT_WORKSPACE"
+                                  print "          value: /projects"
+                                  done=1
+                                  next
+                                }
+                                { print }
+                              ')
+                            fi
+
                             if [ -n "$NEW_DEVFILE" ] && [ "$DEVFILE_CONTENT" != "$NEW_DEVFILE" ]; then
                               NEW_DEVFILE_B64=$(printf '%s' "$NEW_DEVFILE" | base64 | tr -d '\n')
                               PUT_CODE=$(curl -sS -o /dev/null -w "%{http_code}" -X PUT \
