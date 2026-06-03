@@ -115,10 +115,10 @@ spec:
             fi
 
             SECRET_NAME="gitea-git-credentials"
-            CRED_LINE="https://${U}:${GITEA_PASSWORD}@${GITEA_HOST}"
+            # Use a trailing slash so git credential matching works reliably for all repo paths.
+            CRED_LINE="https://${U}:${GITEA_PASSWORD}@${GITEA_HOST}/"
             AUTH_B64="$(printf '%s' "${U}:${GITEA_PASSWORD}" | base64 | tr -d '\n')"
 
-            if ! oc get secret "$SECRET_NAME" -n "$NS" &>/dev/null; then
             cat <<EOSECRET | oc apply -f -
           apiVersion: v1
           kind: Secret
@@ -135,7 +135,6 @@ spec:
           stringData:
             credentials: "${CRED_LINE}"
           EOSECRET
-            fi
 
             # Use http.extraHeader instead of credential-store on the read-only secret mount.
             # credential-store creates *.lock next to the store file; /etc/secret is not writable

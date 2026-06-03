@@ -59,7 +59,9 @@ metadata:
   namespace: gitea
   annotations:
     argocd.argoproj.io/hook: PostSync
-    argocd.argoproj.io/hook-delete-policy: HookSucceeded
+    # Keep the hook Job around so Argo CD can reliably observe completion.
+    # It will be removed automatically on the next sync before a new hook is created.
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
 spec:
   template:
     spec:
