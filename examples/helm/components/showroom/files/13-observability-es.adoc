@@ -47,15 +47,6 @@ TIP: Si el grafo aparece vacío, normalmente significa que **no hay tráfico en 
 * Hacer clic en **Display idle nodes**
 * Generar tráfico desde esta terminal (ver abajo). La terminal embebida corre en `showroom`, por lo que por defecto no puede hacer `oc exec` en tu namespace.
 
-=== Rutas del backend (verificadas)
-
-| Ruta | Código típico | Notas
-| `/api/customers` | 200 | Endpoint principal para demos
-| `/q/health` | 200 | Health Quarkus (sin API key)
-| `/api/hello` | 404 o 200 | No está en el template base; usa `/api/customers`
-| Gateway sin `X-API-Key` | 401 | Se ve como tráfico fallido en el grafo de Service Mesh
-| Gateway con API key válida | 200 o 503 | 503 = problema gateway→backend vía waypoint
-
 === Generar tráfico exitoso (recomendado)
 
 [.console-input]
@@ -88,10 +79,6 @@ for i in $(seq 1 10); do
 done
 ----
 
-Si falta el nodo **MCP**: comprueba `oc -n {user_name}-neuralbank get endpoints customer-service-mcp`. Si está `<none>`, el pod no tiene la etiqueta `app.kubernetes.io/component=application` (re-despliega MCP o sincroniza ArgoCD).
-
-O abre `https://neuralbank-frontend-{user_name}-neuralbank.{cluster_domain}` y refresca la página **Credits**.
-
 La pestaña **Graph** muestra:
 
 * **Ruteo de tráfico** a través del Istio Gateway
@@ -123,14 +110,6 @@ graph LR
 
 . En el proyecto `{user_name}-neuralbank`, abre **Service Mesh** → **Traces**.
 . Tras generar tráfico in-mesh, busca servicios como `neuralbank-backend` o el workload del gateway en tu namespace.
-
-Si **Traces** está vacío: Istio envía OTLP al collector `mesh-collector.istio-system:4317`, que reenvía a Tempo (`tempo-distributor.openshift-opentelemetry:4317`). El chart del workshop lo configura en `connectivity-link-opentelemetry` y `connectivity-link-servicemeshoperator3`. El muestreo por defecto es 50% — con menos requests deberías ver trazas en Tempo/Kiali. No esperes `x-b3-traceid` en respuestas `curl -I`.
-
-[source,bash]
-----
-oc -n openshift-opentelemetry exec deploy/tempo-connectivity-query-frontend -- \
-  wget -qO- http://127.0.0.1:16686/api/services
-----
 
 Cada traza muestra el camino completo de una request:
 

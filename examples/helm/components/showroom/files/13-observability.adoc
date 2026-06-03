@@ -47,33 +47,6 @@ TIP: If the graph is empty, it usually means there is **no traffic in the select
 * Click **Display idle nodes**
 * Generate traffic from this terminal (see below). The embedded terminal runs in namespace `showroom`, so it cannot use `oc exec` into your namespace by default.
 
-=== Backend API paths (verified)
-
-[cols="2,1,2"]
-|===
-| Path | Typical code | Notes
-
-| `/api/customers`
-| 200
-| Main REST list endpoint (use this for demos)
-
-| `/q/health`, `/q/health/ready`
-| 200
-| Quarkus health (no API key)
-
-| `/api/hello`
-| 404 or 200
-| **Not** in the stock software template; some clusters return 200 only after a custom backend build. Prefer `/api/customers`.
-
-| Gateway `/api/*` without `X-API-Key`
-| 401
-| Shows as **failed** traffic in the Service Mesh graph (Kuadrant AuthPolicy)
-
-| Gateway `/api/*` with valid `X-API-Key`
-| 200 or 503
-| 503 usually means gateway→backend via waypoint failed; use in-mesh curls below or the frontend Route while investigating
-|===
-
 === Generate successful traffic (recommended)
 
 [.console-input]
@@ -106,8 +79,6 @@ for i in $(seq 1 10); do
 done
 ----
 
-Or open `https://neuralbank-frontend-{user_name}-neuralbank.{cluster_domain}` and refresh the **Credits** page.
-
 The **Graph** tab shows:
 
 * **Traffic routing** through the Istio Gateway
@@ -133,27 +104,12 @@ graph LR
 
 * Click **Display idle nodes** and set the time range to **Last 1h**.
 * **Frontend** (`neuralbank-frontend`): appears after in-mesh or browser traffic; the SPA route does not require an API key.
-* **MCP** (`customer-service-mcp`): the Service selector requires labels `app.kubernetes.io/name` **and** `app.kubernetes.io/component=application`. If `oc -n {user_name}-neuralbank get endpoints customer-service-mcp` shows `<none>`, the pod is missing the `component` label (re-sync ArgoCD / re-run the MCP pipeline, or patch the Deployment pod template to match the software template).
+* **MCP** (`customer-service-mcp`): the Service selector requires labels `app.kubernetes.io/name` **and** `app.kubernetes.io/component=application`.
 
 == OpenShift Console: Service Mesh traces
 
 . In project `{user_name}-neuralbank`, open **Service Mesh** → **Traces**.
 . After generating in-mesh traffic, search for services such as `neuralbank-backend` or the gateway workload in your namespace.
-
-If **Traces** is empty:
-
-* **No OTLP receiver**: Istio exports spans to the mesh OpenTelemetry Collector (`mesh-collector.istio-system:4317`), which forwards to Tempo (`tempo-distributor.openshift-opentelemetry:4317`). This is configured in `connectivity-link-opentelemetry` and `connectivity-link-servicemeshoperator3`.
-* **Sampling**: mesh default is `randomSamplingPercentage: 50` — fewer requests needed than at 10%; override in `istio-system/telemetry` `mesh-default` if needed.
-* **Response headers**: ambient/Istio typically does **not** return `x-b3-traceid` to clients; use the console **Traces** tab, not `curl -I`.
-* **Verify trace backend** (optional):
-+
-[.console-input]
-[source,bash]
-----
-# Should list workload services after in-mesh traffic
-oc -n openshift-opentelemetry exec deploy/tempo-connectivity-query-frontend -- \
-  wget -qO- http://127.0.0.1:16686/api/services
-----
 
 Each trace shows the full request path:
 
