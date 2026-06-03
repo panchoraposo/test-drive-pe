@@ -182,6 +182,8 @@ spec:
       name: tempo-s3-storage
       type: s3
   storageSize: 5Gi
+  # Waypoint traces via Jaeger Query can take >30s; keep this above Kiali's query_timeout.
+  timeout: 1m0s
   resources:
     total:
       limits:
