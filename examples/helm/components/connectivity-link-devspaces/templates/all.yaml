@@ -42,6 +42,53 @@ spec:
       oAuthSecret: devspaces-oidc-secret
     {{- end }}
 ---
+# DevWorkspace Operator (devworkspace-controller) runs in `openshift-operators` and requires a
+# `DevWorkspaceOperatorConfig` named `devworkspace-operator-config` in the same namespace.
+# Without this, DevWorkspaces fail with:
+# "basic routing requires .config.routing.clusterHostSuffix to be set in operator config".
+apiVersion: controller.devfile.io/v1alpha1
+kind: DevWorkspaceOperatorConfig
+metadata:
+  name: devworkspace-operator-config
+  namespace: openshift-operators
+  annotations:
+    argocd.argoproj.io/sync-wave: "7"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
+config:
+  routing:
+    clusterHostSuffix: {{ .Values.clusterDomain }}
+  workspace:
+    # DevSpaces uses container-build SCC to allow SETUID/SETGID during workspace startup.
+    containerSecurityContext:
+      allowPrivilegeEscalation: true
+      capabilities:
+        add:
+        - SETGID
+        - SETUID
+    deploymentStrategy: Recreate
+    ignoredUnrecoverableEvents:
+    - FailedScheduling
+    persistUserHome:
+      enabled: true
+    progressTimeout: 600s
+    serviceAccount:
+      disableCreation: false
+---
+# OCP provides `system:openshift:scc:*` ClusterRoles for most SCCs, but some clusters
+# (including this workshop environment) may miss `container-build`. Create it so we can
+# grant SCC access via RoleBindings in user DevSpaces namespaces.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: system:openshift:scc:container-build
+  annotations:
+    argocd.argoproj.io/sync-wave: "7"
+rules:
+- apiGroups: ["security.openshift.io"]
+  resources: ["securitycontextconstraints"]
+  resourceNames: ["container-build"]
+  verbs: ["use"]
+---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -59,6 +106,12 @@ metadata:
 rules:
 - apiGroups: [""]
   resources: ["secrets", "namespaces"]
+  verbs: ["get", "list", "create", "patch", "update"]
+- apiGroups: ["controller.devfile.io"]
+  resources: ["devworkspaceoperatorconfigs"]
+  verbs: ["get", "list", "patch", "update"]
+- apiGroups: ["rbac.authorization.k8s.io"]
+  resources: ["rolebindings"]
   verbs: ["get", "list", "create", "patch", "update"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
@@ -100,11 +153,21 @@ spec:
           value: "{{ .Values.userCount | default 200 }}"
         - name: GITEA_PASSWORD
           value: "redhat"
+        - name: CLUSTER_DOMAIN
+          value: "{{ .Values.clusterDomain }}"
         command:
         - /bin/bash
         - -c
         - |
           set -e
+          # After cold starts/power cycles, DevSpaces may come up without routing.clusterHostSuffix set,
+          # which causes DevWorkspaces to fail with: "basic routing requires ... clusterHostSuffix".
+          # Make this idempotent and self-healing.
+          if [ -n "${CLUSTER_DOMAIN:-}" ]; then
+            echo "Ensuring DevWorkspaceOperatorConfig.routing.clusterHostSuffix=${CLUSTER_DOMAIN} ..."
+            oc patch devworkspaceoperatorconfig devworkspace-config -n devspaces --type=merge \
+              -p "{\"config\":{\"routing\":{\"clusterHostSuffix\":\"${CLUSTER_DOMAIN}\"}}}" >/dev/null 2>&1 || true
+          fi
           echo "Provisioning Gitea git credentials for DevSpaces users..."
           for i in $(seq 1 $USER_COUNT); do
             U="user${i}"
@@ -113,6 +176,24 @@ spec:
             if ! oc get namespace "$NS" &>/dev/null; then
               continue
             fi
+
+            # DevSpaces workspaces need container-build SCC (SETUID/SETGID, allowPrivilegeEscalation).
+            # Bind SCC access for all serviceaccounts in each user's DevSpaces namespace.
+            cat <<EORB | oc apply -f -
+          apiVersion: rbac.authorization.k8s.io/v1
+          kind: RoleBinding
+          metadata:
+            name: devspaces-scc-container-build
+            namespace: ${NS}
+          roleRef:
+            apiGroup: rbac.authorization.k8s.io
+            kind: ClusterRole
+            name: system:openshift:scc:container-build
+          subjects:
+          - apiGroup: rbac.authorization.k8s.io
+            kind: Group
+            name: system:serviceaccounts:${NS}
+          EORB
 
             SECRET_NAME="gitea-git-credentials"
             # Use a trailing slash so git credential matching works reliably for all repo paths.
