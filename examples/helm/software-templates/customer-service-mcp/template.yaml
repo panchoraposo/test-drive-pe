@@ -22,8 +22,9 @@ spec:
           title: Application Name
           type: string
           description: Unique name for the MCP service (e.g. customer-service-mcp)
+          const: customer-service-mcp
           default: customer-service-mcp
-          pattern: "^[a-z0-9-]+$"
+          pattern: "^[a-z][a-z0-9-]*$"
           ui:autofocus: true
         description:
           title: Description

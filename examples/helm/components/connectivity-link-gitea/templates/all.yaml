@@ -217,10 +217,17 @@ spec:
                 FC=$(curl -sS -o /dev/null -w "%{http_code}" -X POST "$BASE/api/v1/repos/${ORG}/${REPO}/contents/template.yaml" \
                   -u "$AUTH" -H "Content-Type: application/json" -d "$T_JSON" || true)
 
-                # Ensure the workshop app repos exist and are not empty (ApplicationSet SCM generator calls branch APIs).
-                ensure_repo_initialized "${ORG}" "neuralbank-backend" "Workshop repo for ${U} (Neuralbank backend)"
-                ensure_repo_initialized "${ORG}" "neuralbank-frontend" "Workshop repo for ${U} (Neuralbank frontend)"
-                ensure_repo_initialized "${ORG}" "customer-service-mcp" "Workshop repo for ${U} (Customer Service MCP)"
+                # Do NOT pre-create workshop app repos (neuralbank-* / customer-service-mcp).
+                # Backstage `publish:gitea` requires repo create (HTTP 201) and fails if the repo already exists.
+                # If older installs seeded stub repos, clean them up safely: remove only repos without `manifests/`.
+                for APP_REPO in neuralbank-backend neuralbank-frontend customer-service-mcp; do
+                  if curl -sS -u "$AUTH" \
+                    "$BASE/api/v1/repos/${ORG}/${APP_REPO}/contents/manifests?ref=main" 2>/dev/null \
+                    | grep -q '"message":"Not Found"'; then
+                    # Repo exists but does not contain workshop manifests → delete so templates can publish normally.
+                    curl -sS -o /dev/null -X DELETE "$BASE/api/v1/repos/${ORG}/${APP_REPO}" -u "$AUTH" || true
+                  fi
+                done
 
                 echo "${U}: user=${C} org=${O} repo=${RC} catalog=${FC}"
               done

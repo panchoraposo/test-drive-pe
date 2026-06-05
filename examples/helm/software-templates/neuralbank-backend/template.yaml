@@ -21,8 +21,10 @@ spec:
         name:
           title: Application Name
           type: string
+          description: Fixed workshop slug (do not change — required for gateway/proxy integration).
+          const: neuralbank-backend
           default: neuralbank-backend
-          pattern: "^[a-z0-9-]+$"
+          pattern: "^[a-z][a-z0-9-]*$"
           ui:autofocus: true
         description:
           title: Description
