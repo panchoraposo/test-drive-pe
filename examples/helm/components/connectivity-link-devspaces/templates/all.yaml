@@ -159,7 +159,7 @@ spec:
         - /bin/bash
         - -c
         - |
-          set -e
+          set -euo pipefail
           # After cold starts/power cycles, DevSpaces may come up without routing.clusterHostSuffix set,
           # which causes DevWorkspaces to fail with: "basic routing requires ... clusterHostSuffix".
           # Make this idempotent and self-healing.
@@ -179,68 +179,46 @@ spec:
 
             # DevSpaces workspaces need container-build SCC (SETUID/SETGID, allowPrivilegeEscalation).
             # Bind SCC access for all serviceaccounts in each user's DevSpaces namespace.
-            cat <<EORB | oc apply -f -
-          apiVersion: rbac.authorization.k8s.io/v1
-          kind: RoleBinding
-          metadata:
-            name: devspaces-scc-container-build
-            namespace: ${NS}
-          roleRef:
-            apiGroup: rbac.authorization.k8s.io
-            kind: ClusterRole
-            name: system:openshift:scc:container-build
-          subjects:
-          - apiGroup: rbac.authorization.k8s.io
-            kind: Group
-            name: system:serviceaccounts:${NS}
-          EORB
+            oc -n "$NS" create rolebinding devspaces-scc-container-build \
+              --clusterrole=system:openshift:scc:container-build \
+              --group="system:serviceaccounts:${NS}" \
+              --dry-run=client -o yaml | oc apply -f -
 
             SECRET_NAME="gitea-git-credentials"
             # Use a trailing slash so git credential matching works reliably for all repo paths.
             CRED_LINE="https://${U}:${GITEA_PASSWORD}@${GITEA_HOST}/"
             AUTH_B64="$(printf '%s' "${U}:${GITEA_PASSWORD}" | base64 | tr -d '\n')"
 
-            cat <<EOSECRET | oc apply -f -
-          apiVersion: v1
-          kind: Secret
-          metadata:
-            name: ${SECRET_NAME}
-            namespace: ${NS}
-            labels:
-              controller.devfile.io/mount-to-devworkspace: "true"
-              controller.devfile.io/watch-secret: "true"
-            annotations:
-              controller.devfile.io/mount-path: /etc/secret
-              controller.devfile.io/mount-as: subpath
-          type: Opaque
-          stringData:
-            credentials: "${CRED_LINE}"
-          EOSECRET
+            oc -n "$NS" create secret generic "${SECRET_NAME}" \
+              --from-literal=credentials="${CRED_LINE}" \
+              --type=Opaque \
+              --dry-run=client -o yaml | oc apply -f -
+            oc -n "$NS" label secret "${SECRET_NAME}" \
+              controller.devfile.io/mount-to-devworkspace=true \
+              controller.devfile.io/watch-secret=true \
+              --overwrite
+            oc -n "$NS" annotate secret "${SECRET_NAME}" \
+              controller.devfile.io/mount-path=/etc/secret \
+              controller.devfile.io/mount-as=subpath \
+              --overwrite
 
             # Use http.extraHeader instead of credential-store on the read-only secret mount.
             # credential-store creates *.lock next to the store file; /etc/secret is not writable
             # and breaks git commit/push from VS Code ("unable to get credential storage lock").
-            cat <<EOCONFIG | oc apply -f -
-          apiVersion: v1
-          kind: Secret
-          metadata:
-            name: devspaces-gitconfig
-            namespace: ${NS}
-            labels:
-              controller.devfile.io/mount-to-devworkspace: "true"
-              controller.devfile.io/watch-secret: "true"
-            annotations:
-              controller.devfile.io/mount-path: /home/user
-              controller.devfile.io/mount-as: subpath
-          type: Opaque
-          stringData:
-            .gitconfig: |
-              [user]
-                  name = ${U}
-                  email = ${U}@developer-hub.local
-              [http "https://${GITEA_HOST}/"]
-                  extraHeader = AUTHORIZATION: basic ${AUTH_B64}
-          EOCONFIG
+            GITCONFIG="$(printf '[user]\n    name = %s\n    email = %s@developer-hub.local\n[http \"https://%s/\"]\n    extraHeader = AUTHORIZATION: basic %s\n' \
+              "$U" "$U" "$GITEA_HOST" "$AUTH_B64")"
+            oc -n "$NS" create secret generic devspaces-gitconfig \
+              --from-literal=.gitconfig="${GITCONFIG}" \
+              --type=Opaque \
+              --dry-run=client -o yaml | oc apply -f -
+            oc -n "$NS" label secret devspaces-gitconfig \
+              controller.devfile.io/mount-to-devworkspace=true \
+              controller.devfile.io/watch-secret=true \
+              --overwrite
+            oc -n "$NS" annotate secret devspaces-gitconfig \
+              controller.devfile.io/mount-path=/home/user \
+              controller.devfile.io/mount-as=subpath \
+              --overwrite
 
             echo "Provisioned git credentials for $U in $NS"
           done
