@@ -205,18 +205,10 @@ subjects:
   name: openshift-gitops-argocd-application-controller
   namespace: openshift-gitops
 ---
-apiVersion: v1
-kind: ServiceAccount
-metadata:
-  name: developer-hub-hooks
-  namespace: developer-hub
-  annotations:
-    argocd.argoproj.io/sync-wave: "0"
----
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: developer-hub-hooks-rolebinding
+  name: developer-hub-default-sa-rolebinding
   namespace: developer-hub
   annotations:
     argocd.argoproj.io/sync-wave: "0"
@@ -226,7 +218,7 @@ roleRef:
   name: developer-hub-gitops-role
 subjects:
   - kind: ServiceAccount
-    name: developer-hub-hooks
+    name: default
     namespace: developer-hub
 ---
 apiVersion: batch/v1
@@ -244,7 +236,7 @@ spec:
   template:
     spec:
       restartPolicy: Never
-      serviceAccountName: developer-hub-hooks
+      serviceAccountName: default
       containers:
         - name: reset
           image: registry.redhat.io/openshift4/ose-cli:latest
