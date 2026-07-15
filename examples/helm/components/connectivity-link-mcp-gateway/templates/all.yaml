@@ -812,7 +812,6 @@ spec:
     group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: openshift-mcp-server-route
-  toolPrefix: ocp
   # Path prefix as exposed through the gateway (matches HTTPRoute).
   path: /openshift-mcp-server/mcp
 ---
@@ -829,7 +828,6 @@ spec:
     group: gateway.networking.k8s.io
     kind: HTTPRoute
     name: k8s-mcp-server-route
-  toolPrefix: k8s
   # Path prefix as exposed through the gateway (matches HTTPRoute).
   path: /k8s-mcp-server/mcp
 {{- end }}
