@@ -21,6 +21,15 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-options: ServerSideApply=true
 spec:
+  extraConfig:
+    # ApplicationSets often report "Progressing: Waiting for the status to be reported"
+    # which keeps the parent app in Progressing even when everything is actually reconciled.
+    # This override marks ApplicationSets as Healthy to keep the workshop GitOps baseline clean.
+    resource.customizations.health.argoproj.io_ApplicationSet: |
+      hs = {}
+      hs.status = "Healthy"
+      hs.message = "ApplicationSet health overridden"
+      return hs
   rbac:
     defaultPolicy: 'role:workshop-readonly'
     scopes: '[groups, preferred_username]'

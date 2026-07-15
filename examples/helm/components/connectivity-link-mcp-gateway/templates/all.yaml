@@ -1,14 +1,4 @@
 ##
-## 1. Namespace
-##
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: mcp-system
-  annotations:
-    argocd.argoproj.io/sync-wave: "0"
----
-##
 ## 1b. Install MCP Gateway Operator (OLM)
 ## Per RHC Link docs: mcp-gateway channel=preview from redhat-operators.
 ##
