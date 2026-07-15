@@ -1316,7 +1316,13 @@ stringData:
   RHDH_BASE_URL: "https://backstage-developer-hub-developer-hub.{{ .Values.clusterDomain }}"
   RHDH_HOST: "https://backstage-developer-hub-developer-hub.{{ .Values.clusterDomain }}"
   RHDH_CALLBACK_URL: "https://backstage-developer-hub-developer-hub.{{ .Values.clusterDomain }}/api/auth/oidc/handler/frame"
-  ARGOCD_INSTANCE_2_URL: "https://openshift-gitops-server-openshift-gitops.{{ .Values.clusterDomain }}"
+  # If clusterDomain is not provided (common when deploying into an env we don't control),
+  # fall back to the in-cluster Argo CD service DNS name instead of producing an invalid URL.
+  ARGOCD_INSTANCE_2_URL: {{- if .Values.clusterDomain -}}
+    "https://openshift-gitops-server-openshift-gitops.{{ .Values.clusterDomain }}"
+  {{- else -}}
+    "https://openshift-gitops-server.openshift-gitops.svc"
+  {{- end }}
   ARGOCD_INSTANCE_2_USERNAME: "admin"
   MCP_TOKEN: "{{ .Values.mcpToken | default "IpIbd50gbMb1p2+iCigrhkm21pZwbn0g" }}"
 ---
@@ -1719,12 +1725,28 @@ spec:
         - /bin/bash
         - -c
         - |
-          set -e
-          echo "Reading ArgoCD admin password from openshift-gitops namespace..."
-          ARGOCD_PWD=$(oc get secret openshift-gitops-cluster -n openshift-gitops -o jsonpath='{.data.admin\.password}' | base64 -d)
+          set -euo pipefail
+          echo "Syncing ArgoCD credentials for Developer Hub (best-effort)..."
+
+          # New environments may not have OpenShift GitOps installed, may use a different namespace,
+          # or may not expose the default admin secret. Do not fail the whole Developer Hub sync
+          # if we can't read it; the ArgoCD plugin can still start (but ArgoCD features may be limited).
+          ARGOCD_PWD=""
+          for NS in openshift-gitops; do
+            for SECRET in openshift-gitops-cluster argocd-cluster; do
+              if oc get secret "$SECRET" -n "$NS" &>/dev/null; then
+                ARGOCD_PWD=$(oc get secret "$SECRET" -n "$NS" -o jsonpath='{.data.admin\.password}' 2>/dev/null | base64 -d 2>/dev/null || true)
+                if [ -n "$ARGOCD_PWD" ]; then
+                  echo "Read ArgoCD admin password from ${NS}/${SECRET}"
+                  break 2
+                fi
+              fi
+            done
+          done
+
           if [ -z "$ARGOCD_PWD" ]; then
-            echo "ERROR: Could not read ArgoCD admin password"
-            exit 1
+            echo "WARNING: Could not read ArgoCD admin password (skipping rhdh-argocd-credentials update)."
+            exit 0
           fi
 
           CURRENT=$(oc get secret rhdh-argocd-credentials -n developer-hub -o jsonpath='{.data.ARGOCD_INSTANCE_2_PASSWORD}' 2>/dev/null | base64 -d 2>/dev/null)
