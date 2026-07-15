@@ -205,6 +205,64 @@ subjects:
   name: openshift-gitops-argocd-application-controller
   namespace: openshift-gitops
 ---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: developer-hub-hooks
+  namespace: developer-hub
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: developer-hub-hooks-rolebinding
+  namespace: developer-hub
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: developer-hub-gitops-role
+subjects:
+  - kind: ServiceAccount
+    name: developer-hub-hooks
+    namespace: developer-hub
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: developer-hub-reset-immutable-configmaps
+  namespace: developer-hub
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+    argocd.argoproj.io/hook: PreSync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
+spec:
+  ttlSecondsAfterFinished: 600
+  backoffLimit: 1
+  template:
+    spec:
+      restartPolicy: Never
+      serviceAccountName: developer-hub-hooks
+      containers:
+        - name: reset
+          image: registry.redhat.io/openshift4/ose-cli:latest
+          command:
+            - /bin/bash
+            - -lc
+            - |
+              set -euo pipefail
+              echo "Deleting immutable backstage-files ConfigMaps (if any)..."
+              for CM in $(oc -n developer-hub get cm -o name | awk -F/ '$2 ~ /^backstage-files-developer-hub-/' ); do
+                IMM="$(oc -n developer-hub get "$CM" -o jsonpath='{.immutable}' 2>/dev/null || true)"
+                if [ "$IMM" = "true" ]; then
+                  echo "Deleting $CM (immutable=true)"
+                  oc -n developer-hub delete "$CM" --ignore-not-found=true
+                fi
+              done
+              echo "Done."
+---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
