@@ -1837,7 +1837,7 @@ kind: Job
 metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "10"
-  name: rhdh-welcome-notification
+  name: rhdh-welcome-notification-optional
   namespace: developer-hub
 spec:
   ttlSecondsAfterFinished: 600
@@ -1860,35 +1860,4 @@ spec:
         - /bin/bash
         - -c
         - |
-          RHDH_URL="https://backstage-developer-hub-developer-hub.${CLUSTER_DOMAIN}"
-          MAILPIT_URL="https://n8n-mailpit-openshift-lightspeed.${CLUSTER_DOMAIN}"
-
-          echo "Waiting for Developer Hub to be ready..."
-          for i in $(seq 1 60); do
-            STATUS=$(curl -sk -o /dev/null -w '%{http_code}' "${RHDH_URL}/api/notifications" \
-              -H "X-Backstage-Backend-Secret: ${BACKEND_SECRET}")
-            if [ "$STATUS" = "200" ]; then
-              echo "Developer Hub notifications API is ready"
-              break
-            fi
-            echo "Attempt $i: HTTP $STATUS, retrying in 10s..."
-            sleep 10
-          done
-
-          echo "Sending welcome notification..."
-          curl -sk -X POST "${RHDH_URL}/api/notifications" \
-            -H "X-Backstage-Backend-Secret: ${BACKEND_SECRET}" \
-            -H "Content-Type: application/json" \
-            -d "{
-              \"recipients\": {\"type\": \"broadcast\"},
-              \"payload\": {
-                \"title\": \"Workshop Email Notifications\",
-                \"description\": \"Your workshop email inbox is ready. Click to view notifications sent by Developer Hub scaffolder templates, pipeline results, and system alerts.\",
-                \"link\": \"${MAILPIT_URL}\",
-                \"severity\": \"normal\",
-                \"topic\": \"workshop-mailpit\"
-              }
-            }"
-
-          echo ""
-          echo "Notification sent successfully"
+          echo "Skipping RHDH welcome notification in this workshop install."
