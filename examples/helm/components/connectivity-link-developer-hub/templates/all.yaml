@@ -603,33 +603,6 @@ data:
     includes:
       - dynamic-plugins.default.yaml
     plugins:
-      # RHDH ships Lightspeed plugins preconfigured via `dynamic-plugins.default.yaml`.
-      # Override the *same* registry-hosted package (instead of adding a second Lightspeed plugin),
-      # otherwise `install-dynamic-plugins` may fail with:
-      #   Config key '...lightspeed.dynamicRoutes' defined differently for 2 dynamic plugins
-      - package: oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-lightspeed:{{ "{{inherit}}" }}!red-hat-developer-hub-backstage-plugin-lightspeed
-        disabled: false
-        pluginConfig:
-          dynamicPlugins:
-            frontend:
-              red-hat-developer-hub.backstage-plugin-lightspeed:
-                appIcons:
-                  - name: LightspeedIcon
-                    module: LightspeedPlugin
-                    importName: LightspeedIcon
-                dynamicRoutes:
-                  - importName: LightspeedPage
-                    menuItem:
-                      icon: LightspeedIcon
-                      text: Lightspeed
-                    module: LightspeedPlugin
-                    path: /lightspeed
-                translationResources:
-                  - importName: lightspeedTranslations
-                    module: Alpha
-                    ref: lightspeedTranslationRef
-      - package: oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-lightspeed-backend:{{ "{{inherit}}" }}!red-hat-developer-hub-backstage-plugin-lightspeed-backend
-        disabled: false
       - package: ./dynamic-plugins/dist/backstage-community-plugin-rbac
         disabled: false
       - package: ./dynamic-plugins/dist/backstage-community-plugin-catalog-backend-module-keycloak-dynamic
