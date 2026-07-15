@@ -1617,6 +1617,12 @@ metadata:
   name: developer-hub
   namespace: developer-hub
 spec:
+  # Disable the default Lightspeed flavour to keep the workshop RHDH baseline stable.
+  # The workshop does not rely on RHDH Lightspeed, and the flavour introduces extra
+  # sidecars/config that can drift across operator/image versions.
+  flavours:
+    - name: lightspeed
+      enabled: false
   application:
     appConfig:
       configMaps:
