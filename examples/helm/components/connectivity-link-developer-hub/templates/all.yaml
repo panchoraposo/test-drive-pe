@@ -1837,7 +1837,6 @@ kind: Job
 metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "10"
-    argocd.argoproj.io/hook: PostSync
   name: rhdh-welcome-notification
   namespace: developer-hub
 spec:
