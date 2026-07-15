@@ -1806,7 +1806,7 @@ spec:
           echo "Waiting for Developer Hub to be ready..."
           for i in $(seq 1 60); do
             STATUS=$(curl -sk -o /dev/null -w '%{http_code}' "${RHDH_URL}/api/notifications" \
-              -H "Authorization: Bearer ${BACKEND_SECRET}")
+              -H "X-Backstage-Backend-Secret: ${BACKEND_SECRET}")
             if [ "$STATUS" = "200" ]; then
               echo "Developer Hub notifications API is ready"
               break
@@ -1817,7 +1817,7 @@ spec:
 
           echo "Sending welcome notification..."
           curl -sk -X POST "${RHDH_URL}/api/notifications" \
-            -H "Authorization: Bearer ${BACKEND_SECRET}" \
+            -H "X-Backstage-Backend-Secret: ${BACKEND_SECRET}" \
             -H "Content-Type: application/json" \
             -d "{
               \"recipients\": {\"type\": \"broadcast\"},
