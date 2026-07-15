@@ -1563,6 +1563,22 @@ data:
       provider_id: rhdh-docs
       vector_db_id: rhdh-product-docs-1_8
 ---
+# Bootstrap ArgoCD credentials so Backstage can start even on greenfield installs.
+# The PostSync hook job updates this secret when the OpenShift GitOps admin password is available.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: rhdh-argocd-credentials
+  namespace: developer-hub
+  labels:
+    rhdh.redhat.com/ext-config-sync: "true"
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+type: Opaque
+stringData:
+  # Placeholder to avoid CreateContainerConfigError if the ArgoCD password sync hook cannot run.
+  ARGOCD_INSTANCE_2_PASSWORD: "placeholder"
+---
 apiVersion: rhdh.redhat.com/v1alpha5
 kind: Backstage
 metadata:
