@@ -634,7 +634,9 @@ data:
         disabled: false
       - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-plugin-scaffolder-backend-module-gitea:bs_1.45.3__0.2.15!backstage-plugin-scaffolder-backend-module-gitea
         disabled: false
-      - package: ./dynamic-plugins/dist/backstage-community-plugin-tekton
+      # RHDH 1.10 (Backstage 1.49.4): use OCI artifact for Tekton.
+      # The container image may not include the bundled wrapper path.
+      - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-tekton:bs_1.49.4__3.37.0!backstage-community-plugin-tekton
         pluginConfig:
           dynamicPlugins:
             frontend:
@@ -670,9 +672,12 @@ data:
                           - hasAnnotation: backstage.io/kubernetes-namespace
       - package: ./dynamic-plugins/dist/roadiehq-scaffolder-backend-module-http-request-dynamic
         disabled: false
-      - package: ./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend-dynamic
+      # RHDH 1.10 (Backstage 1.49.4): do not rely on the bundled wrapper path for ArgoCD backend.
+      # Some RHDH images no longer ship `./dynamic-plugins/dist/roadiehq-backstage-plugin-argo-cd-backend-dynamic`,
+      # which causes the `install-dynamic-plugins` initContainer to fail with ENOENT on `package.json`.
+      - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-argocd-backend:bs_1.49.4__1.4.0!backstage-community-plugin-argocd-backend
         disabled: false
-      - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-argocd:bs_1.45.3__2.4.3!backstage-community-plugin-argocd
+      - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/backstage-community-plugin-argocd:bs_1.49.4__2.8.0!backstage-community-plugin-argocd
         disabled: false
         pluginConfig:
           dynamicPlugins:
@@ -1318,9 +1323,9 @@ stringData:
   RHDH_CALLBACK_URL: "https://backstage-developer-hub-developer-hub.{{ .Values.clusterDomain }}/api/auth/oidc/handler/frame"
   # If clusterDomain is not provided (common when deploying into an env we don't control),
   # fall back to the in-cluster Argo CD service DNS name instead of producing an invalid URL.
-  ARGOCD_INSTANCE_2_URL: {{- if .Values.clusterDomain -}}
+  ARGOCD_INSTANCE_2_URL: {{- if .Values.clusterDomain }}
     "https://openshift-gitops-server-openshift-gitops.{{ .Values.clusterDomain }}"
-  {{- else -}}
+  {{- else }}
     "https://openshift-gitops-server.openshift-gitops.svc"
   {{- end }}
   ARGOCD_INSTANCE_2_USERNAME: "admin"
