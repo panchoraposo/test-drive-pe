@@ -1617,6 +1617,11 @@ spec:
               - name: llama-stack-config
                 configMap:
                   name: llama-stack-config
+              # lightspeed-core's llama-stack config expects an external providers directory.
+              # Some images/configurations reference `/app-root/providers.d`; mount an empty dir
+              # to guarantee the path exists and avoid startup FileNotFoundError.
+              - name: lightspeed-external-providers
+                emptyDir: {}
               - name: shared-storage
                 emptyDir: {}
               - name: rag-data-volume
@@ -1662,6 +1667,8 @@ spec:
                   - mountPath: /app-root/src/sitecustomize.py
                     name: lightspeed-core-sitecustomize
                     subPath: sitecustomize.py
+                  - mountPath: /app-root/providers.d
+                    name: lightspeed-external-providers
                   - mountPath: /tmp/data
                     name: shared-storage
 ---
