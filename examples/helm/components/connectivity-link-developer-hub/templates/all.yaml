@@ -603,7 +603,11 @@ data:
     includes:
       - dynamic-plugins.default.yaml
     plugins:
-      - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/red-hat-developer-hub-backstage-plugin-lightspeed:bs_1.42.5__1.0.3!red-hat-developer-hub-backstage-plugin-lightspeed
+      # RHDH ships Lightspeed plugins preconfigured via `dynamic-plugins.default.yaml`.
+      # Override the *same* registry-hosted package (instead of adding a second Lightspeed plugin),
+      # otherwise `install-dynamic-plugins` may fail with:
+      #   Config key '...lightspeed.dynamicRoutes' defined differently for 2 dynamic plugins
+      - package: oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-lightspeed:{{ "{{inherit}}" }}!red-hat-developer-hub-backstage-plugin-lightspeed
         disabled: false
         pluginConfig:
           dynamicPlugins:
@@ -624,7 +628,7 @@ data:
                   - importName: lightspeedTranslations
                     module: Alpha
                     ref: lightspeedTranslationRef
-      - package: oci://ghcr.io/redhat-developer/rhdh-plugin-export-overlays/red-hat-developer-hub-backstage-plugin-lightspeed-backend:bs_1.42.5__1.0.3!red-hat-developer-hub-backstage-plugin-lightspeed-backend
+      - package: oci://registry.access.redhat.com/rhdh/red-hat-developer-hub-backstage-plugin-lightspeed-backend:{{ "{{inherit}}" }}!red-hat-developer-hub-backstage-plugin-lightspeed-backend
         disabled: false
       - package: ./dynamic-plugins/dist/backstage-community-plugin-rbac
         disabled: false
